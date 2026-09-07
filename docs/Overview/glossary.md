@@ -21,7 +21,7 @@ page that provides a full explanation.
 :   A CNI (Container Network Interface) plugin for Kubernetes that provides pod-to-pod networking and network policy enforcement. Omnia deploys Calico as the default CNI in the Kubernetes cluster.
 
 **Catalog**
-:   A declarative YAML manifest used in BuildStreaM deployments that defines the complete cluster configuration, including software selections, network settings, and domain execution order. BuildStreaM reads the catalog to generate a GitLab CI/CD pipeline for automated deployment. See [BuildStreaM](../GetStarted/buildstream_deployment.md).
+:   A declarative JSON manifest used in BuildStreaM deployments that defines the complete cluster configuration, including software selections, network settings, and domain execution order. BuildStreaM reads the catalog to generate a GitLab CI/CD pipeline for automated deployment. See [BuildStreaM](../GetStarted/buildstream_deployment.md).
 
 **cloud-init**
 :   A cloud instance initialization system that configures systems during first boot. Omnia uses cloud-init to automate node configuration and customization during the provisioning process.
@@ -67,6 +67,12 @@ page that provides a full explanation.
 
 **InfiniBand**
 :   A high-performance, low-latency networking technology designed for HPC clusters. Omnia supports InfiniBand networking with automatic DOCA-OFED driver installation for NVIDIA adapters.
+
+**Input Contractor**
+:   A standardized interface that defines the input parameters, configuration files, and data structures required by an Omnia domain. Input contractors specify what information a domain needs to receive from other domains or user configuration to perform its operations. See [Domain Contracts](domain_execution.md).
+
+**Output Contractor**
+:   A standardized interface that defines the output files, artifacts, and data structures produced by an Omnia domain. Output contractors specify what information a domain generates and makes available to other domains or downstream processes. See [Domain Contracts](domain_execution.md).
 
 **iSCSI**
 :   Internet Small Computer System Interface. A storage networking protocol for linking data storage facilities. Omnia uses iSCSI for PowerVault storage integration to provide persistent storage for critical cluster components.
