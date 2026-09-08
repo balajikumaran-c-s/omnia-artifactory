@@ -10,7 +10,9 @@ The Build Stream deploy pipeline automates the deployment of built images to tar
 - **restart**: PXE-boots the target nodes to load the deployed images
 - **validate**: Executes Molecule-based infrastructure tests to verify cluster deployment, network connectivity, and service health
 
-The deploy pipeline is automatically triggered when you update the PXE mapping file (`pxe_mapping_file.csv`) in the GitLab repository, or can be manually initiated through the GitLab interface.
+The deploy pipeline is automatically triggered when you update
+`input/orchestrator/pxe_mapping_file.csv` in the GitLab repository, or it can
+be initiated manually through the GitLab interface.
 
 !!! warning
 
@@ -18,14 +20,16 @@ The deploy pipeline is automatically triggered when you update the PXE mapping f
 
 !!! note
 
-    Build Stream does not support execution of multiple pipelines in parallel. Only one pipeline can be executed at a time. Attempting to run multiple pipelines simultaneously may result in unexpected behavior or failures.
+    The current GitLab configuration does not serialize pipelines. Concurrent
+    pipelines can access shared resources, so avoid overlapping operations that
+    update the same catalog, mapping, image, or deployment state.
 
 ## Prerequisites
 
 - Build pipeline has completed successfully and images are available
 - Target nodes are powered on and accessible via BMC
-- PXE mapping file (`pxe_mapping_file.csv`) is correctly configured with target node information
-- PXE mapping file is present in the GitLab repository `input/` folder for automatic triggering
+- `input/orchestrator/pxe_mapping_file.csv` follows the
+  [Orchestrator input contract](../../Reference/domain_contracts/orchestrator_contract.md#pxe-mapping-contract).
 
 ## Procedure
 
@@ -37,7 +41,8 @@ The deploy pipeline is automatically triggered when you update the PXE mapping f
     https://<gitlab_host>:<gitlab_https_port>/root/<gitlab_project_name>
     ```
 
-2. Update the `pxe_mapping_file.csv` file in the GitLab repository and commit the changes. The deploy pipeline triggers automatically.
+2. Update `input/orchestrator/pxe_mapping_file.csv` in the GitLab repository
+   and commit the change. The deploy pipeline triggers automatically.
 
     ![GitLab Deploy Trigger](../../assets/images/gitlab-deploy-trigger.png)
 
@@ -170,18 +175,14 @@ After the deploy pipeline completes:
 
 ## Next Steps
 
-- [Add Nodes to Cluster](../orchestrator/add_nodes.md) -- Deploy images to new nodes without affecting existing nodes
-- [Cleanup Operations](cleanup_operations.md) -- Remove old Image Groups
+- [Add Nodes through Build Stream](../../Operations/build_stream/add_nodes.md) -- Update the desired mapping and run the deploy pipeline
+- [Cleanup Operations](../../Operations/build_stream/cleanup_operations.md) -- Remove old Image Groups
 
 ## Troubleshooting
 
 - **Deploy stage failing**: Check the log path from the API response. Ensure the functional groups in the PXE mapping file match the `catalog_rhel.json`.
 - **Restart stage failing**: Verify iDRAC readiness and BMC network connectivity.
-- For additional issues, see [Build Stream Troubleshooting](../../Troubleshooting/build_stream.md).
-
-
-
-
+- For additional issues, see [Build Stream Troubleshooting](../../Troubleshooting/build_stream/buildstream.md).
 
 
 

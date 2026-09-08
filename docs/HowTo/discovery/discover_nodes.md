@@ -1,468 +1,463 @@
-# Discover Nodes Using OME
-
-Use OpenManage Enterprise (OME) to discover cluster nodes and auto-generate the PXE mapping file using the discovery domain. This is the recommended method for creating the mapping file, as it reduces manual configuration effort by querying OME for server inventory and NIC details.
+# Discover nodes using OME
 
 ## Overview
 
-The discovery domain (collection: `omnia.discovery`) performs the following steps:
+The Omnia Discovery module connects to Dell OpenManage Enterprise (OME) from
+the Omnia Infrastructure Manager (OIM), collects server and network-interface
+inventory, and generates the node mapping used by the Orchestrator module.
+Discovery runs locally on the OIM and supports OME as its discovery mechanism.
 
-1. Authenticates with OpenManage Enterprise using OME credentials
-2. Collects server inventory from OME (service tags, MAC addresses, NIC details)
-3. Generates a `bmc_pxe_mapping_file_<timestamp>.csv` in `/opt/omnia/discovery/output/<project>/discovery/`
-4. Generates a `bmc_discovery_report_<timestamp>.csv` with NIC link statuses for pre-provisioning health checks
+A complete untagged run:
 
-!!! note
+1. Validates `discovery_config.yml`.
+2. Creates or loads the OME credentials stored for the selected project.
+3. Verifies that OME is reachable on TCP port 443.
+4. Collects OME devices of server type `1000`, their iDRAC details, Ethernet
+   interfaces, InfiniBand interfaces, and OME static-group membership.
+5. Generates a timestamped PXE mapping file and a NIC-status report.
+6. Once the OME discovery role starts, writes `discovery_status.yml` with the
+   result of that role.
 
-    In Dell Omnia deployments integrated with OME, server identification and mapping during PXE boot rely on information retrieved from OME and iDRAC inventory. Depending on the DNS environment, the `DnsName` value may match the intended iDRAC hostname, or may return a reverse DNS name (for example, `pool-<IP-based>`), which may not align with naming conventions required for cluster configuration. Due to differences between iDRAC configuration and OME-reported hostnames, you must explicitly define `GROUP_NAME` and `PARENT_SERVICE_TAG` in the `pxe_mapping_file` to ensure accurate PXE provisioning and cluster setup.
+With the default data path and project, the generated files are under
+`/opt/omnia/discovery/output/project_default/`:
+
+| File | Purpose |
+|------|---------|
+| `bmc_pxe_mapping_file_<timestamp>.csv` | Timestamped node mapping for review and downstream use. |
+| `bmc_pxe_mapping_file.csv` | Symbolic link to the latest timestamped mapping file. |
+| `bmc_discovery_report_<timestamp>.csv` | Point-in-time report of BMC, Ethernet, and InfiniBand NIC status. |
+| `discovery_status.yml` | OME role status, mapping-file path, discovered-server count, and timestamp. This file is not updated by earlier failures. |
+
+Discovery generates the mapping required by the downstream deployment
+workflow. It does not build OS images.
 
 ## Prerequisites
 
-- The [Setup the OIM](../main/setup_oim.md) procedure is complete (main domain setup is complete)
-- The [Initialize Domains](../main/initialize_domains.md) procedure is complete (discovery domain is initialized)
-- OpenManage Enterprise (OME) is installed and accessible from the OIM
-- All target servers have iDRAC configured with network connectivity
-- OME has discovered the devices (servers are visible in OME inventory)
-- You have administrative access to OME
-- For a deployment with N Scalable Units, ensure one dedicated `service_kube_node` (Kubernetes worker node) for each Scalable Unit
+- Run Discovery on the OIM with permission to create files under the Omnia data
+  path, `/var/log/omnia/discovery/`, and `/opt/omnia/log/core/playbooks/`.
+- Before the first run, use the Discovery initialization script to prepare the
+  runtime directories, attempt installation of the module dependencies, and
+  stage the input templates. The playbook can stage its input templates when
+  the runtime input directory is absent, but it does not perform the other
+  initialization work.
+- Activate the shared Omnia virtual environment before running the
+  initialization script or Discovery playbook manually.
+- Use the module-initialized environment. `requirements.txt` requests Ansible
+  Core 2.20 or later, Jinja 3.0 or later, and PyYAML 6.0.3 or later;
+  `requirements.yml` requests `ansible.posix` 2.0.0 and `community.general`
+  10.3.0. The `requests` Python library must also be importable by Ansible, and
+  `openssl` must be available to generate a Vault password when the credential
+  files do not exist.
+- OME must be reachable from the OIM over TCP port 443.
+- Valid OME credentials must be available. Discovery prompts for missing OME
+  credentials, saves them in `discovery_credentials.yml`, and encrypts the file
+  with Ansible Vault using `.discovery_credentials_key`.
+- Target servers must already be managed by OME as server devices and must have
+  a service tag. Devices without a service tag are not added to the discovered
+  server list.
+- OME must expose the device, group, device-management, and server network
+  interface inventory used by Discovery.
 
-### Input Contract
+### Input contract
 
-The discovery domain requires the following inputs:
+Discovery resolves its runtime paths from the following values:
 
-| Input | Location | Purpose |
-|-------|----------|---------|
-| `discovery_config.yml` | `/opt/omnia/discovery/input/<project>/discovery_config.yml` | Discovery mechanism and OME connection configuration |
-| `network_spec.yml` | `/opt/omnia/discovery/input/<project>/network_spec.yml` | Network topology for IP derivation in PXE mapping |
-| `omnia_config_credentials.yml` | `/opt/omnia/discovery/input/<project>/omnia_config_credentials.yml` | OME credentials (vault-encrypted) |
-| `discovery_mechanism` | CLI extra variable | Discovery backend: `ome` or `magellan` |
+| Input | Required value or default |
+|-------|---------------------------|
+| `OMNIA_DATA_PATH` | Optional. Defaults to `/opt/omnia`. |
+| `OMNIA_PROJECT_NAME` | Optional. Defaults to `project_default`. |
+| `project_name` | Optional Ansible extra variable used when `OMNIA_PROJECT_NAME` is not set. |
 
-**Required Files:**
-- `discovery_config.yml` - Always required
-- `network_spec.yml` - Always required
-- `omnia_config_credentials.yml` - Auto-created if missing (with user-prompted OME credentials)
-- `discovery_mechanism` - Required CLI variable
+Prepare the following files in
+`<OMNIA_DATA_PATH>/discovery/input/<OMNIA_PROJECT_NAME>/`:
 
-**Input Sources:**
-- **User** - Provides `discovery_config.yml`, `network_spec.yml`, and CLI variables
-- **Credential utility** - Auto-creates `omnia_config_credentials.yml` with user-prompted OME credentials
-- **Domain initialization** - Stages input files from samples directory
+| Input | Requirement |
+|-------|-------------|
+| `discovery_config.yml` | Required. Contains `enable_bmc_discovery` and the OME IPv4 address in `ome_ip`. |
+| `network_spec.yml` | Required during execution. Discovery reads the admin and InfiniBand subnet values from this file to derive node IP addresses. |
+| `discovery_credentials.yml` | Created automatically if absent. Contains `ome_username` and `ome_password` and is stored encrypted. |
+| `.discovery_credentials_key` | Created automatically with the credential file and stored with mode `0400`. |
+| `build_stream_config.yml` | Optional. When `enable_build_stream` is `true`, Discovery displays the BuildStream handoff after generating the report. If the file is absent, Discovery displays the direct Orchestrator handoff. |
 
-### NIC MAC address selection
+`discovery_config.yml` must retain both schema fields. For an OME discovery
+run, set `enable_bmc_discovery: true` and set `ome_ip` to a valid,
+non-loopback IPv4 address.
 
-Servers must have the correct NIC order and configuration in BIOS or
-iDRAC settings to match your intended IP assignment scheme. During
-OME-based discovery, Omnia collects MAC addresses using priority-based
-selection:
+The credential workflow requires a nonempty OME username and password. The
+username must contain between 1 and 64 characters and cannot contain a
+backslash, single quote, double quote, or semicolon. The password must contain
+between 1 and 128 characters. Discovery prompts only for values that are empty
+or absent in the credential file.
 
-**Admin (non-iDRAC) NIC selection:**
+### Plan OME static groups
 
-| Priority | Condition | Action |
-| --- | --- | --- |
-| 1 | First Ethernet NIC is active (UP) | Use first NIC |
-| 2 | First NIC is down, second NIC is UP | Use second NIC |
-| 3 | All Ethernet NICs are down | Default to first NIC regardless of link state |
+When OME exposes a `Static Groups` container, Discovery uses its immediate
+child groups as functional-group assignments. If that container is absent,
+Discovery falls back to non-system OME groups. A server can belong to no more
+than one of the groups that Discovery processes; Discovery stops if a server
+belongs to multiple processed groups.
 
-Omnia scans server NICs excluding the iDRAC/BMC NIC. NIC order is
-determined by BIOS/iDRAC settings.
+The mapping generator accepts these exact, case-sensitive OME static-group
+names:
 
-**InfiniBand (IB) NIC selection:**
+- `service_kube_control_plane_x86_64`
+- `service_kube_node_x86_64`
+- `login_node_x86_64`
+- `login_node_aarch64`
+- `login_compiler_node_x86_64`
+- `login_compiler_node_aarch64`
+- `slurm_control_node_x86_64`
+- `slurm_node_x86_64`
+- `slurm_node_aarch64`
+- `os_x86_64`
+- `os_aarch64`
 
-| Priority | Condition | Action |
-| --- | --- | --- |
-| 1 | IB NIC link status is UP | Use this IB NIC |
-| 2 | IB NIC link status is Unknown | Use as fallback |
-| 3 | IB NIC link status is Down | Use as last resort |
+#### Create OME static groups
 
-If no InfiniBand NIC is detected, the IB fields are left empty in the
-generated CSV. This is expected behavior and does not affect provisioning
-for clusters without InfiniBand.
+Create one static group for each Omnia functional group required by the
+cluster:
 
-### iDRAC hostname naming convention
+1. In the OME left navigation menu, select **CUSTOM GROUPS > Static Groups**.
+2. Select the ellipsis (**...**) next to **Static Groups**, and then select
+   **Create Group**.
+3. Enter one of the supported functional-group names exactly as listed above.
+4. Enter a description that identifies the purpose of the group.
+5. Select **Finish**.
 
-Omnia uses the iDRAC hostname as the anchor identity for every compute
-node. The hostname encodes the physical and logical location of the
-server, read left to right from the largest grouping down to the
-individual node. The iDRAC hostname must follow this pattern:
+Repeat these steps for each functional group required by the cluster. The
+group name determines the value written to `FUNCTIONAL_GROUP_NAME`; the group
+description does not affect Discovery behavior.
 
-```text
-idrac-<SU><1-100>R<000-999>OU<1-54><Type><Instance>
-```
+#### Assign devices to OME static groups
 
-| Component | Description | Format |
-| --- | --- | --- |
-| **SU** (Scalable Unit) | A logical block of infrastructure -- a group of racks deployed and managed together as a single unit. | `SU1` through `SU100` (case-insensitive) |
-| **R** (Rack) | The physical rack cabinet housing servers and networking equipment within the Scalable Unit. | `R1` through `R999` |
-| **OU** (ORv3 Unit Position) | The vertical slot position in an ORv3-compliant rack. | `OU1` through `OU54` |
-| **C** (Compute Node) | Distinguishes individual compute servers at a rack position. A dense chassis can hold multiple nodes. | `C1` through `C99` |
+After creating the required static groups, assign the discovered servers:
 
-**Example breakdown:**
+1. Select the static group from the OME group list.
+2. Select **Add Devices**.
+3. In the **Add Devices to Group** dialog box, select the servers whose
+   intended role matches the functional group.
+4. Select **Finish**.
 
-```text
-SU02   R1   OU05   C7
-│      │     │      │
-│      │     │      └──  Compute Node number
-│      │     └─────────  ORv3 Unit position in the rack
-│      └───────────────  Rack number within the Scalable Unit
-└──────────────────────  Scalable Unit number
-```
+Repeat these steps for the remaining groups. Before running Discovery, verify
+that each server is assigned to no more than one Omnia static group and that
+each group is an immediate child of **Static Groups**.
 
-`SU02R1OU05C7` = Scalable Unit 02, Rack 1, ORv3 Unit position 5,
-Compute Node 7.
+A server without a static-group assignment is placed in
+`slurm_node_aarch64`. A server assigned to a nonempty, unsupported static
+group is skipped when the mapping file is generated, although it remains in
+the discovery report.
 
-!!! warning
+Discovery derives `GROUP_NAME` from an `SU` identifier in the iDRAC hostname.
+Recognized examples include `idrac-SUA99R999OU30C2` and `SU1R2OU1C5`, which
+produce `SUA99` and `SU1`, respectively. If the hostname does not contain a
+match, Discovery tries the OME group name and then defaults to `grp0`.
 
-    If the iDRAC hostname is not set correctly using this convention
-    before discovery, Omnia will generate incorrect PXE mapping
-    information. Accurate, consistent naming is mandatory.
+For `slurm_node_x86_64` and `slurm_node_aarch64`, Discovery populates
+`PARENT_SERVICE_TAG` from a `service_kube_node_x86_64` server with the same
+derived `GROUP_NAME`. Plan the iDRAC hostnames and static-group membership
+accordingly when this relationship is required.
 
 ## Procedure
 
-1. **Discover servers in OME.** In OpenManage Enterprise, discover the
-   cluster nodes you want to provision with Omnia. For more information,
-   see the
-   [OpenManage Enterprise User Guide](https://dl.dell.com/content/manual4/en/openmanage-enterprise-user-guide-en){target="_blank"}.
+1. In OME, discover or manage the target servers that Omnia will provision.
+   Confirm that each target appears in OME as a server device and has a service
+   tag. Omnia queries the existing OME inventory; it does not add devices to
+   OME. For the version-specific device-discovery procedure, see the
+   [Dell OpenManage Enterprise documentation](https://www.dell.com/support/product-details/en-us/product/dell-openmanage-enterprise/docs){target="_blank"}.
 
-2. **Create static groups in OME** for each Omnia functional group you
-   plan to use. The group names must exactly match the functional group
-   names listed in
-   [Functional groups](#functional-groups).
-
-    To create static groups in OME:
-
-    1. In the left navigation menu, navigate to **CUSTOM GROUPS > Static Groups**.
-    2. Click the ellipsis (**…**) next to Static Groups and select
-       **Create Group**.
-    3. Provide the group name exactly matching the functional group name.
-    4. Add a description for the group.
-    5. Click **Finish**.
-
-    Repeat for each functional group type you plan to use.
-
-3. **Add discovered servers to the static groups** in OME:
-
-    1. Select the static functional group from the list.
-    2. Click **Add Devices**.
-    3. In the **Add Devices to Group** dialog box, select the servers
-       that belong to that functional group.
-    4. Click **Finish**.
-
-    Repeat for all functional groups, ensuring each server is assigned to
-    the correct static group based on its intended role in the cluster.
-
-    !!! note
-
-        Devices not assigned to any Omnia-supported static group will
-        default to `slurm_node_aarch64` in the auto-generated mapping
-        file.
-
-4. **Configure the discovery input file:**
+2. Set the data path and project name in the shell used to initialize and run
+   Discovery. The following values select the standard runtime location:
 
     ```bash title="Run on: OIM host"
-    vi /opt/omnia/discovery/input/project_default/discovery_config.yml
+    export OMNIA_DATA_PATH=/opt/omnia
+    export OMNIA_PROJECT_NAME=project_default
     ```
 
-    | Parameter | Mandatory / Optional | Details |
-    | --- | --- | --- |
-    | `enable_bmc_discovery` | Optional | **Type:** Boolean. Set to `true` to enable BMC discovery via OME. When `false`, OME credentials will not be prompted. **Default:** `false` |
-    | `ome_ip` | Conditional Mandatory | **Type:** String. IP address of the Dell OME instance. **Required when** `enable_bmc_discovery` is `true`. **Example:** `"192.168.1.100"` **Default:** `""` |
+3. From the Omnia source tree, initialize the Discovery module:
 
-    ```yaml title="Example: discovery_config.yml"
+    ```bash title="Run on: OIM host"
+    cd src/discovery
+    ./domain-init.sh
+    ```
+
+    The script attempts to install the module dependencies, creates the runtime
+    and log directories, and copies `discovery_config.yml` and
+    `network_spec.yml` to
+    `<OMNIA_DATA_PATH>/discovery/input/<OMNIA_PROJECT_NAME>/`. Review its output
+    and confirm that the dependencies are available; dependency-install errors
+    are reported as warnings and do not stop initialization.
+
+    !!! warning
+
+        If the destination already contains files, initialization asks before
+        overwriting them. Preserve any project-specific changes when responding
+        to the prompt.
+
+4. [Create the required OME static groups](#create-ome-static-groups), and then
+   [assign the discovered servers](#assign-devices-to-ome-static-groups). Use
+   an exact supported functional-group name and place each server in no more
+   than one Omnia static group. A server without a static-group assignment
+   uses the default functional group.
+
+5. Edit the staged `discovery_config.yml` and enable OME discovery:
+
+    ```yaml title="File: /opt/omnia/discovery/input/project_default/discovery_config.yml"
     enable_bmc_discovery: true
     ome_ip: "192.168.1.100"
     ```
 
-5. **Run the discovery domain:**
+    Configure `ome_ip` with a valid, non-loopback OME IPv4 address, which is the
+    format defined by the Discovery configuration schema.
 
-    ```bash title="Run on: OIM host"
-    ./omnia.sh --run discovery -e "discovery_mechanism=ome"
+6. Edit the staged `network_spec.yml`. Discovery uses only
+   `admin_network.subnet` and `ib_network.subnet`; preserve the `Networks` list
+   and both network entries from the staged template.
+
+    ```yaml title="File: /opt/omnia/discovery/input/project_default/network_spec.yml"
+    Networks:
+      - admin_network:
+          subnet: "172.16.0.0"
+
+      - ib_network:
+          subnet: "192.168.0.0"
     ```
 
-    The domain will prompt for OME credentials if not already configured. After completion, a summary message is displayed:
+    Discovery derives `ADMIN_IP` by combining the first two octets of the admin
+    subnet with the last two octets of the server's BMC IP. It derives `IB_IP`
+    in the same way from the InfiniBand subnet, but only when an InfiniBand NIC
+    was detected. The Discovery validator does not validate `network_spec.yml`,
+    so review these subnet values before execution.
+
+7. Change to the Discovery playbook directory and validate
+   `discovery_config.yml` before contacting OME:
+
+    ```bash title="Run on: OIM host"
+    cd playbooks
+    ansible-playbook discovery.yml --tags validate
+    ```
+
+    A successful validation prints `Discovery configuration validation passed.`
+    and displays the validation-log path. This phase does not request OME
+    credentials.
+
+8. Run the complete Discovery workflow:
+
+    ```bash title="Run on: OIM host"
+    ansible-playbook discovery.yml
+    ```
+
+    When `discovery_credentials.yml` does not exist, Discovery creates it and
+    creates its Vault key if needed. Enter the OME username and password when
+    prompted. The password prompt asks for confirmation before the credential
+    file is encrypted.
+
+    The default untagged run performs setup, validation, credential handling,
+    and OME discovery. The `execute` and `discovery` tags route to the same OME
+    execution flow. Use only one tag in a command.
+
+    A successful run without BuildStream prints a completion summary in this
+    form:
 
     ```text title="Expected output"
     ============================================================
     OME Discovery Complete
     ============================================================
-    BMC PXE mapping file generated: /opt/omnia/discovery/output/project_default/discovery/bmc_pxe_mapping_file_<timestamp>.csv
-    BMC discovery report generated: /opt/omnia/discovery/output/project_default/discovery/bmc_discovery_report_<timestamp>.csv
+    BMC PXE mapping file generated: /opt/omnia/discovery/output/project_default/bmc_pxe_mapping_file_<timestamp>.csv
+    BMC discovery report generated: /opt/omnia/discovery/output/project_default/bmc_discovery_report_<timestamp>.csv
       (Lists link status of BMC, Ethernet, and InfiniBand NICs for each server)
-    Total servers discovered: <N>
+    Total servers discovered: <count>
+
+    Output directory: /opt/omnia/discovery/output/project_default
 
     Next Steps:
     1. Review and edit the generated PXE mapping file.
     2. Review the discovery report for NIC link statuses.
     3. Update HOSTNAME, FUNCTIONAL_GROUP_NAME, GROUP_NAME as needed.
-    4. Copy the mapping file to orchestrator input directory.
+    4. Copy the mapping file to the Orchestrator input directory.
     ============================================================
     ```
 
-6. **Verify and edit the generated mapping file:**
-
-    ```bash title="Run on: OIM host"
-    cat /opt/omnia/discovery/output/project_default/discovery/bmc_pxe_mapping_file_*.csv
-    ```
-
-    Review the file and update `HOSTNAME`, `FUNCTIONAL_GROUP_NAME`,
-    `GROUP_NAME`, and `PARENT_SERVICE_TAG` columns as needed for your
-    deployment.
-
-### Groups
-
-Nodes located in the same physical location or with similar hardware can
-be grouped together. Each group in the PXE mapping file has the following
-attributes:
-
-| Attribute | Mandatory / Optional | Description |
-| --- | --- | --- |
-| `GROUP_NAME` (`grpN`) | Mandatory | User-defined group name. Range for `N` is `0`--`99`. Example: `grp0`, `grp1`, `grp2`. |
-| `PARENT_SERVICE_TAG` | Conditional Mandatory | Service tag of the parent (active service) node. **Required** for nodes in the `slurm_node_x86_64` and `slurm_node_aarch64` functional groups. Must be the service tag of the `service_kube_node` associated with that group. |
-
-### Functional groups
-
-Nodes with similar functional roles are grouped into functional groups.
-The following table lists all functional groups supported in Omnia.
-
-!!! note
-
-    - At least one functional group is mandatory. You must not change the
-      name of functional groups.
-    - Each node must be associated with exactly one functional group. Do
-      not assign a node to multiple functional groups.
-    - Functional group names are **case-sensitive**.
-    - To set up a service cluster, the `service_kube_node` must be present
-      in the mapping file.
-
-| Functional Group Name | Layer | Description |
-| --- | --- | --- |
-| `slurm_control_node_x86_64` | Management | Slurm head node. Nodes in this group are configured to run the Slurm controller. |
-| `slurm_node_x86_64` | Compute | Slurm compute nodes on x86_64 architecture. |
-| `slurm_node_aarch64` | Compute | Slurm compute nodes on aarch64 architecture. |
-| `service_kube_control_plane_x86_64` | Management | Kubernetes control plane nodes on the service cluster. HA requires a minimum of 3 nodes. |
-| `service_kube_node_x86_64` | Management | Kubernetes worker nodes on the service cluster. |
-| `login_node_x86_64` | Management | User login nodes on x86_64. Handles user login sessions. |
-| `login_node_aarch64` | Management | User login nodes on aarch64. Handles user login sessions. |
-| `login_compiler_node_x86_64` | Management | Login and compiler nodes on x86_64. Includes compilation tools. |
-| `login_compiler_node_aarch64` | Management | Login and compiler nodes on aarch64. Includes compilation tools. |
-| `os_x86_64` | Compute | Minimal OS baseline for x86_64. Clean environment for downstream platform software. |
-| `os_aarch64` | Compute | Minimal OS baseline for aarch64. Clean environment for downstream platform software. |
-
-#### Recommended software by functional groups
-
-!!! caution
-
-    Ensure that the `software_config.json` file contains all required
-    inputs for the software to be deployed on each functional group. For
-    more information, see
-    [software_config.json](../../Reference/Configuration/software_config.md){target="_blank"}.
-
-| Functional Group Name | Recommended Software |
-| --- | --- |
-| `service_kube_control_plane_x86_64` | `service_k8s` |
-| `service_kube_node_x86_64` | `service_k8s` |
-| `slurm_control_node_x86_64` | `slurm_custom`, `openldap`, `ldms` |
-| `slurm_node_x86_64` | `slurm_custom`, `openldap`, `ldms` |
-| `slurm_node_aarch64` | `slurm_custom`, `openldap`, `ldms` |
-| `login_node_x86_64` | `slurm_custom`, `openldap`, `ldms` |
-| `login_node_aarch64` | `slurm_custom`, `openldap`, `ldms` |
-| `login_compiler_node_x86_64` | `slurm_custom`, `openldap`, `ucx`, `openmpi`, `ldms` |
-| `login_compiler_node_aarch64` | `slurm_custom`, `openldap`, `ucx`, `openmpi`, `ldms` |
-| `os_x86_64` | `default_packages`, `ldms` |
-| `os_aarch64` | `default_packages`, `ldms` |
-
-!!! note
-
-    The `os_x86_64` and `os_aarch64` functional groups support optional
-    additional packages via `additional_packages.json` files. Create these
-    files in `input/config/<arch>/rhel/10.0/` to include custom packages.
-    If no additional packages are needed, the images build successfully
-    with the standard packages.
-
-### BMC discovery report
-
-The BMC discovery report is a CSV file generated automatically at the end
-of the OME discovery process. It provides a consolidated view of all
-discovered servers along with the link status of each NIC type (BMC,
-Ethernet, and InfiniBand), enabling administrators to quickly identify
-connectivity issues before provisioning.
-
-#### Output file location
-
-```text
-/opt/omnia/discovery/output/<project>/discovery/bmc_discovery_report_<timestamp>.csv
-```
-
-Where `<timestamp>` is in `YYYYMMDDTHHMMSS` format (for example,
-`20260601T120000`), matching the PXE mapping file timestamp.
-
-#### Report columns
-
-| Column | Description |
-| --- | --- |
-| `SERVICE_TAG` | Dell service tag uniquely identifying the server. |
-| `BMC_MAC` | MAC address of the BMC (iDRAC) network interface. |
-| `BMC_IP` | IP address assigned to the BMC (iDRAC). |
-| `BMC_NIC_STATUS` | Link status of the BMC NIC. Typically `Up` if the server is managed by OME. |
-| `ETHERNET_NIC_MAC` | MAC address of the first Ethernet NIC (excluding iDRAC and InfiniBand NICs). |
-| `ETHERNET_NIC_LINK_STATUS` | Link status of the Ethernet NIC (`Up`, `Down`, `Unknown`). |
-| `IB_NIC_NAME` | FQDD of the InfiniBand NIC port (for example, `InfiniBand.Slot.3-1`). Empty if no InfiniBand NIC is present. |
-| `IB_NIC_LINK_STATUS` | Link status of the InfiniBand NIC (`Up`, `Down`, `Unknown`). Empty if no InfiniBand NIC is present. |
-
-#### Sample output
-
-```csv title="bmc_discovery_report_20260601T120000.csv"
-SERVICE_TAG,BMC_MAC,BMC_IP,BMC_NIC_STATUS,ETHERNET_NIC_MAC,ETHERNET_NIC_LINK_STATUS,IB_NIC_NAME,IB_NIC_LINK_STATUS
-H94M8F3,B8:CE:F6:57:89:D0,172.16.0.101,UP,b0:7b:25:d8:4a:f4,Up,InfiniBand.Slot.3-1,Unknown
-J7KN2G4,A4:BF:01:12:34:56,172.16.0.102,UP,e4:43:4b:01:23:45,Up,,
-K5LP9H2,D0:94:66:AB:CD:EF,172.16.0.103,UP,24:6e:96:78:90:12,Unknown,InfiniBand.Slot.3-1,Up
-```
-
-#### NIC link statuses
-
-**BMC NIC status:** Indicates whether the iDRAC is reachable from OME.
-Typically `Up` since OME manages the server.
-
-**Ethernet NIC link status:** Reflects the physical link state of the
-first non-iDRAC, non-InfiniBand network port:
-
-- **Up** -- Cable connected and link established.
-- **Down** -- No link detected (cable disconnected or switch port down).
-- **Unknown** -- iDRAC cannot determine the link state. This can occur
-  when the NIC firmware has not been initialized or the server is powered
-  off.
-
-!!! note
-
-    When all Ethernet NICs report `Unknown` status, Omnia selects the
-    first available Ethernet NIC as a fallback. InfiniBand NICs are never
-    selected as the Ethernet/admin NIC.
-
-**InfiniBand NIC link status:** Reflects the state of the IB port:
-
-- **Up** -- InfiniBand link is active.
-- **Down** -- No InfiniBand link detected.
-- **Unknown** -- iDRAC reports the link state as unknown. This is common
-  for InfiniBand NICs even when they are active at the OS level, as
-  iDRAC may not have full visibility into InfiniBand link state.
-
-!!! note
-
-    InfiniBand NIC selection uses a priority-based fallback: `Up` is
-    preferred, followed by `Unknown`, then `Down`. This ensures an IB NIC
-    is reported even when iDRAC cannot determine its link state.
-
-#### Use cases
-
-**Pre-provisioning health check:** Before running `provision.yml`, review
-the discovery report to verify:
-
-- All servers have valid BMC IPs and MAC addresses.
-- Ethernet NICs are in `Up` state (required for PXE boot).
-- InfiniBand NICs are detected on servers that require IB connectivity.
-
-**Troubleshooting NIC connectivity:** If a server fails to PXE boot
-during provisioning:
-
-1. Check the `ETHERNET_NIC_LINK_STATUS` in the discovery report.
-2. If the status is `Down` or `Unknown`, verify the physical cable
-   connection and switch port configuration.
-3. If the `ETHERNET_NIC_MAC` appears incorrect, check NIC ordering in
-   BIOS/iDRAC settings.
-
-**Inventory auditing:** The report serves as a point-in-time snapshot of
-the cluster NIC inventory, useful for verifying InfiniBand fabric
-connectivity, tracking which servers have IB NICs installed, and auditing
-MAC addresses.
-
-#### Relationship to PXE mapping file
-
-| Attribute | PXE Mapping File | Discovery Report |
-| --- | --- | --- |
-| **Purpose** | Input for provisioning | Diagnostic and auditing |
-| **Editable** | Yes (user edits hostnames, groups) | No (read-only reference) |
-| **Contains NIC link status** | No | Yes |
-| **Contains IP assignments** | Yes (`ADMIN_IP`, `BMC_IP`, `IB_IP`) | Yes (`BMC_IP` only) |
-| **Contains hostnames** | Yes | No |
-| **Used by provision.yml** | Yes | No |
+    When BuildStream is enabled, the generated-file and server-count lines are
+    the same, but the displayed next steps describe the GitLab handoff.
 
 ## Verification
 
-Verify the generated PXE mapping file contains the expected nodes:
+1. **Output contract:** After a successful OME discovery, confirm that the
+   project output directory,
+   `<OMNIA_DATA_PATH>/discovery/output/<OMNIA_PROJECT_NAME>/`, contains the
+   following artifacts:
 
-```bash title="Run on: OIM host"
-cat /opt/omnia/discovery/output/project_default/discovery/bmc_pxe_mapping_file_*.csv
-```
+    | Artifact | Verification |
+    |----------|--------------|
+    | `bmc_pxe_mapping_file_<timestamp>.csv` | Timestamped PXE mapping containing discovered servers whose OME static-group assignment is supported or empty. |
+    | `bmc_pxe_mapping_file.csv` | Symbolic link to the latest timestamped mapping file. |
+    | `bmc_discovery_report_<timestamp>.csv` | NIC-status report generated from every discovered server that has a service tag. |
+    | `discovery_status.yml` | Status of the OME discovery role, mapping-file path, discovered-server count, and timestamp. |
 
-Confirm that each discovered server has the correct `FUNCTIONAL_GROUP_NAME`, `ADMIN_MAC`, `BMC_IP`, and `HOSTNAME` values.
+    With the standard data path and project name, check the status file:
 
-## Output Contract
+    ```bash title="Run on: OIM host"
+    cat /opt/omnia/discovery/output/project_default/discovery_status.yml
+    ```
 
-After successful execution, the discovery domain produces the following output contract:
+    A successful status file has this structure:
 
-| Output | Location | Purpose |
-|--------|----------|---------|
-| `bmc_pxe_mapping_file_<timestamp>.csv` | `/opt/omnia/discovery/output/<project>/discovery/` | Maps discovered servers to PXE boot parameters for orchestrator consumption |
-| `bmc_pxe_mapping_file.csv` (symlink) | `/opt/omnia/discovery/output/<project>/discovery/` | Symlink to latest timestamped mapping file |
-| `bmc_discovery_report_<timestamp>.csv` | `/opt/omnia/discovery/output/<project>/discovery/` | NIC link status report for operator review (informational only) |
+    ```yaml title="Expected structure"
+    overall_status: "success"
+    discovery_mechanism: "ome"
+    bmc_pxe_mapping_file: "/opt/omnia/discovery/output/project_default/bmc_pxe_mapping_file_<timestamp>.csv"
+    servers_discovered: <count>
+    timestamp: "<ISO 8601 timestamp>"
+    ```
 
-### bmc_pxe_mapping_file.csv Structure
+    Confirm that `overall_status` is `success`, `discovery_mechanism` is `ome`,
+    `bmc_pxe_mapping_file` identifies the timestamped mapping file, and
+    `servers_discovered` matches the OME servers expected in the discovery
+    report. Setup, validation, and credential failures occur before this status
+    file is updated; for those failures, use the Ansible output and log instead
+    of relying on an existing status file.
 
-The mapping file contains:
-- FUNCTIONAL_GROUP_NAME - Node functional group (e.g., slurm_node_aarch64)
-- GROUP_NAME - Scalable Unit / group identifier
-- SERVICE_TAG - Dell server service tag
-- HOSTNAME - Generated hostname (e.g., nid00001)
-- ADMIN_MAC, ADMIN_IP - Admin NIC MAC and IP
-- BMC_MAC, BMC_IP, BMC_HOSTNAME - BMC/iDRAC information
-- IB_NIC_NAME, IB_IP - InfiniBand NIC and IP (if present)
+2. Confirm that the stable mapping-file link resolves to the latest
+   timestamped file:
 
-This contract is consumed by:
-- **Operator** - For manual review and editing before provisioning
-- **Orchestrator** - For PXE boot configuration and node provisioning
+    ```bash title="Run on: OIM host"
+    readlink /opt/omnia/discovery/output/project_default/bmc_pxe_mapping_file.csv
+    ```
 
-## Next Steps
+3. Review the generated mapping:
 
-- [Create Mapping File](create_mapping_file.md) -- Manually create PXE mapping files (alternative to OME discovery)
-- [Deploy Orchestrator](../orchestrator/deploy_slurm.md) -- Use the mapping file for PXE boot provisioning
+    ```bash title="Run on: OIM host"
+    cat /opt/omnia/discovery/output/project_default/bmc_pxe_mapping_file.csv
+    ```
+
+    The mapping contains these columns:
+
+    | Column | Generated value |
+    |--------|-----------------|
+    | `FUNCTIONAL_GROUP_NAME` | Supported OME static-group name, or `slurm_node_aarch64` when the server has no assignment. |
+    | `GROUP_NAME` | `SU` identifier derived from the iDRAC hostname, or `grp0` when no identifier is found. |
+    | `SERVICE_TAG` | Service tag reported by OME. |
+    | `PARENT_SERVICE_TAG` | Service tag of a `service_kube_node_x86_64` in the same group for Slurm compute-node roles; otherwise empty. |
+    | `HOSTNAME` | `nid` plus a three-digit sequence number based on discovery order. It normally begins with `nid001`; skipped devices can create gaps. |
+    | `ADMIN_MAC` | MAC of the first non-iDRAC, non-InfiniBand port with link status `Up`; otherwise the first usable non-iDRAC, non-InfiniBand port. |
+    | `ADMIN_IP` | Admin subnet's first two octets combined with the BMC IP's last two octets. |
+    | `BMC_MAC` | iDRAC MAC address reported by OME. |
+    | `BMC_IP` | iDRAC IP address reported by OME. |
+    | `IB_NIC_NAME` | InfiniBand port identifier selected with priority `Up`, then `Unknown`, then another reported state; empty when no InfiniBand NIC is found. |
+    | `IB_IP` | InfiniBand subnet's first two octets combined with the BMC IP's last two octets; empty when no InfiniBand NIC is found. |
+
+4. Review the report with the same timestamp as the mapping file. Replace
+   `<timestamp>` with the value in the mapping filename:
+
+    ```bash title="Run on: OIM host"
+    cat /opt/omnia/discovery/output/project_default/bmc_discovery_report_<timestamp>.csv
+    ```
+
+    The report contains `SERVICE_TAG`, `BMC_MAC`, `BMC_IP`, `BMC_NIC_STATUS`,
+    `ETHERNET_NIC_MAC`, `ETHERNET_NIC_LINK_STATUS`, `IB_NIC_NAME`, and
+    `IB_NIC_LINK_STATUS`. Use it to identify missing NIC inventory and links
+    reported as `Down` or `Unknown` before using the mapping downstream.
+
+    The report includes every discovered server with a service tag. The mapping
+    can contain fewer rows when a server was assigned to an unsupported OME
+    static group.
+
+## Next steps
+
+1. Review and, where necessary, edit `HOSTNAME`, `FUNCTIONAL_GROUP_NAME`, and
+   `GROUP_NAME` in the timestamped mapping file. Also confirm the generated
+   service tags, parent relationships, MAC addresses, and IP addresses.
+
+2. Without BuildStream, copy the reviewed mapping to the Orchestrator input
+   directory:
+
+    ```bash title="Run on: OIM host"
+    cp /opt/omnia/discovery/output/project_default/bmc_pxe_mapping_file.csv \
+      /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv
+    ```
+
+3. With BuildStream enabled, build the images through the build pipeline first.
+   If the GitLab server is not yet available, place the reviewed mapping at the
+   Orchestrator input path shown above. If GitLab is available, copy it to
+   `input/orchestrator/pxe_mapping_file.csv` in the GitLab project and commit
+   the change; the commit triggers the deploy pipeline for the nodes in that
+   mapping.
 
 ## Troubleshooting
 
-**Missing Ethernet NIC MAC in the mapping file**
+### Discovery configuration validation fails
 
-Verify NIC ordering in the server BIOS/iDRAC settings. Omnia selects the
-first active Ethernet NIC (excluding iDRAC and InfiniBand NICs). If all
-NICs are down, it falls back to the first NIC regardless of link state.
+- Confirm that
+  `<OMNIA_DATA_PATH>/discovery/input/<project>/discovery_config.yml` exists and
+  contains both `enable_bmc_discovery` and `ome_ip`.
+- When BMC discovery is enabled, use a non-loopback OME IPv4 address.
+- Correct YAML parsing errors reported by the playbook.
+- Review
+  `/opt/omnia/log/core/playbooks/discovery_validation_<project>.log`, then rerun
+  the `validate` tag.
 
-**Incorrect hostnames in the generated file**
+### OME is unreachable
 
-Ensure iDRAC hostnames follow the Omnia naming convention
-(`idrac-<SU>R<Rack>OU<Position><Type><Instance>`) before running
-discovery. See [iDRAC hostname naming convention](#idrac-hostname-naming-convention).
+Discovery waits up to 30 seconds for `<ome_ip>:443`. Confirm that `ome_ip` is
+correct, OME is powered on, and the OIM can reach TCP port 443.
 
-**OME connection failure**
+### OME authentication fails
 
-Verify OME is accessible from the OIM:
+Correct the `ome_username` and `ome_password` values managed in
+`discovery_credentials.yml` before running Discovery again. Rerunning alone
+does not replace nonempty stored credentials. If the credential file is
+Vault-encrypted, its matching `.discovery_credentials_key` must be present in
+the same project input directory.
 
-```bash title="Run on: OIM host"
-curl -sk https://<ome-ip>/api/SessionService/Sessions -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"UserName":"<user>","Password":"<pass>"}'
-```
+### No servers are discovered
 
+Confirm that OME manages the target devices as server type `1000` and that the
+devices have nonempty service tags. Discovery fails when the filtered server
+list is empty.
 
+### A server belongs to multiple OME static groups
 
+Discovery reports each conflicting service tag and its groups, then stops.
+Remove the duplicate static-group memberships so that each server belongs to
+no more than one static group and rerun Discovery.
 
+### A server is missing from the mapping
 
+Look for a warning that names an unsupported OME static group. Rename the group
+to one of the supported functional-group names or remove the server's static
+group assignment to use the default. The server remains visible in the
+discovery report if OME supplied its service tag.
 
+### The admin MAC address is unexpected or empty
 
+Check `ETHERNET_NIC_MAC` and `ETHERNET_NIC_LINK_STATUS` in the discovery report
+and inspect the server network-interface inventory in OME. Discovery excludes
+iDRAC and InfiniBand interfaces, selects the first usable port reported as
+`Up`, and otherwise falls back to the first usable non-iDRAC,
+non-InfiniBand port. If that inventory produces no MAC address, Discovery
+attempts the OME `deviceNics` inventory as a fallback.
 
+### InfiniBand fields are empty
 
+This is expected when OME does not report an interface whose identifier
+contains `InfiniBand`. When an interface is present, Discovery prefers an `Up`
+port, then `Unknown`, and then another reported state.
 
+### Group names or parent service tags are incorrect
 
+Ensure the iDRAC hostname contains an `SU` identifier immediately followed by
+an `R` and rack number, such as `SU1R2OU1C5`. For Slurm compute-node roles,
+ensure a `service_kube_node_x86_64` server resolves to the same `GROUP_NAME`.
 
+### OME discovery execution fails
 
+If OME execution started, inspect `discovery_status.yml`; a failed OME phase
+records `failed_task` and `failure_reason`. Setup, validation, or credential
+failures can leave that file absent or unchanged from a previous run. For all
+phases, inspect the Ansible output and
+`/var/log/omnia/discovery/discovery.log`.
 
+### Discovery is blocked by an upgrade lock
 
-
-
-
-
+Complete the Omnia upgrade before rerunning Discovery. The workflow does not
+run normally while `/opt/omnia/.data/upgrade_in_progress.lock` exists.

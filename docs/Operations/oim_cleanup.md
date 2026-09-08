@@ -107,13 +107,6 @@ The `oim_cleanup.yml` playbook performs the following tasks:
 
 !!! warning
 
-    - After a clean-up, when re-provisioning your cluster by re-running the
-      `provision.yml` playbook, ensure to use a different `admin_nic_subnet` in
-      `input/provision_config.yml` to avoid a conflict with newly assigned
-      servers. Alternatively, disable any OS available in the
-      **Boot Option Enable/Disable** section of your BIOS settings
-      (**BIOS Settings > Boot Settings > UEFI Boot Settings**) on all target
-      nodes.
     - On subsequent runs of `provision.yml`, if users are unable to log into
       the server, refresh the SSH key manually and retry:
 
@@ -123,7 +116,6 @@ The `oim_cleanup.yml` playbook performs the following tasks:
 !!! info
 
     - [Pulp Cleanup](pulp_cleanup.md) -- Clean up Pulp repositories, files, and container images.
-
 
 
 

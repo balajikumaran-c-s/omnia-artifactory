@@ -25,7 +25,7 @@ The `prepare_oim.yml` playbook prepares the Omnia Infrastructure Manager (OIM) b
 1. Update the following input files in `/opt/omnia/input/project_default/`:
 
     - `network_spec.yml` -- Contains the necessary configurations for the cluster network.
-    - `provision_config.yml` -- Contains the details about provisioning of clusters.
+    - `orchestrator_config.yml` -- Contains the provisioning controls and upstream output paths.
     - `build_stream_config.yml` -- Contains the details about the BuildStreaM pipeline.
     - `storage_config.yml` -- Contains the details about the storage configuration.
 
@@ -83,9 +83,9 @@ Networks:
     dns: []
 ```
 
-#### provision_config.yml
+#### orchestrator_config.yml
 
-Add necessary inputs to the `provision_config.yml` file for provisioning the cluster. Refer to [Provision Config](../../Reference/Configuration/provision_config.md) for guidance on configuring these parameters.
+Add the required provisioning inputs to `orchestrator_config.yml`. Refer to [Orchestrator Config](../../Reference/Configuration/orchestrator_config.md) for the supported parameters.
 
 #### build_stream_config.yml
 
@@ -251,6 +251,6 @@ When running `prepare_oim.yml`, you are prompted for S3 credentials. Enter the S
 !!! info "Related References"
 
     - [Network Spec](../../Reference/Configuration/network_spec.md) -- Network configuration parameters.
-    - [Provision Config](../../Reference/Configuration/provision_config.md) -- Provisioning configuration parameters.
+    - [Orchestrator Config](../../Reference/Configuration/orchestrator_config.md) -- Provisioning configuration parameters.
     - [Storage Config](../../Reference/Configuration/storage_config.md) -- Storage configuration parameters.
     - [Security Configuration Guide](../../SecurityConfigurationGuide/network_security.md#firewall-settings) -- Firewall port requirements.

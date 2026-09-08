@@ -1,42 +1,53 @@
-﻿# omnia.env Reference
+# omnia.env
 
-The `omnia.env` file contains environment variables for the Omnia deployment.
+`omnia.env` is the shared environment configuration used by `omnia.sh`, module
+initialization scripts, and Ansible playbooks. Edit the source file before OIM
+setup. The setup flow installs the resulting environment under `/etc/omnia`.
 
 ## Location
 
-```
-/opt/omnia/omnia.env
-```
-
-## Environment Variables
-
-| Variable | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `OMNIA_VERSION` | string | Yes | - | Omnia version |
-| `OMNIA_BRANCH` | string | Yes | - | Omnia branch |
-| `OIM_HOSTNAME` | string | Yes | - | OIM hostname |
-| `OIM_IP` | string | Yes | - | OIM IP address |
-| `ADMIN_PASSWORD` | string | Yes | - | Admin password |
-| `TIMEZONE` | string | No | UTC | System timezone |
-| `LANG` | string | No | en_US.UTF-8 | System language |
-
-## Usage Example
-
-```bash title="File: /opt/omnia/omnia.env"
-OMNIA_VERSION=2.3.0
-OMNIA_BRANCH=main
-OIM_HOSTNAME=oim.example.com
-OIM_IP=192.168.1.100
-ADMIN_PASSWORD=your_password
-TIMEZONE=UTC
-LANG=en_US.UTF-8
+```text
+Source:    src/main/omnia.env
+Installed: /etc/omnia/omnia.env
 ```
 
-## Related Configuration
+Source the environment before running Omnia commands directly:
 
-- [repo_manager_config.md](repo_manager_config.md)
-- [provision_config.md](provision_config.md)
+```bash
+set -a
+source src/main/omnia.env
+set +a
+```
 
+## Variables
 
+| Variable | Requirement | Source value | Purpose |
+|---|---|---|---|
+| `SYSTEM_ADMIN_NIC_IPV4` | Required | `172.16.107.254` | OIM admin-network IPv4 address used by platform services. |
+| `OMNIA_DATA_PATH` | Optional | `/opt/omnia` | Root for persistent module data. |
+| `OMNIA_PROJECT_NAME` | Optional | `project_default` | Selects each module's input and output project directory. |
+| `SYSTEM_HOSTNAME` | Optional | `oim` | Short hostname of the OIM host. |
+| `SYSTEM_DOMAIN_NAME` | Optional | `omnia.cluster` | Domain name of the OIM host. |
+| `OMNIA_VENV_PATH` | Optional | `/opt/omnia/venv` | Shared Python virtual environment created during setup. |
+| `OMNIA_VERSION` | Optional | `2.3` | Omnia release version. |
+| `CATALOG_FILE_PATH` | Optional | `${OMNIA_DATA_PATH}/catalog/catalog_rhel.json` | Shared catalog path consumed by catalog-aware modules. |
 
+The source also provides optional component path overrides:
 
+```bash
+# IMAGE_BUILD_MANAGER_DATA_PATH=${OMNIA_DATA_PATH}/image_build_manager
+# REPO_MANAGER_DATA_PATH=${OMNIA_DATA_PATH}/repo_manager
+# DISCOVERY_DATA_PATH=${OMNIA_DATA_PATH}/discovery
+# ORCHESTRATOR_DATA_PATH=${OMNIA_DATA_PATH}/orchestrator
+# TELEMETRY_DATA_PATH=${OMNIA_DATA_PATH}/telemetry
+# BUILD_STREAM_DATA_PATH=${OMNIA_DATA_PATH}/build_stream
+```
+
+Do not add credentials to `omnia.env`; module credential playbooks create their
+own encrypted credential files.
+
+## Related configuration
+
+- [Repo Manager configuration](repo_manager_config.md)
+- [Image Build configuration](image_build_manager_config.md)
+- [Orchestrator configuration](orchestrator_config.md)

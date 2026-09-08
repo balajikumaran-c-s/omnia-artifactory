@@ -1,121 +1,102 @@
 # Build Stream
 
-The build_stream domain (collection: `omnia.build_stream`) provides a RESTful API service that orchestrates GitOps-based CI/CD pipelines for automated image building and deployment using GitLab.
-
 ## Overview
 
-Build Stream is a RESTful API service that orchestrates the creation and management of build jobs for the Omnia infrastructure platform. It provides a centralized interface for managing software catalog parsing, local repository creation, image building, and validation workflows. The FastAPI service runs inside a Podman container, while Ansible playbooks run directly on the host from the shared Omnia venv.
+Build Stream provides the GitLab and Build Stream Manager (BSM) services used
+for catalog-driven image-build, deployment, and cleanup pipelines. BSM runs as
+a FastAPI service on the Omnia Infrastructure Manager (OIM), and the
+playbook-watcher executes the requested Omnia module playbooks.
 
-**Customer-facing interface**: GitLab CE Omnibus with TLS, CI/CD pipelines, runner, and project configuration
-**Backend orchestration**: FastAPI REST API that triggers domain execution (repo_manager, image_build_manager, discovery, orchestrator, telemetry)
+The managed GitLab project routes:
+
+```text
+catalog_rhel.json change
+        -> build pipeline -> Repo Manager -> Image Build Manager
+
+input/orchestrator/pxe_mapping_file.csv change
+        -> deploy pipeline -> Orchestrator
+
+PIPELINE_TYPE=cleanup
+        -> cleanup pipeline
+```
 
 ## Prerequisites
 
-Before using the build_stream domain, ensure the following prerequisites are met:
+- Complete the [OIM setup](../main/setup_oim.md).
+- Use `project_default`. The current Build Stream entry playbook fixes its
+  input and output directories to that project.
+- Configure
+  `/opt/omnia/build_stream/input/project_default/build_stream_config.yml`
+  with `enable_build_stream: true`, the BSM host and port, and the GitLab
+  host.
+- Ensure the OIM can reach the GitLab host over SSH and HTTPS.
+- Ensure the configured GitLab host satisfies the CPU, memory, and free-storage
+  minimums in `build_stream_config.yml`.
+- Ensure Podman and systemd are available on the OIM.
+- Review the
+  [Build Stream Input/Output Contract](../../Reference/domain_contracts/build_stream_contract.md)
+  before deployment.
 
-- **Main domain setup completed**: The omnia.sh CLI must be installed and configured (`./omnia.sh -s`)
-- **GitLab requirements**: Sufficient system resources for GitLab CE (4GB+ RAM, 20GB+ disk space)
-- **Network connectivity**: OIM must have network access to GitLab repositories and external services
-- **Container runtime**: Podman must be installed and operational on the OIM host
-- **Input files configured**: `build_stream_config.yml` must be properly configured
-- **Domain dependencies**: Other domains (repo_manager, image_build_manager, etc.) must be available for pipeline execution
+## Procedure
 
-## System Context
+Choose the operation that matches the required workflow.
 
+| Task | Use it to |
+|---|---|
+| [Deploy GitLab and Build Stream](deploy_gitlab.md) | Initialize inputs and credentials, deploy PostgreSQL, BSM, the watcher, GitLab, and the managed project and runner. |
+| [Execute the build pipeline](execute_build_pipeline.md) | Commit `catalog_rhel.json` or select `PIPELINE_TYPE=build` to synchronize content and build images. |
+| [Execute the deploy pipeline](execute_deploy_pipeline.md) | Commit `input/orchestrator/pxe_mapping_file.csv` or select `PIPELINE_TYPE=deploy` to provision mapped nodes. |
+| [Add nodes](../../Operations/build_stream/add_nodes.md) | Add rows to the Orchestrator mapping contract and run the deploy pipeline. |
+| [Initialize Telemetry](initialize_telemetry.md) | Configure and run Telemetry after a service Kubernetes cluster is available. |
+| [Update the catalog](../../Operations/build_stream/update_catalog.md) | Modify the GitLab project’s root `catalog_rhel.json` and start a build. |
+| [Clean up pipeline resources](../../Operations/build_stream/cleanup_operations.md) | Run the GitLab cleanup pipeline for selected image resources. |
+| [Retry a pipeline](../../Operations/build_stream/retry_pipelines.md) | Retry a failed parent or downstream pipeline after correcting its cause. |
+
+The Build Stream entry playbook supports no tag, `precheck`, `validate`,
+`credentials`, `prepare`, `execute`, `build`, `cleanup`, `upgrade`,
+and `rollback`. See the contract for the implemented behavior of each tag.
+
+## Verification
+
+After deploying Build Stream, inspect:
+
+```bash title="Run on: OIM host"
+cat /opt/omnia/build_stream/output/project_default/build_stream_status.yml
+systemctl is-active omnia_postgres.service
+systemctl is-active omnia_build_stream.service
+systemctl is-active playbook-watcher.service
 ```
-  GitLab Pipeline (customer-facing)
-         ↓
-  Build Stream REST API
-         ↓
-  Domain execution:
-  - repo_manager
-  - image_build_manager
-  - discovery
-  - orchestrator
-  - telemetry
-```
 
-## When to Use This Domain
+Confirm that `overall_status` is `prepared`, the reported BSM and GitLab
+addresses match `build_stream_config.yml`, and all three services are active.
+Then verify that the managed GitLab project and its runner are available at the
+reported `gitlab_url`.
 
-- Use when implementing GitOps-based deployment
-- Use when automating image building and deployment via REST API
-- Use when managing image catalogs and pipelines
-- Optional service - not part of the core domain execution flow
+Pipeline results are reported through the GitLab pipeline and BSM job state.
+Build Stream does not write `pipeline_status.yml` or
+`catalog_manifest.yml` to its project output directory.
 
-## Domain Workflow
+## Next steps
 
-The domain supports the following execution tags:
+- Run the [build pipeline](execute_build_pipeline.md).
+- After images are available, prepare
+  `input/orchestrator/pxe_mapping_file.csv` and run the
+  [deploy pipeline](execute_deploy_pipeline.md).
+- Deploy [Telemetry](../Telemetry/deploy_telemetry.md) after the service
+  Kubernetes cluster is reachable.
 
-| Tag | Description | Prerequisites |
-|-----|-------------|---------------|
-| `validate` | Validate catalog and pipeline configuration | No |
-| `prepare` | Deploy GitLab and CI/CD infrastructure | Yes |
-| `execute` | Execute build and deploy pipelines | Yes |
-| `cleanup` | Remove pipeline artifacts | No |
+## Troubleshooting
 
-## Execution Flow
-
-Build Stream follows a clean architecture pattern with clear separation of concerns:
-
-1. **API Layer** - FastAPI routes and HTTP handling
-2. **Core Layer** - Business logic, entities, and domain services
-3. **Orchestrator Layer** - Use cases that coordinate workflows
-4. **Infrastructure Layer** - External integrations and data persistence
-5. **Common Layer** - Shared utilities and configuration
-
-## Key Inputs
-
-| Input | Location | Purpose |
-|-------|----------|---------|
-| `build_stream_config.yml` | `/opt/omnia/build_stream/input/<project>/build_stream_config.yml` | BSM + GitLab configuration |
-| `omnia.env` | `/etc/omnia/omnia.env` | Common environment variables |
-
-**Input Sources:**
-- **Administrator** - Provides build_stream configuration
-- **Domain initialization** - Stages input files from source tree
-
-## Key Outputs
-
-| Output | Location | Purpose |
-|--------|----------|---------|
-| Build status | `/opt/omnia/build_stream/output/<project>/` | Build job status and results |
-| Playbook logs | `/opt/omnia/build_stream/log/playbooks/` | Ansible playbook execution logs |
-| Job queue | `/opt/omnia/build_stream/playbook_queue/` | Watcher job queue directory |
-
-## Output Contract
-
-This contract is consumed by:
-- **GitLab pipelines** - For automated CI/CD workflows
-- **Administrators** - For monitoring build status and results
-
-## Build Stream Components
-
-| Category | Component | Description |
-|----------|-----------|-------------|
-| **API Service** | FastAPI | REST API for build job management |
-| **Database** | PostgreSQL | Persistent job and artifact metadata |
-| **CI/CD** | GitLab | CI/CD pipeline for catalog-driven builds |
-| **Orchestration** | Playbook watcher | Monitors queue and triggers Ansible playbooks |
-| **Execution** | Ansible playbooks | Infrastructure provisioning and deployment |
-
-## Related Guides
-
-## Core Deployment
-- [Deploy GitLab](deploy_gitlab.md) -- Deploy GitLab CE Omnibus with CI/CD pipelines
-
-## Pipeline Operations
-- [Execute Build Pipeline](execute_build_pipeline.md) -- Execute build pipeline via GitLab
-- [Execute Deploy Pipeline](execute_deploy_pipeline.md) -- Execute deploy pipeline via GitLab
-- [Add Nodes to Cluster](add_nodes.md) -- Add nodes to cluster via pipeline
-- [Initialize Telemetry](initialize_telemetry.md) -- Initialize telemetry via pipeline
-- [Update Catalog](update_catalog.md) -- Update software catalog
-- [Cleanup Operations](cleanup_operations.md) -- Cleanup pipeline artifacts
-- [Retry Pipelines](retry_pipelines.md) -- Retry failed pipelines
-
-## Additional
-- [Getting Started: Build Stream](../../GetStarted/buildstream_deployment.md) -- Quick start guide
-- [Domain Contract](../../Reference/domain_contracts/build_stream_contract.md) -- Build Stream domain contract
-
-
-
-
+- **The project input directory is not found:** Use
+  `/opt/omnia/build_stream/input/project_default/`; the current entry
+  playbook does not select another project.
+- **Preparation fails:** Check
+  `/var/log/omnia/build_stream/` and the status of PostgreSQL, BSM, and the
+  watcher.
+- **GitLab execution fails:** Confirm the GitLab host is reachable and meets
+  the configured resource minimums.
+- **A file commit does not start the expected pipeline:** Use
+  `catalog_rhel.json` for builds and
+  `input/orchestrator/pxe_mapping_file.csv` for deployments.
+- **A module stage fails:** Follow its BSM job log path and inspect the
+  corresponding module status contract.

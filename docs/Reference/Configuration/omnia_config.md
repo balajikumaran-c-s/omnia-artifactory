@@ -62,12 +62,11 @@ service_k8s_cluster:
 
 !!! info
 
-    - [Software Config](software_config.md) -- Package-level software selection.
+    - [Orchestrator Config](orchestrator_config.md) -- Provisioning, catalog path, and upstream output settings.
     - [Slurm Conf](../SampleFiles/slurm_conf.md) -- Custom Slurm configuration.
     - [HA Config](high_availability_config.md) -- Kubernetes high-availability settings.
     - [Slurm Storage Architecture](../../HowTo/orchestrator/deploy_slurm.md#slurm-storage-architecture) -- How NFS and VAST mounts are used by Slurm.
     - [K8s Storage Architecture](../../HowTo/orchestrator/deploy_kubernetes.md#k8s-storage-architecture) -- How NFS mounts are used by service K8s.
-
 
 
 

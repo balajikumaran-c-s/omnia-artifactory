@@ -1,10 +1,10 @@
-# orchestrator Domain
+# Orchestrator module
 
 Slurm, Kubernetes, networking, storage, and authentication issues - Node provisioning, cluster configuration
 
 ## Orchestrator Issues
 
-Issues related to the orchestrator domain operations.
+Issues related to Orchestrator module operations.
 
 For detailed troubleshooting information, see [Orchestrator Issues](orchestrator.md).
 
@@ -46,6 +46,6 @@ For detailed troubleshooting information, see [Kernel Version Override](kernel_v
 
 !!! info
     - [Provision Nodes](../../HowTo/orchestrator/provision_nodes.md) -- Node provisioning guide
-    - [Configure Slurm](../../HowTo/Configure/configure_slurm.md) -- Slurm configuration guide
+    - [Configure Slurm](../../HowTo/orchestrator/configure_slurm.md) -- Slurm configuration guide
     - [Verify Cluster](../../Operations/verify_cluster.md) -- Cluster verification procedures
     - [Log Management](../../Operations/log_management.md) -- Where to find logs for deeper diagnosis

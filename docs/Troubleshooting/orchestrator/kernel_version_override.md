@@ -54,7 +54,7 @@ Issues related to kernel version override functionality, including repository sy
 ??? note "Cause"
 
     - The kernel image was not built or uploaded to S3 during the build image step
-    - The kernel version specified in `provision_config.yml` does not match any
+    - The kernel version specified in `orchestrator_config.yml` does not match any
       available kernel images in S3
     - The build image playbook (`build_image_x86_64.yml` or
       `build_image_aarch64.yml`) was not executed or failed
@@ -95,7 +95,7 @@ Issues related to kernel version override functionality, including repository sy
 ??? note "Cause"
 
     - BSS boot parameters were not updated with the new kernel version
-    - The kernel version specified in `provision_config.yml` does not match the
+    - The kernel version specified in `orchestrator_config.yml` does not match the
       kernel images available in S3
     - Network connectivity issues between nodes and the OIM prevent fetching
       the correct boot parameters
@@ -116,7 +116,7 @@ Issues related to kernel version override functionality, including repository sy
     uname -r
     ```
 
-    If the kernel version does not match the expected override, check that `kernel_version_override` in `provision_config.yml` is set correctly and re-run `provision.yml`.
+    If the kernel version does not match the expected override, check that `kernel_version_override` in `orchestrator_config.yml` is set correctly and re-run the Orchestrator flow.
 
 ## EUS Subscription Certificate Issues
 

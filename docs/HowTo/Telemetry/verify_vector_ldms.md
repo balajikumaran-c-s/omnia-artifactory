@@ -1,81 +1,46 @@
-
-# Verify Vector-LDMS Pipeline
+# Verify the Vector-LDMS Pipeline
 
 ## Overview
 
-This page provides verification steps for the Vector-LDMS pipeline that routes LDMS metrics from Kafka to VictoriaMetrics.
+Vector-LDMS consumes the Kafka `ldms` topic, transforms LDMS records, and sends
+metrics through `vmagent-vector` to the VictoriaMetrics vminsert endpoint.
 
 ## Prerequisites
 
+- Complete [Configure LDMS Telemetry](configure_ldms.md) with
+  `telemetry_bridges.vector_ldms.metrics_enabled: true`.
+- Ensure both Kafka and VictoriaMetrics are deployed.
 
-- The [Configure LDMS Telemetry](configure_ldms.md) procedure is complete, with [Vector-LDMS bridge](configure_ldms.md#step-5-enable-vector-ldms-bridge-optional) enabled.
-- LDMS telemetry is configured and the `store_avro_kafka` plugin is producing to the Kafka `ldms` topic.
+## Procedure
 
+On the Kubernetes VIP, inspect the bridge, its write buffer, and the topic:
 
-## Verify Vector-LDMS Telemetry Pods
+```bash title="Run on: Kubernetes VIP"
+kubectl get deployment vector-ldms vmagent-vector -n telemetry
+kubectl get pods -n telemetry -l app=vector-ldms
+kubectl get kafkatopic ldms -n telemetry
+```
 
-1. Verify that the Vector-LDMS pod is running:
+The deployment workflow waits for the Vector-LDMS rollout and for its pods to
+be Ready.
 
-    ```bash title="Run on K8s control plane"
-    kubectl get pods -n telemetry | grep vector-ldms
-    ```
+## Verification
 
-    ![Vector-LDMS Pod](../../assets/images/victoria_metrics_ldms_1.png)
+Both deployments must have ready replicas, the `ldms` topic must exist, and
+`bridges.vector_ldms: deployed` must appear in `telemetry_status.yml`.
 
-2. Verify that the vmagent-vector pod is running:
+## Next steps
 
-    ```bash title="Run on K8s control plane"
-    kubectl get pods -n telemetry | grep vmagent-vector
-    ```
+- Export [VictoriaMetrics connection details](configure_external_victoria.md)
+  to obtain the query and UI endpoints.
+- Review [LDMS verification](verify_ldms.md) when the upstream aggregator,
+  store, or samplers are not healthy.
 
-    ![vmagent-vector Pod](../../assets/images/victoria_metrics_ldms_2.png)
+## Troubleshooting
 
-3. Verify that the VictoriaMetrics service is running:
-
-    ```bash title="Run on K8s control plane"
-    kubectl get service -n telemetry | grep vm
-    ```
-
-    ![VictoriaMetrics Service](../../assets/images/victoria_metrics_ldms_3.png)
-
-## View LDMS Metrics in VictoriaMetrics UI (VMUI)
-
-1. Note the **External IP** of the `vmselect` service from the output of the previous command. The VMUI uses the vmselect service's external IP.
-
-2. Access the VMUI in a web browser:
-
-    ```
-    https://<vmselect service external IP>:8481/select/0/vmui
-    ```
-
-    !!! note
-
-        The VMUI URL uses the external IP of the `vmselect` service, not vminsert or other VictoriaMetrics services.
-
-3. Verify that metrics are reaching VictoriaMetrics by querying the VMUI. For example, the following query displays LDMS-related metrics:
-
-    ```
-    {__name__=~"ldms_.*"}
-    ```
-
-    ![LDMS Metrics in VMUI](../../assets/images/victoria_metrics_ldms_ui_login.png)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- **Vector-LDMS is skipped:** Enable both the LDMS source and its Vector bridge.
+- **The bridge is not ready:** Inspect the Vector-LDMS logs and confirm that
+  Kafka, the `ldms` topic, and `vmagent-vector` are available.
+- **The bridge runs but no data arrives:** Verify the upstream LDMS aggregator,
+  store, and sampler configuration first.
 

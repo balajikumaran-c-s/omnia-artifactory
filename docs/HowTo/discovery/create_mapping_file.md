@@ -23,14 +23,19 @@ Nodes in Omnia are discovered and provisioned based on the **groups** and **func
 
 ## Procedure
 
-Omnia supports two methods for discovering target nodes and creating PXE mapping files:
+Omnia supports two ways to obtain a PXE mapping file:
 
-- **Manual PXE mapping** -- Manually collect PXE NIC information and define entries in `pxe_mapping_file.csv`. See [Create PXE file manually](#create-pxe-file-manually).
-- **OME-based PXE file generation** (Recommended) -- Use OpenManage Enterprise (OME) to discover cluster nodes and auto-generate the mapping file via the `discovery.yml` playbook. See [Create PXE file using OME](#create-pxe-file-using-ome).
+- **Manual PXE mapping** -- Collect the node information and create the
+  Orchestrator input file directly. This does not execute the Discovery module.
+- **OME-based generation** -- Run the Discovery module to query OpenManage
+  Enterprise and generate a mapping for review.
 
 ### Create PXE file manually
 
-Manually collect PXE NIC information for each node and define it in `pxe_mapping_file.csv`. Provide the file path to the `pxe_mapping_file_path` variable in `/opt/omnia/input/project_default/provision_config.yml`.
+Manually collect PXE NIC information for each node and create the file at
+`/opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv`. To use a
+different absolute path, set `pxe_mapping_file_path` in
+`/opt/omnia/orchestrator/input/project_default/orchestrator_config.yml`.
 
 Each node entry requires the following fields: `FUNCTIONAL_GROUP_NAME`, `GROUP_NAME`, `SERVICE_TAG`, `PARENT_SERVICE_TAG`, `HOSTNAME`, `ADMIN_MAC`, `ADMIN_IP`, `BMC_MAC`, `BMC_IP`, `IB_NIC_NAME`, and `IB_IP`.
 
@@ -52,7 +57,7 @@ Each node entry requires the following fields: `FUNCTIONAL_GROUP_NAME`, `GROUP_N
 
 ### Sample mapping file (x86_64 cluster)
 
-```text title="File: /opt/omnia/input/project_default/pxe_mapping_file.csv"
+```text title="File: /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv"
 FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
 slurm_control_node_x86_64,grp0,ABCD12,,nid001,a1:b2:c3:d4:e5:f6,172.16.107.52,a2:b3:c4:d5:e6:f7,172.17.107.52,InfiniBand.Slot.7-1,192.168.0.100
 slurm_node_x86_64,grp1,ABCD34,ABFL82,nid002,b1:c2:d3:e4:f5:a6,172.16.107.43,b2:c3:d4:e5:f6:a7,172.17.107.43,InfiniBand.Slot.7-1,192.168.0.101
@@ -65,7 +70,7 @@ os_x86_64,grp6,ABEF56,,nid007,77:88:99:aa:bb:cc,172.16.107.60,78:89:aa:bb:cc:dd,
 
 ### Sample mapping file (mixed x86_64 and aarch64 cluster)
 
-```text title="File: /opt/omnia/input/project_default/pxe_mapping_file.csv"
+```text title="File: /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv"
 FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
 slurm_control_node_x86_64,grp0,ABCD12,,nid001,a1:b2:c3:d4:e5:f6,172.16.107.52,a2:b3:c4:d5:e6:f7,172.17.107.52,InfiniBand.Slot.7-1,192.168.0.100
 slurm_node_aarch64,grp1,ABCD34,ABFL82,nid002,b1:c2:d3:e4:f5:a6,172.16.107.43,b2:c3:d4:e5:f6:a7,172.17.107.43,InfiniBand.Slot.7-2,192.168.0.101
@@ -77,7 +82,7 @@ os_aarch64,grp7,ABEF78,,nid006,99:aa:bb:cc:dd:ee,172.16.107.61,9a:ab:bc:cd:de:ef
 
 !!! note "Hostname format"
 
-    - When `dns_enabled` is `false` in `provision_config.yml`, `HOSTNAME` values can be customized (e.g., `slurm-control-node1`).
+    - When `dns_enabled` is `false` in `orchestrator_config.yml`, `HOSTNAME` values can be customized (e.g., `slurm-control-node1`).
     - When `dns_enabled` is `true` (the default for fresh installations), `HOSTNAME` values must follow the `nidxxx` format (e.g., `nid001`, `nid002`).
 
 !!! warning
@@ -141,17 +146,15 @@ OME-based BMC discovery is the recommended method for discovering target nodes. 
 
 Verify the mapping file is correctly formatted and contains all required entries:
 
-```bash title="Run on: omnia_core container"
-cat /opt/omnia/input/project_default/<pxe_mapping_file>.csv
+```bash title="Run on: OIM host"
+cat /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv
 ```
 
 Confirm that each node entry has a valid `FUNCTIONAL_GROUP_NAME`, `GROUP_NAME`, `SERVICE_TAG`, `HOSTNAME`, `ADMIN_MAC`, `ADMIN_IP`, `BMC_MAC`, and `BMC_IP`.
 
 ## Next Steps
 
-- [Configure Inputs](../main/configure_inputs.md) -- Configure software and cluster input files.
-- [Configure Credentials](../main/configure_credentials.md) -- Set up encrypted provisioning credentials.
-- [Discover Nodes](../discovery/discover_nodes.md) -- Run the discovery playbook using this mapping file.
+- [Provision Nodes](../orchestrator/provision_nodes.md) -- Validate and consume the manually created mapping file.
 
 ## Troubleshooting
 
@@ -160,13 +163,8 @@ Confirm that each node entry has a valid `FUNCTIONAL_GROUP_NAME`, `GROUP_NAME`, 
 
 !!! info "Related References"
 
-    - [Discover Nodes](../discovery/discover_nodes.md) -- Run the discovery playbook.
-    - [Provision Config](../../Reference/Configuration/provision_config.md) -- Configure `pxe_mapping_file_path` and other provisioning parameters.
-
-
-
-
-
+    - [Provision Nodes](../orchestrator/provision_nodes.md) -- Run the Orchestrator provisioning workflow.
+    - [Orchestrator contract](../../Reference/domain_contracts/orchestrator_contract.md) -- Review the mapping input and generated outputs.
 
 
 

@@ -2,106 +2,129 @@
 
 ## Overview
 
-The telemetry domain deploys and manages a comprehensive telemetry stack for HPC and AI clusters. It collects metrics and logs from multiple sources (iDRAC, LDMS, OME, UFM, PowerScale, VAST, SFM) and stores them in sink backends (Kafka, VictoriaMetrics, VictoriaLogs). Telemetry runs as Kubernetes workloads on the kube_vip cluster.
-
-### When to Use This Page
-
-- **First-time deployment** -- You are deploying the telemetry stack for the first time
-- **Re-deployment** -- You are re-deploying telemetry after configuration changes
+The Telemetry entry point validates the three runtime input files, deploys the
+required sinks, deploys each enabled source, reconciles the generated
+Kustomize manifests, checks pod state, and writes `telemetry_status.yml`.
+Running without tags performs validation followed by deployment. Cleanup,
+precheck, upgrade, rollback, and connection-export workflows run only when
+their tags are selected explicitly.
 
 ## Prerequisites
 
-- The [Setup the OIM](../main/setup_oim.md) procedure is complete (main domain setup is complete)
-- The [Initialize Domains](../main/initialize_domains.md) procedure is complete (telemetry domain is initialized)
-- The [Deploy Kubernetes](../orchestrator/deploy_kubernetes.md) procedure is complete (kube_vip cluster is running)
-- The telemetry source you want has been configured. See the per-source guides under [Telemetry Setup](setup_telemetry.md)
+- Meet the platform requirements on the [Telemetry landing page](index.md).
+- Export `OMNIA_DATA_PATH` and `OMNIA_PROJECT_NAME`, or accept `/opt/omnia` and
+  `project_default`.
+- Provide an Orchestrator YAML inventory whose `kube_vip_group` contains the
+  service Kubernetes VIP. The inventory must also contain service control-plane
+  and worker groups; LDMS additionally uses its Slurm groups.
+- Ensure that the OIM can reach the VIP over SSH as `root` and that `kubectl`
+  on the VIP can access the cluster.
+- Make the shared `k8s_cluster_mount` available on the Kubernetes nodes. LDMS
+  also requires the configured `slurm_cluster_mount` on the Slurm nodes.
 
 ## Procedure
 
-Run the telemetry domain deployment using omnia.sh CLI.
+1. From the Omnia source root, initialize the shared virtual environment and
+   Telemetry runtime files:
 
-### Step 1: Initialize the telemetry domain
+    ```bash title="Run on: OIM"
+    set -a
+    source src/main/omnia.env
+    set +a
+    ./omnia.sh --setup-venv
+    ```
 
-```bash title="Run on: OIM host"
-./omnia.sh -i telemetry
-```
+    Telemetry templates are staged under
+    `<OMNIA_DATA_PATH>/telemetry/input/<project>/`. Running
+    `src/telemetry/domain-init.sh --force` overwrites existing project inputs;
+    use it only when that is intended.
 
-This stages input files and installs dependencies.
+2. Edit all three project input files without removing their keys:
 
-### Step 2: Configure telemetry settings
+    - `telemetry_config.yml`: inventory, sources, bridges, sinks, and
+      source-specific settings.
+    - `telemetry_storage_config.yml`: replica counts and CPU, memory, and PVC
+      settings.
+    - `telemetry_packages.yml`: online/offline mode, repository URL, shared
+      Kubernetes and Slurm mounts, registry, images, charts, repositories, and
+      Python modules.
 
-```bash title="Run on: OIM host"
-vi /opt/omnia/telemetry/input/project_default/telemetry_config.yml
-```
+3. Run the opt-in environment precheck:
 
-Configure the telemetry sources, sinks, and bridges as needed.
+    ```bash title="Run on: OIM"
+    ./omnia.sh -r telemetry --tags precheck
+    ```
 
-### Step 3: Deploy the telemetry stack
+    It validates the VIP and SSH access, control-plane and worker readiness,
+    non-Telemetry pod health, and the source-specific PowerScale and LDMS
+    prerequisites when those sources are enabled.
 
-```bash title="Run on: OIM host"
-./omnia.sh --run telemetry --tags deploy
-```
+4. Validate only the input contract when desired:
 
-This performs the following:
-- Validates K8s prerequisites (kube_vip, nodes, pods)
-- Validates telemetry configuration files
-- Deploys sink infrastructure (Kafka, VictoriaMetrics, VictoriaLogs)
-- Deploys enabled source components (iDRAC, LDMS, OME, UFM, PowerScale, VAST, SFM)
-- Generates and applies Kubernetes manifests via kustomize
+    ```bash title="Run on: OIM"
+    ./omnia.sh -r telemetry --tags validate
+    ```
 
-### Update Telemetry on a Running Cluster
+5. Deploy the enabled configuration:
 
-If the cluster is already provisioned and you want to enable or reconfigure a telemetry source:
+    ```bash title="Run on: OIM"
+    ./omnia.sh -r telemetry --tags deploy
+    ```
 
-1. Update `telemetry_config.yml`
-2. Re-run the telemetry deployment:
+    The credential role creates an encrypted `telemetry_credentials.yml` and
+    prompts only for empty credentials required by the enabled sources.
 
-    ```bash title="Run on: OIM host"
-    ./omnia.sh --run telemetry --tags deploy
+    The equivalent command from `src/telemetry` is:
+
+    ```bash title="Run on: OIM"
+    ansible-playbook playbooks/telemetry.yml --tags deploy
     ```
 
 ## Verification
 
-Verify that the input files were successfully processed and the telemetry stack is operational.
+1. Read the generated status file:
 
-```bash title="Run on: service_kube_control_plane node"
-kubectl get pods -n telemetry -o wide
-```
+    ```bash title="Run on: OIM"
+    cat /opt/omnia/telemetry/output/project_default/telemetry_status.yml
+    ```
 
-All pods should show `Running` status. Use the component-specific verification pages listed in Next Steps to confirm each enabled telemetry source is collecting data.
+    Adjust the path when `OMNIA_DATA_PATH` or `OMNIA_PROJECT_NAME` differs.
+    Confirm `overall_status: success` and check that each requested sink,
+    source, and bridge is `deployed`. Disabled components are `skipped`.
 
-## Next Steps
+2. On the Kubernetes VIP, inspect the namespace:
 
-After deployment, verify that each enabled telemetry source is collecting data. Each component has its own verification page:
+    ```bash title="Run on: Kubernetes VIP"
+    kubectl get pods -n telemetry
+    ```
 
-- [Verify iDRAC Telemetry](verify_idrac.md)
-- [Verify LDMS Telemetry](verify_ldms.md)
-- [Verify PowerScale Telemetry](verify_powerscale.md)
-- [Verify UFM Telemetry](verify_ufm.md)
-- [Verify VAST Telemetry](verify_vast.md)
-- [Verify OME Telemetry](verify_ome.md)
-- [Verify Vector-LDMS Bridge](verify_vector_ldms.md)
+    Deployment fails when a pod reaches `CrashLoopBackOff`, `Error`,
+    `ImagePullBackOff`, `ErrImagePull`, `InvalidImageName`, or
+    `CreateContainerConfigError`.
+
+## Next steps
+
+- Use the source-specific guides from the [Telemetry landing page](index.md) to
+  configure and verify each data path.
+- Export [Kafka](configure_external_kafka.md) or
+  [Victoria](configure_external_victoria.md) connection details when external
+  systems must publish or query Telemetry data.
+- To remove all Telemetry runtime resources while preserving PVCs and Kafka
+  identity metadata, run `./omnia.sh -r telemetry --tags cleanup`. Pass
+  `-e Delete_volume=true` only when persistent volumes must also be deleted.
 
 ## Troubleshooting
 
-[Telemetry Troubleshooting](../../Troubleshooting/telemetry.md)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- **Input validation fails:** Correct every file listed in the validation
+  output. Validation applies JSON Schema checks and cross-field logic to all
+  three input files.
+- **`kube_vip` is missing:** Set `cluster_inventory` to a valid inventory with
+  `all.children.kube_vip_group.hosts`.
+- **The VIP is unreachable:** Restore root SSH connectivity from the OIM to the
+  inventory VIP.
+- **A pod is in an error state:** Run
+  `kubectl logs -n telemetry <pod-name>` on the VIP and correct the reported
+  image, configuration, or secret issue.
+- **An LDMS node was skipped:** Review `deploy_unreachable_nodes.ldms` in the
+  status file. Unreachable LDMS nodes are recorded without failing an otherwise
+  successful deployment; failures returned by reachable nodes remain fatal.

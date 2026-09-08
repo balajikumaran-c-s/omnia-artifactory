@@ -88,7 +88,7 @@ BuildStreaM uses a **three-pipeline architecture** in GitLab:
     - [`local_repo_config.yml`](../../Reference/Configuration/local_repo_config.md) -- Local repository configuration file
     - [`network_spec.yml`](../../Reference/Configuration/network_spec.md) -- Network configuration file
     - [`omnia_config.yml`](../../Reference/Configuration/omnia_config.md) -- Omnia configuration file
-    - [`provision_config.yml`](../../Reference/Configuration/provision_config.md) -- Provision configuration file
+    - [`orchestrator_config.yml`](../../Reference/Configuration/orchestrator_config.md) -- Orchestrator configuration file
     - [`pxe_mapping_file.csv`](../../Reference/SampleFiles/pxe_mapping_file.md) -- PXE mapping file
     - [`security_config.yml`](../../Reference/Configuration/security_config.md) -- Security configuration file
     - [`storage_config.yml`](../../Reference/Configuration/storage_config.md) -- Storage configuration file

@@ -52,6 +52,10 @@
 }
 .of-s .t { font-size: .8rem; font-weight: 600; color: var(--c-text); line-height: 1.35; }
 .of-s .d { font-size: .68rem; color: var(--c-sub); margin-top: 2px; line-height: 1.2; opacity: .75; }
+.of-s .of-more { font-size: .66rem; margin-top: 7px; line-height: 1.2; }
+.of-s .of-more p { margin: 0; }
+.of-s .of-more a { color: var(--c-primary); font-weight: 600; text-decoration: none; }
+.of-s .of-more a:hover { text-decoration: underline; }
 .of-s code {
   background: var(--c-primary-l); color: var(--c-primary);
   padding: 0 4px; border-radius: 3px;

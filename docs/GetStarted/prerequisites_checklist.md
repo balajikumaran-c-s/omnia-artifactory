@@ -216,7 +216,7 @@ via iDRAC or BIOS Setup (F2 at POST).
 | ☐ | iDRAC firmware updated to latest version | Download from [Dell Support](https://www.dell.com/support). |
 | ☐ | Datacenter license installed (for telemetry) | The Datacenter license enables streaming telemetry via iDRAC. Enterprise license is insufficient. |
 | ☐ | iDRAC IP assigned on BMC network | Can be DHCP (Omnia will assign) or static. If static, record each iDRAC IP for the mapping file. |
-| ☐ | Default iDRAC credentials known | Factory default is `root` / `calvin`. If changed, you must provide the current credentials in `provision_config.yml`. |
+| ☐ | Current iDRAC credentials known | Provide them through the Orchestrator credential workflow when prompted. |
 
 ## Aarch64 Node Prerequisites
 
@@ -279,8 +279,8 @@ via iDRAC or BIOS Setup (F2 at POST).
 
 | ☑ | Requirement | Details |
 | --- | --- | --- |
-| ☐ | LDAP server details available | Required to configure the `omnia_auth` container and OpenLDAP. See [Deploy External LDAP](../HowTo/orchestrator/configure_authentication.md). |
-| ☐ | External OpenLDAP server deployed (if applicable) | Ensure the OpenLDAP server is deployed and configured with the required directory structure (users and groups). See [External LDAP Deployment](../HowTo/orchestrator/configure_authentication.md). |
+| ☐ | LDAP server details available | Required to configure the `omnia_auth` container and OpenLDAP. See [Deploy External LDAP](../HowTo/Authentication/deploy_external_ldap.md). |
+| ☐ | External OpenLDAP server deployed (if applicable) | Ensure the OpenLDAP server is deployed and configured with the required directory structure (users and groups). See [External LDAP Deployment](../HowTo/Authentication/deploy_external_ldap.md). |
 
 ## Telemetry Prerequisites
 
@@ -367,8 +367,6 @@ dnf repolist
     deep in the Ansible playbook execution.
 
 You are now ready to choose your deployment path. Return to [Get Started Index](index.md).
-
-
 
 
 

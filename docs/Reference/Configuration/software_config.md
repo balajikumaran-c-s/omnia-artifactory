@@ -1,86 +1,11 @@
-﻿# software_config.json
+# software_config.json is not a current module input
 
-This file defines which software packages are installed on each functional
-group of nodes. It is a JSON array where each element maps a functional group
-to a list of software packages.
+The current Repo Manager and Orchestrator initialization flows do not stage a
+customer-authored `software_config.json`. Software selection is catalog-driven,
+and Image Build Manager can alternatively read
+[package_groups.yml](package_groups.md) when
+`functional_groups_source: config` is selected.
 
-## Parameter Reference
-
---8<-- "html/software_config.html"
-
-## Usage example
-See [Software Config Json](../SampleFiles/software_config_json.md) for complete annotated
-examples covering Slurm-only, Slurm + K8s, and K8s-only scenarios.
-
-```json title="File: /opt/omnia/repo_manager/input/project_default/software_config.json"
-{
-    "cluster_os_type": "rhel",
-    "cluster_os_version": "10.0",
-    "repo_config": "partial",
-    "softwares": [
-        {"name": "default_packages", "arch": ["x86_64","aarch64"]},
-        {"name": "admin_debug_packages", "arch": ["x86_64","aarch64"]},
-        {"name": "openldap", "arch": ["x86_64","aarch64"]},
-        {"name": "service_k8s","version": "1.35.1", "arch": ["x86_64"]},
-        {"name": "slurm_custom", "arch": ["x86_64","aarch64"]},
-        {"name": "csi_driver_powerscale", "version":"v2.17.0", "arch": ["x86_64"]},
-        {"name": "ldms", "arch": ["x86_64","aarch64"]},
-        {"name": "additional_packages", "arch": ["x86_64","aarch64"]}
-    ],
-    "slurm_custom": [
-        {"name": "slurm_control_node"},
-        {"name": "slurm_node"},
-        {"name": "login_node"},
-        {"name": "login_compiler_node"}
-    ],
-    "service_k8s": [
-        {"name": "service_kube_control_plane_first"},
-        {"name": "service_kube_control_plane"},
-        {"name": "service_kube_node"}
-    ],
-    "additional_packages":[
-        {"name": "service_kube_control_plane_first"},
-        {"name": "service_kube_control_plane"},
-        {"name": "service_kube_node"},
-        {"name": "slurm_control_node"},
-        {"name": "slurm_node"},
-        {"name": "login_node"},
-        {"name": "login_compiler_node"},
-        {"name": "os"}
-    ]
-}
-```
-
-
-!!! note
-
-    - This configuration file has to be provided in json format.
-    - The `functional_group_name` must exactly match the value in the
-      `FUNCTIONAL_GROUP_NAME` column of the PXE mapping CSV.
-
-!!! info
-
-    - [Software Config Json](../SampleFiles/software_config_json.md) -- Complete sample
-      files for different scenarios.
-    - [PXE Mapping File](../SampleFiles/pxe_mapping_file.md) -- PXE mapping CSV that
-      defines functional groups.
-    - [Local Repo Config](repo_manager_config.md) -- Repository sources for these packages.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Some Build Stream adapter and compatibility paths can generate or recognize
+`software_config.json`; those internal paths do not make it a required
+customer input for the current module workflows.

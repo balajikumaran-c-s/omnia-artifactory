@@ -1,96 +1,101 @@
-# Configure Environment
+# Configure the Main environment
 
 ## Overview
 
-The omnia.env file is the single source of truth for environment configuration in Omnia. It contains all the environment variables required for domain execution.
+`src/main/omnia.env` defines the shared environment used by `omnia.sh` and the
+module playbooks. During OIM setup, Main installs this file at
+`/etc/omnia/omnia.env` and creates `/etc/profile.d/omnia-env.sh` so that new
+login shells load the installed values.
 
 ## Prerequisites
 
-- [Setup the OIM](setup_oim.md) is complete
-- Root or equivalent privileges
+- Use an Omnia source checkout on the OIM.
+- Identify the IPv4 address assigned to the OIM administrative interface.
+- Confirm the OIM short hostname with `hostname -s`.
+- Decide whether the default data, project, virtual-environment, domain, and
+  catalog paths are suitable for the deployment.
 
 ## Procedure
 
-1. **Edit the environment file**:
+1. Change to the Main source directory:
 
     ```bash title="Run on: OIM host"
-    vi /etc/omnia/omnia.env
+    cd src/main
     ```
 
-    Or edit the source file and re-run setup:
-    ```bash
-    cd /path/to/omnia/src/main
-    vi omnia.env
-    ./omnia.sh -s
-    ```
+2. Edit `omnia.env`. Set `SYSTEM_ADMIN_NIC_IPV4` to an address assigned to the
+   OIM. Review the optional values and keep or replace their supplied defaults:
 
-2. **Configure the required variables**:
-
-    ```bash title="File: /etc/omnia/omnia.env"
-    # Required
-    OMNIA_VERSION=2.3.0
-    OMNIA_BRANCH=main
-    OIM_HOSTNAME=oim.example.com
-    OIM_IP=192.168.1.100
-    SYSTEM_ADMIN_NIC_IPV4=192.168.1.100
-    ADMIN_PASSWORD=your_password
-
-    # Optional
-    TIMEZONE=UTC
-    LANG=en_US.UTF-8
+    ```bash title="File: src/main/omnia.env"
+    SYSTEM_ADMIN_NIC_IPV4=172.16.107.254
     OMNIA_DATA_PATH=/opt/omnia
-    OMNIA_VENV_PATH=/opt/omnia/venv
     OMNIA_PROJECT_NAME=project_default
+    SYSTEM_HOSTNAME=oim
+    SYSTEM_DOMAIN_NAME=omnia.cluster
+    OMNIA_VENV_PATH=/opt/omnia/venv
+    OMNIA_VERSION=2.3
+    CATALOG_FILE_PATH=${OMNIA_DATA_PATH}/catalog/catalog_rhel.json
     ```
 
-3. **Reload the environment**:
+    `SYSTEM_HOSTNAME` must match the value returned by `hostname -s`. A
+    mismatch between `SYSTEM_DOMAIN_NAME` and `hostname -d` produces a warning.
+
+3. For a non-standard layout, uncomment and update only the component paths
+   that must differ from `<OMNIA_DATA_PATH>/<component>`:
+
+    ```bash title="File: src/main/omnia.env"
+    IMAGE_BUILD_MANAGER_DATA_PATH=${OMNIA_DATA_PATH}/image_build_manager
+    REPO_MANAGER_DATA_PATH=${OMNIA_DATA_PATH}/repo_manager
+    DISCOVERY_DATA_PATH=${OMNIA_DATA_PATH}/discovery
+    ORCHESTRATOR_DATA_PATH=${OMNIA_DATA_PATH}/orchestrator
+    TELEMETRY_DATA_PATH=${OMNIA_DATA_PATH}/telemetry
+    BUILD_STREAM_DATA_PATH=${OMNIA_DATA_PATH}/build_stream
+    ```
+
+4. Install the environment as part of OIM setup:
 
     ```bash title="Run on: OIM host"
-    source /etc/profile.d/omnia-env.sh
+    ./omnia.sh --setup-venv
     ```
 
-## Environment Variables
+5. After setup, load the installed environment and activate the shared virtual
+   environment in the current shell:
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `OMNIA_VERSION` | Yes | - | Omnia version |
-| `OMNIA_BRANCH` | Yes | - | Git branch for source code |
-| `OIM_HOSTNAME` | Yes | - | OIM hostname |
-| `OIM_IP` | Yes | - | OIM IP address |
-| `SYSTEM_ADMIN_NIC_IPV4` | Yes | - | Admin network IPv4 address |
-| `ADMIN_PASSWORD` | Yes | - | Admin password for services |
-| `TIMEZONE` | No | UTC | System timezone |
-| `LANG` | No | en_US.UTF-8 | System language |
-| `OMNIA_DATA_PATH` | No | /opt/omnia | Root Omnia runtime data directory |
-| `OMNIA_VENV_PATH` | No | /opt/omnia/venv | Python virtual environment path |
-| `OMNIA_PROJECT_NAME` | No | project_default | Active project name |
+    ```bash title="Run on: OIM host"
+    source /opt/omnia/activate-omnia.sh
+    ```
+
+    If `OMNIA_DATA_PATH` is customized, source
+    `<OMNIA_DATA_PATH>/activate-omnia.sh` instead.
 
 ## Verification
 
-After updating the environment:
+Verify that Main installed the source configuration and exported the selected
+values:
 
-1. **Verify environment variables are loaded**:
-    ```bash
-    env | grep OMNIA
-    ```
+```bash title="Run on: OIM host"
+test -f /etc/omnia/omnia.env
+test -f /etc/profile.d/omnia-env.sh
+source /etc/profile.d/omnia-env.sh
+printf '%s\n' "$SYSTEM_ADMIN_NIC_IPV4"
+printf '%s\n' "$OMNIA_DATA_PATH"
+printf '%s\n' "$OMNIA_PROJECT_NAME"
+```
 
-2. **Check that the environment file is valid**:
-    ```bash
-    ./omnia.sh --check-deps
-    ```
+The printed values must match the values configured in `src/main/omnia.env`.
 
-3. **Re-run setup if needed**:
-    ```bash
-    ./omnia.sh -s
-    ```
+## Next steps
+
+- [Set up the OIM](setup_oim.md) to install the configured environment and
+  create the shared virtual environment.
 
 ## Troubleshooting
 
-- **Environment variables not loaded**: Ensure `/etc/profile.d/omnia-env.sh` exists and source it manually.
-- **Validation fails**: Check that `SYSTEM_ADMIN_NIC_IPV4` is a valid IPv4 address.
-- **Changes not reflected**: Re-run `./omnia.sh -s` to apply changes system-wide.
-
-## Next Steps
-
-- [Initialize Domains](initialize_domains.md) -- Stage input files with updated environment
-- [Run Domains](run_domains.md) -- Execute domain workflows
+- **The administrative address is rejected**: Set `SYSTEM_ADMIN_NIC_IPV4` to
+  an IPv4 address assigned to a local OIM interface.
+- **Hostname validation fails**: Make `SYSTEM_HOSTNAME` match `hostname -s`.
+- **The installed values did not change**: Edit `src/main/omnia.env` and rerun
+  `./omnia.sh --setup-venv`; editing the source file alone does not replace
+  `/etc/omnia/omnia.env`.
+- **The activation script is not at `/opt/omnia`**: Use the configured
+  `OMNIA_DATA_PATH` when locating `activate-omnia.sh`.

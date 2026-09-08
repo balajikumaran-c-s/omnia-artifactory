@@ -1,114 +1,43 @@
 # Utilities
 
-The utils domain (collection: `omnia.utils`) provides helper utilities for OS installation, Slurm configuration backup, and aarch64 node preparation.
-
 ## Overview
 
-The utils domain handles auxiliary tasks that support the main deployment workflow. It provides utilities for unattended OS installation, Slurm configuration backup, and aarch64 node preparation. These are optional helper utilities that can be used independently or as part of the cluster deployment process.
+The `omnia.utils` collection provides optional utilities that run from the
+Omnia Infrastructure Manager (OIM). The current Utils entry point supports
+collecting Kubernetes and Slurm logs, installing RHEL on a bare-metal node
+through iDRAC Virtual Media, and cleaning up artifacts from those workflows.
+
+The OS installation workflow supports both `x86_64` and `aarch64`. The
+collection also contains reusable Slurm configuration backup, cleanup, and
+rollback roles, but those roles are not exposed by the Utils entry-point
+playbook.
 
 ## Prerequisites
 
-Before using the utils domain, ensure the following prerequisites are met:
+| Requirement | Supported by the Utils source |
+|---|---|
+| Operating system | RHEL 10.x or a compatible Enterprise Linux 10 system |
+| Python | 3.12 or later |
+| Ansible | `ansible-core` 2.20 or later |
+| Runtime location | Omnia Infrastructure Manager |
+| Environment | `/etc/omnia/omnia.env` installed and consistent with the OIM |
+| Project inputs | Initialized under `$OMNIA_DATA_PATH/utils/input/$OMNIA_PROJECT_NAME/` |
 
-- **Main domain setup completed**: The omnia.sh CLI must be installed and configured (`./omnia.sh -s`)
-- **Orchestrator domain completed**: Cluster must be provisioned for Slurm backup operations
-- **aarch64 node access**: For ARM preparation, aarch64 nodes must be accessible via SSH
-- **Storage space**: Sufficient disk space for ISO creation and log archives
-- **Input files configured**: `iso_config.yml` and related configuration files must be properly configured
-- **Network connectivity**: OIM must have network access to target nodes for log collection
+The default data path is `/opt/omnia`, and the default project name is
+`project_default`. Network access, storage, credentials, and target-system
+requirements depend on the selected utility.
 
-## System Context
+## Choose a task
 
-```
-  orchestrator_state.yml                      iso_config.yml
-  +---------------------+     +---------------------+
-  |    Orchestrator     |---->|                     |
-  |  (upstream)           |     |      Utils           |---->  ISO files
-  +---------------------+     |                     |     & backups
-                              |  (iso creation,      |
-                              |   log collection,    |
-                              |   slurm utilities)   |
-                              +---------------------+
-```
+| Task | Use it to |
+|---|---|
+| [Install an OS unattended](install_os_unattended.md) | Build a Kickstart-enabled ISO, attach it through iDRAC Virtual Media, and install one `x86_64` or `aarch64` node. |
+| [Prepare an aarch64 image-build node](prepare_aarch64_node.md) | Apply the architecture-specific settings required when the installation target is `aarch64`. |
+| [Collect cluster logs](../../Operations/collect_cluster_logs.md) | Collect Kubernetes and Slurm logs from configured nodes and create a support archive with metadata. |
+| [Use the Slurm configuration roles](../../Operations/slurm_configuration_roles.md) | Integrate the standalone Slurm backup, cleanup, and rollback roles into an administrator-maintained playbook. |
 
-## Domain Workflow
+## Contract reference
 
-The utils domain supports the following execution tags:
-
-| Tag | Description | Prerequisites |
-|-----|-------------|---------------|
-| `validate` | Validate utility configuration | No |
-| `prepare` | Prepare utility environment | No |
-| `execute` | Execute utility task | No |
-| `cleanup` | Remove utility artifacts | No |
-
-## Execution Flow
-
-The utils domain provides independent utility playbooks that can be run on-demand:
-
-```
-1. Initialize domain environment
-2. Validate configuration files
-3. Execute specific utility task:
-   - ISO creation and delivery
-   - Log collection from cluster nodes
-   - Slurm configuration backup/rollback
-   - ARM64/aarch64 node preparation
-```
-
-## Key Inputs
-
-| Input | Location | Purpose |
-|-------|----------|---------|
-| `iso_config.yml` | `/opt/omnia/utils/input/<project>/iso_config.yml` | ISO creation and delivery settings |
-| `telemetry_config.yml` | `/opt/omnia/utils/input/<project>/telemetry_config.yml` | Telemetry source configuration |
-| `arm_config.yml` | `/opt/omnia/utils/input/<project>/arm_config.yml` | ARM-specific settings (optional) |
-| `bmc_inventory.csv` | `/opt/omnia/utils/input/<project>/bmc_inventory.csv` | BMC inventory for iDRAC operations |
-
-**Input Sources:**
-- **Administrator** - Provides utility configuration files
-- **Domain initialization** - Stages input files from samples directory
-
-## Key Outputs
-
-| Output | Location | Purpose |
-|--------|----------|---------|
-| ISO files | `/opt/omnia/utils/output/<project>/` | Custom OS installation ISOs |
-| Log archives | `/opt/omnia/utils/output/<project>/` | Collected logs from cluster nodes |
-| Slurm config backups | `/opt/omnia/utils/output/<project>/` | Slurm configuration backup files |
-
-## Output Contract
-
-This contract is consumed by:
-- **Administrators** - For manual cluster operations and troubleshooting
-- **Cluster workflows** - For ongoing operations
-
-## Utils Components
-
-| Category | Component | Description |
-|----------|-----------|-------------|
-| **OS Installation** | ISO Creation | Create custom OS installation ISOs |
-| | ISO Delivery | Deliver ISOs via iDRAC virtual media |
-| | Unattended Install | Perform bare-metal OS installation |
-| **Configuration** | Slurm Backup | Backup Slurm configuration files |
-| | Slurm Rollback | Rollback Slurm configuration |
-| | Slurm Cleanup | Clean up Slurm configuration |
-| **ARM Support** | ARM Preparation | Prepare aarch64 nodes for deployment |
-| | ARM Validation | Validate ARM configuration |
-| **Log Collection** | Log Collector | Collect logs from cluster nodes |
-
-## Related Guides
-
-## OS Installation
-- [Install OS Unattended](install_os_unattended.md) -- Perform bare-metal OS installation
-- [Prepare aarch64 Node](prepare_aarch64_node.md) -- Prepare ARM64/aarch64 nodes
-
-## Configuration Utilities
-- [Backup Slurm Config](backup_slurm_config.md) -- Backup Slurm configuration
-
-## Additional
-- [Domain Contract](../../Reference/domain_contracts/utils_contract.md) -- Utils domain contract
-
-
-
-
+See the [Utils Input/Output Contract](../../Reference/domain_contracts/utils_contract.md)
+for the environment, input files, credentials, output paths, and generated
+status structures used by the current workflows.

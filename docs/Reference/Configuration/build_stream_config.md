@@ -1,37 +1,61 @@
-# build_stream Config Reference
+# build_stream_config.yml
 
-The `build_stream_config.yml` file configures BuildStreaM CI/CD pipelines.
+The consolidated Build Stream configuration controls the Build Stream Manager
+(BSM) API and the managed GitLab deployment. It replaces the former separate
+Build Stream and GitLab configuration files.
 
 ## Location
 
+```text
+$OMNIA_DATA_PATH/build_stream/input/project_default/build_stream_config.yml
 ```
-/opt/omnia/input/project_default/build_stream_config.yml
-```
 
-## Configuration Parameters
+The current entry playbook fixes the project directory to `project_default`.
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `gitlab_host` | string | Yes | - | GitLab server hostname |
-| `gitlab_project` | string | Yes | - | GitLab project name |
-| `gitlab_https_port` | integer | No | 443 | GitLab HTTPS port |
-| `pipeline_type` | string | Yes | - | Pipeline type (build, deploy, clean) |
-| `catalog_path` | string | Yes | - | Catalog file path |
+## Configuration parameters
 
-## Usage Example
+| Parameter | Type | Requirement | Default |
+|---|---|---|---|
+| `enable_build_stream` | boolean | Required | None |
+| `build_stream_host_ip` | IPv4 string | Required when enabled | Empty |
+| `build_stream_port` | integer | Required when enabled | `8010` |
+| `gitlab_host` | IPv4 string | Required for GitLab execution | Empty |
+| `gitlab_project_name` | string | Optional | `omnia-catalog` |
+| `gitlab_project_visibility` | string | Optional: `private`, `internal`, or `public` | `private` |
+| `gitlab_default_branch` | string | Optional | `main` |
+| `gitlab_https_port` | integer | Optional | `443` |
+| `gitlab_min_storage_gb` | integer | Optional | `20` |
+| `gitlab_min_memory_gb` | integer | Optional | `4` |
+| `gitlab_min_cpu_cores` | integer | Optional | `2` |
+| `gitlab_puma_workers` | integer | Optional | `2` |
+| `gitlab_sidekiq_concurrency` | integer | Optional | `10` |
 
-```yaml title="File: /opt/omnia/input/project_default/build_stream_config.yml"
-gitlab_host: gitlab.example.com
-gitlab_project: omnia-build
+Ports must be from 1 through 65535. Resource minimums and worker counts must be
+positive integers. Unknown fields are rejected.
+
+`PIPELINE_TYPE` is a GitLab pipeline variable, not a field in this YAML file.
+
+## Usage example
+
+```yaml title="File: /opt/omnia/build_stream/input/project_default/build_stream_config.yml"
+enable_build_stream: true
+build_stream_host_ip: "172.16.107.254"
+build_stream_port: 8010
+gitlab_host: "172.16.107.20"
+gitlab_project_name: "omnia-catalog"
+gitlab_project_visibility: "private"
+gitlab_default_branch: "main"
 gitlab_https_port: 443
-pipeline_type: build
-catalog_path: catalog_rhel.json
+gitlab_min_storage_gb: 20
+gitlab_min_memory_gb: 4
+gitlab_min_cpu_cores: 2
+gitlab_puma_workers: 2
+gitlab_sidekiq_concurrency: 10
 ```
 
-## Related Configuration
+## Related configuration
 
-- [omnia_env.md](omnia_env.md)
-- [Domain Contract](../domain_contracts/build_stream_contract.md)
-
-
+- [Main environment](omnia_env.md)
+- [Build Stream contract](../domain_contracts/build_stream_contract.md)
+- [Deploy GitLab and Build Stream](../../HowTo/build_stream/deploy_gitlab.md)
 

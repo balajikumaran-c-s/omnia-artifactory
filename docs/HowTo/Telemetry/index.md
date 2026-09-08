@@ -1,144 +1,113 @@
 # Telemetry
 
-The telemetry domain (collection: `omnia.telemetry`) manages monitoring, metrics collection, and data aggregation for cluster health and performance.
-
 ## Overview
 
-The telemetry domain deploys and manages a comprehensive telemetry stack for HPC and AI clusters. It collects metrics and logs from multiple sources (iDRAC, LDMS, OME, UFM, PowerScale, VAST, SFM) and stores them in sink backends (Kafka, VictoriaMetrics, VictoriaLogs). Telemetry runs as Kubernetes workloads on the kube_vip cluster.
+The Telemetry deployment module deploys and manages Kubernetes workloads that collect HPC
+and infrastructure metrics and logs. It supports iDRAC, LDMS, OpenManage
+Enterprise (OME), PowerScale, NVIDIA UFM, and VAST sources. Depending on the
+configured routes, it deploys Kafka, VictoriaMetrics, VictoriaLogs, and Vector
+bridges in the `telemetry` namespace.
 
-**Note**: The orchestrator domain configures telemetry client-side integration on nodes (via telemetry_config.yml and iDRAC telemetry service). The telemetry domain deploys the full telemetry server stack.
+Telemetry runs from the Omnia Infrastructure Manager (OIM). Kubernetes actions
+run through SSH on the control-plane VIP obtained from the configured
+Orchestrator inventory.
+
+```text
+sources -> optional Vector bridges -> Kafka / VictoriaMetrics / VictoriaLogs
+                                      |
+                                      v
+                        telemetry_status.yml and connection exports
+```
 
 ## Prerequisites
 
-Before using the telemetry domain, ensure the following prerequisites are met:
+| Requirement | Supported value |
+|---|---|
+| OIM operating system | RHEL or Rocky Linux 10.x |
+| Python | 3.12 or later |
+| Ansible | 2.20 or later |
+| Kubernetes | A deployed service cluster reachable through `kube_vip` |
+| Access | Root SSH access from the OIM to `kube_vip` |
 
-- **Main domain setup completed**: The omnia.sh CLI must be installed and configured (`./omnia.sh -s`)
-- **Orchestrator domain completed**: Kubernetes service cluster must be deployed and operational
-- **Kubernetes cluster**: kube_vip cluster must be running with sufficient resources for telemetry workloads
-- **Storage resources**: Persistent storage must be available for VictoriaMetrics and VictoriaLogs PVCs
-- **Network connectivity**: Cluster nodes must have network access to telemetry sources (iDRAC, OME, UFM, etc.)
-- **Input files configured**: `telemetry_config.yml` and related configuration files must be properly configured
+Source-specific requirements are listed in each configuration guide. Review
+the [Telemetry Input/Output Contract](../../Reference/domain_contracts/telemetry_contract.md)
+before configuring the project inputs.
 
-## System Context
+## Procedure
 
-```
-  orchestrator_state.yml                      telemetry_config.yml
-  +---------------------+     +---------------------+
-  |    Orchestrator     |---->|                     |
-  |  (upstream)           |     |    Telemetry        |---->  monitoring dashboards
-  +---------------------+     |                     |     & metrics storage
-                              |  (kafka, victoria,  |
-                              |   sources, sinks)    |
-                              +---------------------+
-                                       |
-                                  Kubernetes
-                                 (kube_vip cluster)
-```
+| Task | Use it to |
+|---|---|
+| [Build Telemetry Container Images](setup_telemetry.md) | Build the iDRAC pump and receiver images and the LDMS image maintained by the Telemetry source. |
+| [Deploy the Telemetry Stack](deploy_telemetry.md) | Initialize runtime inputs, validate them, run prechecks, deploy enabled components, and inspect deployment status. |
+| [Configure iDRAC Telemetry](configure_idrac.md) | Collect Dell server BMC metrics into Kafka and VictoriaMetrics. |
+| [Prepare Worker-to-BMC Network Access](worker_node_vlan_configuration.md) | Verify the worker and Redfish network path required by the iDRAC workflow. |
+| [Configure LDMS Telemetry](configure_ldms.md) | Deploy LDMS samplers and Kubernetes aggregator/store components, with an optional Vector-to-VictoriaMetrics bridge. |
+| [Configure PowerScale Telemetry](configure_powerscale.md) | Deploy CSM Metrics PowerScale and route metrics to VictoriaMetrics; prepare the VictoriaLogs syslog target when logs are enabled. |
+| [Configure UFM Telemetry](configure_ufm.md) | Scrape an existing UFM Prometheus endpoint and prepare optional log ingestion through VLAgent. |
+| [Configure VAST Telemetry](configure_vast.md) | Scrape an existing VAST Prometheus endpoint and prepare optional log ingestion through VLAgent. |
+| [Configure OME Telemetry](telemetry_from_ome.md) | Route OME Kafka topics through Vector to VictoriaMetrics and VictoriaLogs. |
+| [Connect SFM](configure_sfm.md) | Export the VictoriaMetrics connection settings generated for SFM remote write. |
+| [Export Kafka Connection Details](configure_external_kafka.md) | Export the native Kafka mTLS endpoint, HTTP Bridge endpoint, and client certificates. |
+| [Export VictoriaMetrics Connection Details](configure_external_victoria.md) | Export VictoriaMetrics write/query endpoints and the TLS CA when enabled. |
+| [Export VictoriaLogs Connection Details](configure_external_victoria_logs.md) | Export VictoriaLogs write/query endpoints and the VLAgent syslog target. |
 
-## Domain Workflow
+The source-specific verification pages repeat the checks independently when a
+deployment must be inspected later: [iDRAC](verify_idrac.md),
+[LDMS](verify_ldms.md), [OME](verify_ome.md),
+[PowerScale](verify_powerscale.md), [UFM](verify_ufm.md),
+[VAST](verify_vast.md), and [Vector-LDMS](verify_vector_ldms.md).
 
-The telemetry domain supports the following execution tags:
+### Contract reference
 
-| Tag | Description | Prerequisites |
-|-----|-------------|---------------|
-| `precheck` | Validate K8s prerequisites (kube_vip, nodes, pods) | No |
-| `validate` | L1 schema + L2 logic validation of all input files | No |
-| `deploy` / `execute` | Deploy sinks + sources + kustomize apply | Yes |
-| `cleanup` | Remove telemetry runtime resources; preserve PVCs and Kafka identity metadata by default | No |
-| `upgrade` | Upgrade telemetry (placeholder) | Yes |
-| `rollback` | Rollback telemetry (placeholder) | Yes |
+See the [Telemetry Input/Output Contract](../../Reference/domain_contracts/telemetry_contract.md)
+for the complete validated input, status, cleanup, and connection-export
+contracts.
 
-**Default flow (no tags)**: setup + validate + deploy
+Telemetry reads these project-scoped runtime inputs:
 
-## Execution Flow
+| Input | Default location |
+|---|---|
+| `telemetry_config.yml` | `/opt/omnia/telemetry/input/project_default/` |
+| `telemetry_storage_config.yml` | `/opt/omnia/telemetry/input/project_default/` |
+| `telemetry_packages.yml` | `/opt/omnia/telemetry/input/project_default/` |
+| `telemetry_credentials.yml` | Created and encrypted in the same directory when credentials are collected |
 
-```
-Step 0: Setup (always) — read omnia.env, derive paths, create dirs
-Step 1: Validate       — L1 schema + L2 logic validation
-Step 2: Deploy
-  Phase 0: Prerequisites — load config, derive flags, resolve kube_vip
-  Phase 1: Sink infrastructure — Kafka, VictoriaMetrics, VictoriaLogs
-  Phase 2: Source components — each enabled source generates K8s manifests
-  Phase 3: Root kustomization — generate root kustomization.yaml
-  Phase 4: Full-stack apply — kubectl apply -k deployments/
-```
-
-## Key Inputs
-
-| Input | Location | Purpose |
-|-------|----------|---------|
-| `telemetry_config.yml` | `/opt/omnia/telemetry/input/<project>/telemetry_config.yml` | Main configuration — kube_vip, sources, sinks, bridges, credentials |
-| `telemetry_storage_config.yml` | `/opt/omnia/telemetry/input/<project>/telemetry_storage_config.yml` | Storage backend configuration (PVC sizes, retention) |
-| `telemetry_packages.yml` | `/opt/omnia/telemetry/input/<project>/telemetry_packages.yml` | Container registry, image versions, cluster_mount |
-
-**Input Sources:**
-- **Administrator** - Provides telemetry configuration files
-- **Domain initialization** - Stages input files from samples directory
-
-## Key Outputs
-
-| Output | Location | Purpose |
-|--------|----------|---------|
-| Telemetry status files | `/opt/omnia/telemetry/output/<project>/` | Deployment status and configuration |
-| Monitoring dashboards | Kubernetes cluster | Grafana dashboards for metrics visualization |
-| Metrics storage | Kubernetes cluster | VictoriaMetrics time-series database |
-| Log storage | Kubernetes cluster | VictoriaLogs log aggregation |
-
-## Output Contract
-
-This contract is consumed by:
-- **Administrators** - For monitoring cluster health and performance
-- **Cluster workflows** - For ongoing operations and troubleshooting
-
-## Telemetry Components
-
-| Category | Source | Description |
-|----------|--------|-------------|
-| **Sinks** | Kafka (Strimzi) | Telemetry data streaming |
-| | VictoriaMetrics | Time-series metrics storage and querying |
-| | VictoriaLogs | Log aggregation and querying |
-| **Compute** | iDRAC | Dell server BMC hardware telemetry |
-| | LDMS | Lightweight Distributed Metric Service (HPC) |
-| **Infrastructure** | OME | OpenManage Enterprise monitoring |
-| | UFM | Unified Fabric Manager (InfiniBand) |
-| | SFM | Smart Fabric Manager (network) |
-| **Storage** | PowerScale | Dell PowerScale (Isilon) |
-| | VAST | VAST Data storage |
-
-## Related Guides
-
-## Core Deployment
-- [Telemetry Setup](setup_telemetry.md) -- Initialize telemetry domain
-- [Deploy Telemetry](deploy_telemetry.md) -- Deploy telemetry stack
-
-## Source Configuration
-- [Configure iDRAC](configure_idrac.md) -- Configure iDRAC hardware telemetry
-- [Configure LDMS](configure_ldms.md) -- Configure LDMS HPC metrics
-- [Configure OME](telemetry_from_ome.md) -- Configure OpenManage Enterprise monitoring
-- [Configure UFM](configure_ufm.md) -- Configure InfiniBand fabric metrics
-- [Configure PowerScale](configure_powerscale.md) -- Configure PowerScale storage metrics
-- [Configure VAST](configure_vast.md) -- Configure VAST storage metrics
-- [Configure SFM](configure_sfm.md) -- Configure network fabric metrics
-
-## External Sink Configuration
-- [Configure External Kafka](configure_external_kafka.md) -- Use external Kafka sink
-- [Configure External VictoriaMetrics](configure_external_victoria.md) -- Use external VictoriaMetrics sink
-- [Configure External VictoriaLogs](configure_external_victoria_logs.md) -- Use external VictoriaLogs sink
+`OMNIA_DATA_PATH` and `OMNIA_PROJECT_NAME` change the root and project portions
+of these paths. The deployment writes
+`<OMNIA_DATA_PATH>/telemetry/output/<project>/telemetry_status.yml`. It records
+the overall result, Kubernetes namespace, VIP, package mode, per-sink and
+per-source results, bridge results, and LDMS nodes skipped as unreachable.
 
 ## Verification
-- [Verify iDRAC](verify_idrac.md) -- Verify iDRAC telemetry
-- [Verify LDMS](verify_ldms.md) -- Verify LDMS telemetry
-- [Verify OME](verify_ome.md) -- Verify OME telemetry
-- [Verify PowerScale](verify_powerscale.md) -- Verify PowerScale telemetry
-- [Verify UFM](verify_ufm.md) -- Verify UFM telemetry
-- [Verify VAST](verify_vast.md) -- Verify VAST telemetry
-- [Verify Vector LDMS](verify_vector_ldms.md) -- Verify Vector-LDMS bridge
 
-## Additional
-- [Worker Node VLAN Configuration](worker_node_vlan_configuration.md) -- Configure VLAN for worker nodes
-- [Getting Started: Kubernetes & Telemetry](../../GetStarted/k8s_telemetry_only.md) -- Quick start guide
-- [Domain Contract](../../Reference/domain_contracts/telemetry_contract.md) -- Telemetry domain contract
+After deployment, inspect:
 
+```bash title="Run on: OIM host"
+cat "$OMNIA_DATA_PATH/telemetry/output/$OMNIA_PROJECT_NAME/telemetry_status.yml"
+```
 
+Confirm that `overall_status` is `success`, enabled components report
+`deployed`, disabled components report `skipped`, and any node listed under
+`deploy_unreachable_nodes.ldms` is intentionally unavailable. Use the
+source-specific verification page when validating metrics or logs after the
+initial deployment.
 
+## Next steps
 
+- Export Kafka or Victoria connection details for external producers and
+  consumers when required.
+- Use the source-specific configuration pages to add or change a telemetry
+  route, then validate and redeploy.
+- Preserve `telemetry_status.yml` when collecting evidence for a support case.
+
+## Troubleshooting
+
+- **The Kubernetes VIP is unavailable:** Verify the file selected by
+  `cluster_inventory` and restore root SSH access from the OIM.
+- **Input validation fails:** Check all three YAML inputs against the schemas
+  under `src/telemetry/plugins/module_utils/input_validation/schema/`.
+- **A component reports `failed`:** Inspect `/var/log/omnia/telemetry/` and
+  the corresponding resources in the `telemetry` namespace.
+- **LDMS nodes are skipped:** Check the hostnames under
+  `deploy_unreachable_nodes.ldms` and restore their SSH reachability before
+  redeploying.

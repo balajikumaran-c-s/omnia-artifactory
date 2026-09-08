@@ -2,321 +2,203 @@
 
 ## Overview
 
-Omnia provides unattended OS installation on bare-metal nodes via iDRAC
-Virtual Media. The playbook builds a custom ISO with an NFS-based Kickstart
-reference, mounts it through the iDRAC virtual media interface, and boots
-the target node for a fully automated install. The ISO is reusable across
-multiple installations and only rebuilt when configuration changes.
+The utils `install_os` workflow installs RHEL on one bare-metal node through
+iDRAC Virtual Media. It validates the installation configuration, collects and
+encrypts credentials, creates a custom ISO with Kickstart, attaches that ISO to
+the target BMC, power-cycles the server, and optionally verifies SSH access to
+the installed operating system.
 
-!!! note
-
-    Installations can be performed one server at a time. Run the playbook
-    for each target node sequentially.
-
-
-!!! info
-
-    To manually install RHEL on an aarch64 build host before image building,
-    refer to the [Prepare aarch64 Node](prepare_aarch64_node.md) procedure.
-
-The `install_os_arm_node.yml` orchestrator reads configuration from
-`iso_config.yml`, fetches credentials from `omnia_config_credentials.yml`,
-and drives the OS installation end-to-end.
-
-## Prerequisites
-
-- The target node is a Dell PowerEdge server with iDRAC 9 or later
-- A RHEL 10.x source ISO (Server with GUI) is available on the OIM host at `/opt/omnia/`
-- An NFS share is configured and maps to `/opt/omnia`. The NFS server must be accessible from both the OIM and the target node's iDRAC
-- BMC network connectivity exists from the OIM to the target node's iDRAC
-- The [Setup the OIM](../main/setup_oim.md) procedure is complete (main domain setup is complete)
-- The [Configure Credentials](../main/configure_credentials.md) procedure is
-  complete. The `omnia_config_credentials.yml` file must contain:
-
-    ```yaml title="File: /opt/omnia/utils/input/project_default/omnia_config_credentials.yml"
-    bmc_username: "<idrac_username>"
-    bmc_password: "<idrac_password>"
-    provision_password: "<os_root_password>"
-    ```
-
-- **iDRAC Boot Order Configuration**: The target node's BIOS boot order must have **Remote File Share 1** and **Remote File Share 2** (Virtual Media) configured as the first and second boot priorities, respectively, before hard drive boot. This is critical for the server to boot from the mounted ISO during installation.
-
-- **Virtual Media Cleanup**: All existing virtual media must be disconnected from the iDRAC before starting the installation to prevent boot conflicts. Verify no ISOs are currently mounted via the iDRAC web console or use the eject command in the playbook.
-
-- **UEFI Boot Sequence Prerequisites** for aarch64 nodes:
-
-    !!! important
-
-        The `Virtual Network File` boot option must be properly configured in the UEFI boot sequence for successful playbook execution on aarch64 nodes.
-
-    - The `Virtual Network File` option may not be available in the UEFI boot sequence until the node is connected during playbook execution
-    - All other boot options except `Virtual Network File` must be disabled in the UEFI boot sequence to ensure `Virtual Network File` gets configured as the first boot option
-
-- **Required Configuration Values for aarch64 Nodes**:
-
-    !!! important
-
-        The following configuration values are required for successful playbook execution on aarch64 nodes (e.g., belton nodes).
-
-    | Parameter | Required Value | Notes |
-    |-----------|----------------|-------|
-    | `gateway` | Must be explicitly set | Required for proper network configuration |
-    | `install_disk` | `nvme0n1` | Target disk device for installation |
-    | `rebuild_iso` | `true` | Required whenever kickstart file configuration changes |
-    | `force_reinstall` | `true` | Required if OS was previously installed |
-    | `network_device` | `enP6s3f0np0` | Network interface for belton nodes |
-
-## Procedure
-
-### Install OS on an aarch64 node
-
-This is the primary method for installing RHEL on an aarch64 build node
-before building aarch64 cluster images.
-
-1. **Place the source ISO inside the container**:
-
-    ```bash title="Run on: OIM host"
-    cp RHEL-10.0-*-aarch64-dvd1.iso <oim_shared_path>/omnia
-    ```
-
-    Verify the ISO is accessible:
-
-    ```bash title="Run on: OIM host container"
-    ls -lh /opt/omnia/*.iso
-    ```
-
-2. **Configure `iso_config.yml`**:
-
-    Edit the input file:
-
-    ```bash title="Run on: OIM host"
-    vi /opt/omnia/utils/input/project_default/iso_config.yml
-    ```
-
-    ```yaml title="File: /opt/omnia/utils/input/project_default/iso_config.yml"
-    iso_source_path: "/opt/omnia/RHEL-10.0-20250410.6-aarch64-dvd1.iso"
-    iso_target_directory: "/opt/omnia/iso_output"
-    target_bmc_ip: "100.10.11.12"
-    hostname: "nid101"
-    target_node_ip: "172.10.5.28"
-
-    # Optional: Force rebuild
-    rebuild_iso: false
-    ```
-
-3. **Run the utils domain install_os tag**:
-
-    ```bash title="Run on: OIM host"
-    ./omnia.sh --run utils --tags install_os
-    ```
-
-    To use a custom config path:
-
-    ```bash title="Run on: OIM host"
-    ./omnia.sh --run utils --tags install_os -e "iso_config_path=/custom/path/iso_config.yml"
-    ```
-
-    To suppress interactive prompts:
-
-    ```bash title="Run on: OIM host"
-    ./omnia.sh --run utils --tags install_os -e "silent_install=true"
-    ```
-
-The playbook performs the following steps automatically:
-
-1. Validates that no upgrade is in progress.
-2. Loads and validates `iso_config.yml`.
-3. Fetches BMC and OS credentials from `omnia_config_credentials.yml`.
-4. Builds a custom ISO with NFS Kickstart reference (if not already built).
-5. Mounts the ISO via iDRAC Virtual Media, sets boot override to virtual
-   CD-ROM, and power-cycles the node.
-6. Waits for OS installation to complete and verifies SSH connectivity.
-
-!!! note
-
-    The ARM orchestrator uses `provision_password` from
-    `omnia_config_credentials.yml` as the OS root password. This is the
-    same password configured during the
-    [Configure Credentials](../main/configure_credentials.md) procedure.
-
-
-
-### `iso_config.yml` parameter reference
-
-| Parameter | Required | Default | Description |
-| --- | --- | --- | --- |
-| `target_bmc_ip` | Yes | -- | Target node BMC/iDRAC IP address. |
-| `hostname` | Yes | -- | Hostname for the installed node. |
-| `target_node_ip` | Yes | -- | Target node OS IP address to set. |
-| `iso_source_path` | Yes | -- | Path to the source ISO inside the container. |
-| `iso_target_directory` | No | `/opt/omnia/iso_output` | Output directory for the custom ISO. |
-| `nfs_share_path` | No | Auto-detected | NFS share in `server:/path` format. Auto-detected from the `/opt/omnia` mount if omitted. |
-| `netmask` | No | `255.255.255.0` | Network mask for Kickstart configuration. |
-| `gateway` | Yes | -- | Default gateway for the installed node. **For aarch64 nodes: Must be explicitly set.** |
-| `dns` | No | -- | DNS server for the installed node. |
-| `install_disk` | Yes | -- | Target disk device (e.g., `sda`, `nvme0n1`). **For aarch64 nodes: Use `nvme0n1`.** |
-| `network_device` | Yes | -- | Network interface name for static IP configuration. Recommended to specify the interface name explicitly instead of using auto-detect. **For aarch64 nodes: Use `enP6s3f0np0` for belton nodes.** |
-| `rebuild_iso` | Yes | `false` | Force ISO rebuild even if a custom ISO already exists. **For aarch64 nodes: Set to `true` when kickstart file configuration changes.** |
-| `force_reinstall` | Yes | `false` | Proceed with installation even if the target node is already reachable. **For aarch64 nodes: Set to `true` if OS was previously installed.** |
-| `silent_install` | No | `false` | Suppress all interactive prompts. |
-| `kickstart_file` | No | -- | Path to a user-provided Kickstart file. Overrides template-based generation. |
-| `iso_source_checksum` | No | -- | SHA-256 checksum for source ISO verification. |
-| `embed_kickstart` | No | `true` | Embed Kickstart file in ISO (`true`) or host on NFS share (`false`). |
-
+The same workflow supports `x86_64` and `aarch64`. The target architecture can
+be configured explicitly or detected from the source ISO filename.
 
 !!! warning
 
-    The playbook erases all data on the target node's install disk. Confirm
-    the target BMC IP and hostname before proceeding.
+    The generated Kickstart clears and repartitions the configured
+    `install_disk`. Confirm the BMC address, operating-system address, and disk
+    name before starting the deployment.
 
-!!! note
+## Prerequisites
 
-    The `os_root_password` is hashed to SHA-512 internally by the playbook.
-    Do not pre-hash the password.
+- Complete the [OIM setup](../main/setup_oim.md) and initialize the utils
+  module.
+- Place a RHEL 10 source ISO on a filesystem accessible to the OIM.
+- Provide an NFS destination in `server:/export/path/file.iso` format. The OIM
+  must be able to mount the export, and the target BMC must be able to access it.
+- Ensure the OIM can reach the target BMC through HTTPS and the installed node
+  through SSH.
+- Ensure the target BMC supports the Redfish operations used by the iDRAC
+  virtual-media modules.
+- Create the SSH public key configured by `ssh_public_key_path`. The default is
+  `/root/.ssh/id_rsa.pub`.
+
+The first installation run prompts for `bmc_username`, `bmc_password`, and
+`os_root_password`. The workflow stores them in an Ansible Vault-encrypted
+`install_os_credentials.yml` file in the utils project input directory.
+
+## Procedure
+
+### Install the operating system
+
+1. Initialize the Utils module so that its input templates and dependencies are
+   available:
+
+    ```bash title="Run from: <omnia-repository>/src/main"
+    ./omnia.sh -i utils
+    ```
+
+    If the shared Omnia environment has not been created, run `./omnia.sh -s`
+    first.
+
+2. Edit the staged configuration:
+
+    ```bash title="Run on: OIM host"
+    vi /opt/omnia/utils/input/project_default/install_os_config.yml
+    ```
+
+    Replace `project_default` when `OMNIA_PROJECT_NAME` selects another project.
+
+3. Configure the source ISO, NFS destination, and target node. For example:
+
+    ```yaml title="File: <OMNIA_DATA_PATH>/utils/input/<project>/install_os_config.yml"
+    source_iso_path: "/opt/omnia/iso/RHEL-10.0-x86_64-dvd.iso"
+    source_iso_checksum: ""
+    custom_iso_path: "192.0.2.10:/exports/omnia/RHEL-10.0-x86_64-omnia.iso"
+
+    kickstart_delivery_method: embedded
+    kickstart_file: ""
+    kickstart_template: rhel10
+
+    target_bmc_ip: "192.0.2.21"
+    target_hostname: "compute-01"
+    target_admin_ip: "192.0.2.31"
+    target_architecture: "x86_64"
+
+    network_device: "eno1"
+    netmask: "255.255.255.0"
+    gateway: "192.0.2.1"
+    dns_server: "192.0.2.2"
+    ssh_public_key_path: "/root/.ssh/id_rsa.pub"
+    install_disk: "sda"
+    timezone: "UTC"
+
+    rebuild_iso: false
+    force_reinstall: false
+    ssh_verify_enabled: true
+    ssh_verify_retries: 60
+    ssh_verify_delay: 30
+    ```
+
+    Replace the example addresses and paths with values for the deployment.
+
+4. Run the complete workflow:
+
+    ```bash title="Run from: <omnia-repository>/src/main"
+    ./omnia.sh --run utils --tags install_os
+    ```
+
+    Respond to the credential prompts on the first run. Later runs reuse the
+    encrypted credential file unless it is removed by the installation cleanup
+    workflow.
+
+The workflow performs the following operations:
+
+1. Validates the fields required for ISO build and deployment.
+2. Loads or collects the BMC and OS root credentials and injects the OIM public
+   key into Kickstart.
+3. Verifies the source ISO and its SHA-256 checksum when one is supplied.
+4. Installs required ISO tools when they are absent.
+5. Creates the custom ISO unless it already exists and `rebuild_iso` is false.
+6. Attaches the NFS-hosted ISO through iDRAC Virtual Media and requests a
+   one-time virtual-CD boot.
+7. Power-cycles the node and, when enabled, waits for SSH to become available.
+8. Writes installation and utils status files for the active project.
+
+### Run individual build or deployment stages
+
+For troubleshooting or controlled operation, run the installation playbook
+directly from the utils collection after activating the Omnia environment:
+
+```bash title="Run from: <omnia-repository>/src/utils"
+ansible-playbook playbooks/install_os.yml --tags credentials
+ansible-playbook playbooks/install_os.yml --tags generate_ks
+ansible-playbook playbooks/install_os.yml --tags build_iso
+ansible-playbook playbooks/install_os.yml --tags deploy
+```
+
+`credentials` collects credentials only, `generate_ks` writes the Kickstart
+file without building an ISO, `build_iso` builds the custom media, and `deploy`
+uses an existing custom ISO.
+
+### `install_os_config.yml` parameter reference
+
+| Parameter | Required | Default | Description |
+| --- | --- | --- | --- |
+| `source_iso_path` | Build and Kickstart generation | -- | Local path to the source ISO. |
+| `source_iso_checksum` | No | Empty | Optional SHA-256 checksum for the source ISO. |
+| `custom_iso_path` | Build and deployment | -- | NFS URI for the custom ISO in `server:/path/file.iso` format. |
+| `kickstart_delivery_method` | No | `embedded` | Use `embedded` or `nfs` Kickstart delivery. |
+| `kickstart_file` | No | Empty | Optional user-provided Kickstart file. Missing root password and SSH-key directives are injected. |
+| `kickstart_template` | No | `rhel10` | Built-in Kickstart template name. |
+| `target_bmc_ip` | Deployment | -- | Target BMC/iDRAC IP address. |
+| `target_hostname` | No | Empty | Hostname written by Kickstart. |
+| `target_admin_ip` | Deployment | -- | Static OS address and post-install SSH-verification target. |
+| `target_architecture` | No | Detected from ISO name | `x86_64` or `aarch64`. |
+| `network_device` | No | First active link | Network interface used by Kickstart. |
+| `netmask` | No | `255.255.255.0` | Static network mask. |
+| `gateway` | No | Empty | Static default gateway. |
+| `dns_server` | No | Empty | DNS server used by Kickstart. |
+| `ssh_public_key_path` | No | `/root/.ssh/id_rsa.pub` | Public key injected for root SSH access. |
+| `install_disk` | No | `sda` | Disk erased and used for installation. |
+| `timezone` | No | `UTC` | Installed-system timezone. |
+| `rebuild_iso` | No | `false` | Rebuild an existing custom ISO. |
+| `force_reinstall` | No | `false` | Continue when the target OS address already accepts SSH. |
+| `ssh_verify_enabled` | No | `true` | Verify SSH after the BMC deployment operation. |
+| `ssh_verify_retries` | No | `60` | Multiplier used with `ssh_verify_delay` to calculate the SSH wait timeout. |
+| `ssh_verify_delay` | No | `30` | Initial delay in seconds before checking SSH; also used to calculate the total timeout. |
 
 ## Verification
 
-1. **Verify the custom ISO was built**:
+1. Confirm that the custom ISO, `kickstart.ks`, and
+   `install_os_manifest.yml` exist at the NFS destination directory.
 
-    ```bash title="Run on: OIM host container"
-    ls -lh /opt/omnia/iso_output/
+2. Review the generated project status:
+
+    ```bash title="Run on: OIM host"
+    cat /opt/omnia/utils/output/project_default/install_os_status.yml
     ```
 
-2. **Verify the node is reachable after installation**:
+3. When SSH verification is enabled, connect to the installed node:
 
-    ```bash title="Run on: OIM host container"
-    ssh <target_node_ip>
+    ```bash title="Run on: OIM host"
+    ssh root@<target_admin_ip>
     ```
 
-3. **Verify the correct OS and architecture**:
+4. Verify the operating system and architecture:
 
     ```bash title="Run on: target node"
     cat /etc/redhat-release
     uname -m
     ```
 
-4. **Verify network configuration**:
+## Next steps
 
-    ```bash title="Run on: target node"
-    hostname
-    ip addr show
-    ip route show default
-    ```
-
-## Next Steps
-
-- [Build Cluster Images](../image_build_manager/build_images.md) -- Build aarch64 diskless
-  images using the installed node.
-
+- [Build Cluster Images](../image_build_manager/build_images.md) -- Use the
+  installed node where required by the image-building workflow.
+- [Prepare an aarch64 Node](prepare_aarch64_node.md) -- Apply the installer to
+  an aarch64 target.
 
 ## Troubleshooting
 
-- **`iso_config.yml` not found**:
-
-    ```text
-    FATAL: iso_config.yml not found at '/opt/omnia/utils/input/project_default/iso_config.yml'
-    ```
-
-    Copy the template from `/opt/omnia/utils/samples/iso_config.yml`
-    or provide a custom path via `-e "iso_config_path=/path/to/iso_config.yml"`.
-
-- **NFS share not accessible**:
-
-    ```text
-    FATAL: NFS share path not available. Cannot auto-detect NFS mount for /opt/omnia
-    ```
-
-    Verify the NFS mount inside the container with `mount | grep /opt/omnia`.
-    Alternatively, specify `nfs_share_path` manually in `iso_config.yml` using
-    the `server:/path` format (e.g., `192.168.1.100:/mnt/nfs/omnia`).
-
-- **Invalid NFS share path format**:
-
-    ```text
-    FATAL: Invalid nfs_share_path format. Expected 'server:/path'
-    ```
-
-    Provide the NFS share in `server:/path` format. Both the server IP and
-    the export path are required (e.g., `192.168.1.100:/mnt/nfs/omnia`).
-
-- **iDRAC authentication failed**:
-
-    ```text
-    FAILED: iDRAC NOT reachable at <bmc_ip> (HTTP 401)
-    ```
-
-    Verify credentials in `omnia_config_credentials.yml` with
-    `ansible-vault view`. Check that the BMC IP is reachable with
-    `ping <bmc_ip>` and the iDRAC user has administrator privileges.
-
-- **ISO rebuild fails with xorriso error**:
-
-    ```text
-    xorriso : FAILURE : -indev differs from -outdev and -outdev media holds non-zero data
-    ```
-
-    Set `rebuild_iso: true` in `iso_config.yml` or manually remove the
-    existing ISO from `/opt/omnia/iso_output/`.
-
-- **Target node does not boot from virtual media**: Confirm BIOS boot
-  order includes virtual media. Verify the iDRAC Virtual Media service
-  is enabled in iDRAC settings.
-
-- **SSH verification fails after installation**:
-
-    ```text
-    FAILED: SSH to <target_node_ip> failed after installation
-    ```
-
-    Verify the node is powered on, the `target_node_ip` in `iso_config.yml`
-    is correct, and network connectivity exists. Manually SSH with
-    `ssh root@<target_node_ip>` using the `provision_password`.
-
-- **`provision_password` is not defined**:
-
-    ```text
-    FATAL: provision_password is not defined
-    ```
-
-    Verify `omnia_config_credentials.yml` contains `bmc_username`,
-    `bmc_password`, and `provision_password`. Re-encrypt if needed with
-    `ansible-vault encrypt`.
-
-- **Static IP not assigned after installation**:
-
-    ```text
-    Node installed but no static IP assigned
-    ```
-
-    Verify `network_device` is set correctly in `iso_config.yml`. Check the generated Kickstart file at `/opt/omnia/iso_output/kickstart.cfg` to confirm it contains `--device=eno1` (or your specified device) instead of `--device=link`. If incorrect, update `iso_config.yml` with the correct interface name, set `rebuild_iso: true`, and re-run the playbook.
-
-    To identify the correct network device name, check similar nodes in your cluster with `ip link show` or refer to the Dell PowerEdge documentation for your server model.
-
-- **Server boots from hard drive instead of ISO**:
-
-    ```text
-    Installation does not start; server boots to existing OS or BIOS change BIOS to not booting
-    ```
-
-    Verify the iDRAC BIOS boot order has **Remote File Share 1** and **Remote File Share 2** (Virtual Media) as the first and second boot priorities. Access iDRAC web console → Configuration → Boot Settings and configure the boot order. Save changes and reboot the server.
-
-    Disconnect all existing virtual media from the iDRAC before running the playbook. Access iDRAC web console → Configuration → Virtual Media and eject/disconnect any mounted ISOs. Alternatively, the playbook will attempt to eject existing media automatically, but manual cleanup is recommended.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- **`install_os_config.yml` is not found**: Run `./omnia.sh -i utils` and edit
+  the staged file under `<OMNIA_DATA_PATH>/utils/input/<project>/`.
+- **The source ISO is rejected**: Confirm `source_iso_path` exists and that
+  `source_iso_checksum`, when configured, is the correct SHA-256 value.
+- **The custom ISO path cannot be resolved**: Confirm `custom_iso_path` uses
+  `server:/path/file.iso` format and that the NFS export is mountable from the
+  OIM.
+- **The target is already reachable**: Leave `force_reinstall: false` to protect
+  an installed node, or set it to `true` only after confirming that the target
+  may be reimaged.
+- **SSH verification times out**: Verify the configured administrative IP,
+  network interface, gateway, and firewall path. Increase
+  `ssh_verify_retries` or `ssh_verify_delay` when installation requires longer.

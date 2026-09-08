@@ -1,4 +1,4 @@
-﻿# Omnia Documentation
+# Omnia Documentation
 
 [![Omnia version](https://img.shields.io/github/v/release/dell/omnia?include_prereleases)](https://github.com/dell/omnia/releases)
 [![Downloads](https://img.shields.io/github/downloads/dell/omnia/total)](https://github.com/dell/omnia/releases)
@@ -7,30 +7,84 @@
 [![Forks](https://img.shields.io/github/forks/dell/omnia)](https://github.com/dell/omnia/network/members)
 [![License](https://img.shields.io/github/license/dell/omnia)](https://github.com/dell/omnia/blob/main/LICENSE)
 
-Omnia is an open-source deployment toolkit designed to automate
-the setup and management of high-performance computing (HPC) environments on
-Linux-based servers. It leverages a domain-based architecture with Ansible playbooks to streamline:
+Omnia is an open-source deployment toolkit for building and managing HPC and
+AI infrastructure on Linux-based Dell PowerEdge servers. From an Omnia
+Infrastructure Manager (OIM), administrators can synchronize software content,
+build stateless node images, discover hardware, provision Slurm and service
+Kubernetes clusters, deploy telemetry, and run supporting lifecycle utilities.
 
-- Operating system provisioning
-- Driver installation and configuration
-- Deployment of workload schedulers such as Slurm and Kubernetes
-- Installation of optimization libraries, machine learning frameworks, and AI models
-- Management of compute, storage, and networking resources
+## Modular deployment architecture
 
-Omnia introduces a domain-based architecture with independent, reusable domains that communicate via YAML contracts. The `omnia.sh` CLI provides a unified interface for domain execution, replacing the container-based model from v2.2.
+Omnia uses a modular, capability-based deployment architecture. Each
+**deployment module** owns its configuration, Ansible entry playbook, runtime
+data, logs, and outputs. Modules exchange documented input/output contracts
+such as YAML status files, JSON catalogs, and CSV node mappings.
 
-Omnia simplifies infrastructure deployment in complex environments, enabling
-faster setup and consistent configuration across systems.
+The `src/main/omnia.sh` script prepares the common runtime and invokes one
+module at a time. The module's CLI value and source-directory name remain its
+internal domain identifier. `main` coordinates setup and execution; it is not
+a deployment module.
 
-The project is hosted on [GitHub](https://github.com/dell/omnia), where you can:
+| Deployment module | Customer outcome | Typical dependency |
+|---|---|---|
+| `repo_manager` | Deploy Pulp and synchronize catalog-selected RPMs, images, files, and Python content. | None |
+| `image_build_manager` | Deploy image storage services and build functional-group OS images. | Successful Repository Manager output |
+| `discovery` | Discover BMC endpoints through OME and produce a PXE mapping. | Independent and optional when a mapping is supplied manually |
+| `orchestrator` | Deploy OpenCHAMI and optional OpenLDAP, provision Slurm or service Kubernetes, and optionally start physical nodes through iDRAC PXE boot. | Built images, repository information, and a PXE mapping |
+| `telemetry` | Deploy enabled telemetry sources, bridges, and sinks on service Kubernetes. | A provisioned service Kubernetes cluster |
+| `build_stream` | Deploy Build Stream Manager, GitLab integration, and catalog-driven build and deploy pipelines. | Prepared Repository Manager and Image Build Manager services |
+| `utils` | Run utilities such as log collection and unattended OS installation. | Depends on the selected utility |
 
-- Access the source code
-- Report issues
-- Ask questions
-- Contribute to development
+For a direct deployment, the source-defined order is:
 
-## How This Documentation is Organized
+```text
+Repository Manager -> Image Build Manager -> optional Discovery
+                   -> Orchestrator -> optional Telemetry
+```
 
+Build Stream provides a separate automation path: its build pipeline invokes
+Repository Manager and Image Build Manager, and its deploy pipeline invokes
+Orchestrator. Utils is used independently when an operational task requires it.
+
+See [Architecture](Overview/architecture.md),
+[Running Deployment Modules](Overview/domain_execution.md), and
+[Module Contracts](Reference/index.md#module-contracts) for the detailed
+interfaces and handoffs.
+
+## Choose a deployment path
+
+<div class="grid cards" markdown>
+
+-   :material-server: **[Slurm Quickstart](GetStarted/slurm_quickstart.md)**
+
+    ---
+
+    Build Slurm images and provision a Slurm cluster.
+
+-   :material-kubernetes: **[Kubernetes and Telemetry](GetStarted/k8s_telemetry_only.md)**
+
+    ---
+
+    Provision service Kubernetes and deploy selected non-LDMS telemetry
+    integrations without Slurm.
+
+-   :material-view-dashboard: **[Full Deployment](GetStarted/full_deployment.md)**
+
+    ---
+
+    Provision Slurm and service Kubernetes, then deploy the required Telemetry
+    sources and sinks.
+
+-   :material-source-branch: **[Build Stream](GetStarted/buildstream_deployment.md)**
+
+    ---
+
+    Use GitLab pipelines to synchronize catalog content, build images, and
+    deploy mapped nodes.
+
+</div>
+
+## Documentation map
 
 <div class="grid cards" markdown>
 
@@ -38,99 +92,61 @@ The project is hosted on [GitHub](https://github.com/dell/omnia), where you can:
 
     ---
 
-    Architecture, components, network topologies, and design concepts. Start here if you are new to Omnia.
+    Learn the architecture, component responsibilities, network topologies,
+    module execution model, and terminology.
 
--   :material-book-open-variant: **[Get Started](GetStarted/index.md)**
-
-    ---
-
-    End-to-end tutorials that take you from a bare set of PowerEdge servers to a fully operational cluster using the omnia.sh CLI. Choose from Slurm-only, full deployment, Kubernetes + telemetry, or Build Stream paths.
-
--   :material-book-open-variant: **[How-to Guides](HowTo/index.md)**
+-   :material-rocket-launch: **[Get Started](GetStarted/index.md)**
 
     ---
 
-    Task-oriented procedures organized by domain: discovery, repo_manager, image_build_manager, orchestrator, telemetry, build_stream, utils, and Configure. Covers provisioning, configuring Slurm, Kubernetes, storage, networking, authentication, and Build Stream.
+    Select a supported deployment path and follow its required module
+    sequence.
 
--   :material-book-open-variant: **[Reference](Reference/index.md)**
-
-    ---
-
-    Configuration parameters, support matrices, playbook references, API documentation, and network port listings.
-
--   :material-book-open-variant: **[Operations & Maintenance](Operations/index.md)**
+-   :material-tools: **[How-to Guides](HowTo/index.md)**
 
     ---
 
-    Day-2 operations: adding and removing nodes, re-provisioning, upgrading and rolling back Omnia versions, OIM cleanup, log management, security hardening, and best practices.
+    Complete a task within `main`, Repository Manager, Image Build Manager,
+    Discovery, Orchestrator, Telemetry, Build Stream, or Utils.
 
--   :material-book-open-variant: **[Troubleshooting](Troubleshooting/index.md)**
+-   :material-file-document: **[Reference](Reference/index.md)**
 
     ---
 
-    Symptom-driven guides for diagnosing and resolving issues with provisioning, Slurm, Kubernetes, telemetry, authentication, and more.
+    Look up configuration files, module contracts, support matrices, samples,
+    and module playbook entry points.
+
+-   :material-cog: **[Operations & Maintenance](Operations/index.md)**
+
+    ---
+
+    Perform day-2 repository, node, Build Stream, diagnostic, and platform
+    lifecycle operations.
+
+-   :material-alert-circle: **[Troubleshooting](Troubleshooting/index.md)**
+
+    ---
+
+    Diagnose cross-module and module-specific failures.
 
 </div>
 
-## Domain-Based Architecture
+## Before deployment
 
-Omnia is organized around 7 specialized domains, each handling a specific aspect of cluster deployment. Domains communicate via YAML contracts and can be executed independently using the `omnia.sh` CLI.
-
-### The 7 Domains
-
-|| Domain | Purpose | When to Use |
-|| --- | --- | --- |
-|| **discovery** | BMC discovery and PXE mapping file generation using OME or manual methods | When you need to discover and map your hardware nodes |
-|| **repo_manager** | Local repository creation and package management for air-gapped deployments | When setting up local package mirrors for offline installations |
-|| **image_build_manager** | Diskless OS image building for each functional group | When creating custom OS images for your cluster nodes |
-|| **orchestrator** | Node provisioning, boot configuration, and cluster setup | When provisioning nodes and configuring Slurm/Kubernetes |
-|| **telemetry** | Telemetry pipeline deployment (iDRAC, LDMS, Kafka, VictoriaMetrics, VictoriaLogs) | When setting up monitoring and metrics collection |
-|| **build_stream** | GitOps-based CI/CD pipeline for catalog-driven deployments | When using BuildStreaM for automated, repeatable deployments |
-|| **utils** | Utility operations including aarch64 node preparation and configuration backup | When preparing ARM nodes or backing up configurations |
-
-### How Domains Work Together
-
-Domains can be combined in different ways to support various deployment scenarios:
-
-- **Slurm-only deployments** use: discovery → repo_manager → image_build_manager → orchestrator
-- **Kubernetes + telemetry deployments** use: discovery → repo_manager → image_build_manager → orchestrator → telemetry
-- **Full production deployments** use: all domains for complete cluster management
-- **BuildStreaM deployments** use: build_stream domain for GitOps-driven automation
-
-!!! tip
-
-    Domains are specialized components that each handle a specific part of the deployment process. You can engage them individually or in combinations depending on your needs, and they coordinate through standardized contracts (YAML files).
-
-## Quick Links
-
-
-|| Resource | Description |
-|| --- | --- |
-|| [Prerequisites Checklist](GetStarted/prerequisites_checklist.md) | Hardware, networking, OS, and subscription requirements to complete before any deployment. |
-|| [Migration Guide](GetStarted/migration_guide.md) | Migrate from Omnia 2.2 to 2.3 domain-based architecture. |
-|| [Slurm Quickstart](GetStarted/slurm_quickstart.md) | Fastest path to a working Slurm cluster (~2 hours, 4 nodes). |
-|| [Kubernetes & Telemetry](GetStarted/k8s_telemetry_only.md) | iDRAC-to-Victoria Metrics visibility without the overhead of a job scheduler. |
-|| [Full Deployment](GetStarted/full_deployment.md) | Production deployment with Slurm, Kubernetes, telemetry, and LDAP. |
-|| [Build Stream](GetStarted/buildstream_deployment.md) | CI/CD-driven, repeatable infrastructure through GitLab pipelines and a declarative catalog. |
+Complete the [Prerequisites Checklist](GetStarted/prerequisites_checklist.md),
+then review the prerequisites for every deployment module included in the
+selected path. A deployment does not require every module or every optional telemetry
+source.
 
 ## Licensing
 
-Omnia is made available under the [Apache 2.0 license](https://opensource.org/licenses/Apache-2.0).
+Omnia is available under the [Apache 2.0 license](https://opensource.org/licenses/Apache-2.0).
+Omnia deploys open-source and third-party software that remains subject to its
+own licenses. See the
+[installed software matrix](Reference/SupportMatrix/installed_software.md) for
+the applicable components and licenses.
 
-!!! note
-    Omnia playbooks are licensed under the Apache 2.0 license. Once an end-user initiates Omnia, that end-user will deploy other open-source and/or third-party software that is licensed separately by their respective developer communities and/or third parties. For a comprehensive list of software and their licenses, [view the installed software matrix](Reference/SupportMatrix/installed_software.md). Dell (or any other contributors) shall have no liability regarding (and no responsibility to provide support for) an end-user's use of any open-source and/or third-party software and Omnia users are solely responsible for ensuring that they are complying with all such licenses. Omnia is provided "as is" without any warranty, express or implied. Dell (or any other contributors) shall have no liability for any direct, indirect, incidental, punitive, special, or consequential damages for an end-user's use of Omnia.
-
-## Previous Versions
-
-*For a better understanding of what Omnia does, check out the following:*
-
-- [1.x documentation](https://omnia-doc.readthedocs.io/en/latest/index.html): supports diskful provisioning.
-- [2.x documentation](https://omnia.readthedocs.io/en/latest/index.html): supports diskless provisioning and containerized deployment.
-
-!!! note
-    Upgrade from Omnia 1.x to 2.x is not supported due to architectural changes.
-
-## Omnia Community Members
+## Omnia community members
 
 <div class="community-logos" style="display: flex; flex-wrap: wrap; align-items: center; gap: 2rem; margin: 1rem 0;">
   <a href="https://www.dell.com"><img src="assets/images/delltech.png" alt="Dell Technologies" style="height: 60px;"></a>
@@ -142,7 +158,5 @@ Omnia is made available under the [Apache 2.0 license](https://opensource.org/li
   <a href="https://www.liqid.com"><img src="assets/images/Liqid.png" alt="Liqid" style="height: 50px;"></a>
 </div>
 
----
-
-*If you have any feedback about Omnia documentation, please reach out at [omnia.readme@dell.com](mailto:omnia.readme@dell.com).*
-
+If you have feedback about the Omnia documentation, contact
+[omnia.readme@dell.com](mailto:omnia.readme@dell.com).

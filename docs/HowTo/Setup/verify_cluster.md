@@ -16,7 +16,7 @@ After booting the nodes, verify the following:
 
 - Nodes are booted and provisioned.
 - Slurm and/or Kubernetes have been deployed (see [Setup Slurm](../Slurm/setup_slurm.md) or [Setup Service K8S](../Kubernetes/setup_service_k8s.md)).
-- For GPU verification: GPU-enabled Slurm nodes are configured (see [Slurm With Gpu](../Slurm/slurm_with_gpu.md)).
+- For GPU verification: GPU-enabled Slurm nodes are configured (see [Slurm With Gpu](../orchestrator/slurm_with_gpu.md)).
 - For PAM verification: External LDAP is deployed (see [Deploy External LDAP](../Authentication/deploy_external_ldap.md)).
 
 ## Procedure
@@ -100,7 +100,7 @@ Slurm PAM restricts SSH access to compute nodes for non-root users. You can log 
 
 ## Next Steps
 
-- [Slurm With GPU](../Slurm/slurm_with_gpu.md) -- Configure GPU support for Slurm.
+- [Slurm With GPU](../orchestrator/slurm_with_gpu.md) -- Configure GPU support for Slurm.
 - [Deploy External LDAP](../Authentication/deploy_external_ldap.md) -- Set up centralized authentication for the PAM feature.
 
 ## Troubleshooting

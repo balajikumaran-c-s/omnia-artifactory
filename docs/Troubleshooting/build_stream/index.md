@@ -1,4 +1,4 @@
-# build_stream Domain
+# Build Stream module
 
 GitOps-based CI/CD pipeline issues - BuildStreaM execution, GitLab integration, catalog validation
 

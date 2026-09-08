@@ -1,56 +1,119 @@
-# Adding Additional Repositories
+# Add an RPM Repository
 
 ## Overview
 
-Add additional repositories to your local repositories by updating the endpoint configuration and re-running the repo_manager domain.
+Add an RPM source by defining it in `repo_manager_config.yml` and referencing
+the same name from a selected catalog package. Repository mappings are scoped by
+OS minor version and architecture.
+
+Use `user_repos` for independent custom repositories. Use
+`additional_repos` when several upstream repositories must be exposed through
+one aggregate Pulp distribution for an architecture.
 
 ## Prerequisites
 
-- [Configure Repos](configure_repos.md) is complete
-- repo_manager domain is initialized
+- Complete [Create Local Repositories](configure_repos.md).
+- Know the repository URL, target RHEL minor version, architecture, and any GPG
+  or TLS material.
+- Ensure the repository exposes `repodata/repomd.xml` and is reachable from
+  the OIM.
+- Identify the catalog package or group that will consume the repository.
 
 ## Procedure
 
-1. **Edit the endpoint configuration**:
+1. Add the repository below the matching version and architecture in
+   `src/repo_manager/input/repo_manager_config.yml`:
 
-    ```bash title="Run on: OIM host"
-    vi /opt/omnia/repo_manager/input/project_default/repo_manager_endpoint_config.yml
-    ```
+    ~~~yaml
+    repositories:
+      "10.0":
+        x86_64:
+          user_repos:
+            slurm_custom:
+              url: "https://repo.example.com/slurm/"
+              policy: partial
+              caching: true
+              priority: 99
+    ~~~
 
-2. **Add the new repository configuration**:
+    The repository name may contain letters, numbers, underscores, periods, and
+    hyphens. Configure a separate mapping for `aarch64` when that architecture
+    is selected; an `x86_64` URL is never reused for `aarch64`.
 
-    ```yaml
-    user_repo_url_x86_64:
-      - "https://additional-repo.example.com/rhel/10.0/x86_64/"
-    user_repo_url_aarch64:
-      - "https://additional-repo.example.com/rhel/10.0/aarch64/"
-    ```
+2. Reference the exact repository key in the catalog package source:
 
-3. **Update the catalog** to include packages from the new repository (if needed).
+    ~~~json
+    {
+      "name": "slurm-slurmctld",
+      "packagetype": "rpm",
+      "sources": [
+        {
+          "architecture": "x86_64",
+          "name": "rhel",
+          "version": ["10.0"],
+          "reponame": "slurm_custom"
+        }
+      ]
+    }
+    ~~~
 
-4. **Re-run the repo_manager domain**:
+    Also add the package key to a group that is reachable from the intended
+    functional layer. See [Add Packages to the Catalog](adding_additional_packages.md).
 
-    ```bash title="Run on: OIM host"
-    ./omnia.sh --run repo_manager --tags execute
-    ```
+3. Stage the updated YAML input:
 
-    The domain will synchronize content from the new repository.
+    ~~~bash title="Run on: OIM host"
+    cd <OMNIA_SOURCE_PATH>/src/repo_manager
+    ./domain-init.sh
+    ~~~
+
+    If the active runtime file has customer changes that are not present in the
+    source file, reconcile them before accepting the overwrite prompt.
+
+4. Validate, synchronize, and publish a new status file:
+
+    ~~~bash title="Run on: OIM host"
+    cd playbooks
+    ansible-playbook repo_manager.yml \
+      --tags "precheck,download,status"
+    ~~~
 
 ## Verification
 
-Check that the new repository was successfully synchronized:
+The complete Pulp RPM name has this form:
 
-```bash title="Run on: OIM host"
-pulp rpm repository list
-```
+~~~text
+<architecture>_<os-type>_<os-version>_<repository>
+~~~
+
+For the example, inspect `x86_64_rhel_10.0_slurm_custom`:
+
+~~~bash title="Run on: OIM host"
+pulp rpm repository show --name x86_64_rhel_10.0_slurm_custom
+pulp rpm distribution show --name x86_64_rhel_10.0_slurm_custom
+~~~
+
+Confirm that the repository URL is also present under
+`repositories."10.0".x86_64` in
+`<REPO_MANAGER_DATA_PATH>/output/<project>/repo_status.yml`.
+
+## Next steps
+
+- [Add packages](adding_additional_packages.md) that use the new `reponame`.
+- [Build Cluster Images](../image_build_manager/build_images.md) after
+  `repo_status.yml` reports success.
+- [Force an RPM resynchronization](../../Operations/repo_manager/local_repository_resync.md) when the upstream
+  repository changes.
 
 ## Troubleshooting
 
-- **Repository not accessible**: Verify the repository URL is correct and accessible from the OIM
-- **Authentication fails**: Ensure credentials are configured for private repositories
-- **Sync fails**: Check network connectivity and repository availability
-
-## Related Guides
-
-- [Configure Repos](configure_repos.md) -- Main repository configuration guide
-- [Adding Additional Packages](adding_additional_packages.md) -- Add new packages
+- **The mapping is ignored**: Repo Manager validates and synchronizes only
+  repositories referenced by packages in selected catalog functional layers.
+- **The URL is reported missing**: Only `baseos`, `appstream`, and
+  `codeready-builder` are eligible for subscription discovery. Every other
+  referenced repository needs an explicit URL.
+- **Metadata validation fails**: Verify
+  `<url-without-trailing-slash>/repodata/repomd.xml` is reachable from the OIM.
+- **A priority is rejected**: Use an integer from 1 through 100.
+- **An architecture is missing**: Define the same repository name independently
+  under every architecture selected by the catalog.

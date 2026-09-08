@@ -1,6 +1,6 @@
 # Orchestrator Issues
 
-Issues related to the orchestrator domain: Slurm job scheduling, Kubernetes services, networking (InfiniBand, DNS), storage configuration, authentication (LDAP), and node provisioning.
+Issues related to the Orchestrator module: Slurm job scheduling, Kubernetes services, networking (InfiniBand, DNS), storage configuration, authentication (LDAP), and node provisioning.
 
 ## Provisioning Issues
 
@@ -263,7 +263,6 @@ Issues related to the orchestrator domain: Slurm job scheduling, Kubernetes serv
 - [Configure InfiniBand](../../HowTo/orchestrator/configure_infiniband.md)
 - [Configure Cluster DNS](../../HowTo/orchestrator/configure_cluster_dns.md)
 - [Configure Storage](../../HowTo/orchestrator/configure_storage.md)
-
 
 
 

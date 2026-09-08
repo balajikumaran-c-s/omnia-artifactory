@@ -30,6 +30,8 @@ This file configures telemetry sources (iDRAC, LDMS, DCGM, PowerScale, UFM, VAST
 
 ```yaml title="File: /opt/omnia/telemetry/input/project_default/telemetry_config.yml"
 ---
+cluster_inventory: "/opt/omnia/orchestrator/output/project_default/orchestrator_inventory.yml"
+
 telemetry_sources:
 
   idrac:
@@ -356,11 +358,12 @@ kafka_storage:
 
 !!! info
 
+    - `cluster_inventory` is required and must identify an existing Ansible YAML inventory. Telemetry reads the Kubernetes VIP and target node groups from this file.
+    - [Telemetry Packages](telemetry_packages.md) -- Package sources, images, charts, repositories, and Python modules.
     - [Idrac Metrics](../Metrics/idrac_metrics.md) -- iDRAC metric catalog.
     - [Ldms Metrics](../Metrics/ldms_metrics.md) -- LDMS sampler metric catalog.
     - [Ports](../../SecurityConfigurationGuide/network_security.md#telemetry-ports) -- Ports used by telemetry
       services.
-
 
 
 

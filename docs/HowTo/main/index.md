@@ -1,79 +1,43 @@
 # Main
 
-The main domain handles setup, initialization, and cross-domain coordination for the Omnia Infrastructure Manager (OIM).
-
 ## Overview
 
-The main domain is responsible for environment configuration, setup, initialization, and cross-domain coordination. It is the first domain that must be executed before any other domains can run.
+The Main component provides `omnia.env` and `omnia.sh` for preparing the Omnia
+Infrastructure Manager (OIM). Use it to configure the shared environment,
+create the Python virtual environment, initialize module dependencies and
+stage the catalog samples required by downstream workflows.
 
-## When to Use This Domain
+After Main setup, continue with Repository Manager. Module execution and
+module-specific inputs, credentials, outputs, and verification are documented
+in their respective module sections.
 
-- Use when setting up the OIM for the first time
-- Use when installing dependencies and creating virtual environment
-- Use when staging input files for all domains
-- Required for all deployment paths
+## Prerequisites
 
-## Setup Process
+- Use an Omnia source checkout on the OIM.
+- Use Python 3.11 or later. The setup script searches for `python3.12`,
+  `python3.11`, and then `python3`.
+- Use an account that can write to the configured data and virtual-environment
+  paths and to the system paths created during setup.
+- Set `SYSTEM_ADMIN_NIC_IPV4` in `src/main/omnia.env` to an IPv4 address
+  assigned to an OIM interface.
+- Make the package sources required by each module's `requirements.txt` and
+  `requirements.yml` files available during dependency installation.
 
-The main domain is executed via the `omnia.sh` script:
+## Choose a task
 
-```bash title="Run on: OIM host"
-# Setup (one-time)
-./omnia.sh -s
+| Task | Use it to |
+|---|---|
+| [Configure the environment](configure_environment.md) | Set the required OIM address, shared paths, project, hostname, domain, version, catalog, and optional component path overrides. |
+| [Set up the OIM](setup_oim.md) | Install the environment, create the shared virtual environment, initialize modules, and stage catalog samples. |
+| [Maintain the Main environment](../../Operations/maintain_main_environment.md) | Audit dependency versions or remove the installed environment while preserving or deleting runtime data. |
 
-# Initialize domains
-./omnia.sh --init
+## Command reference
 
-# Initialize specific domains
-./omnia.sh -i repo_manager,telemetry
+Run the source command help for the complete set of currently implemented
+options:
+
+```bash title="Run from: <omnia-repository>/src/main"
+./omnia.sh --help
 ```
 
-## Domain Workflow
-
-The main domain supports the following operations:
-
-| Operation | Description |
-|-----------|-------------|
-| `-s` | Full setup: venv + deps + input copy + catalog + omnia-cli |
-| `-s --deps-only` | Venv + deps only, skip input file staging |
-| `-s --skip-catalog` | Setup without catalog copy |
-| `-s --skip-omnia-cli` | Setup without omnia-cli install |
-| `-s --force-deps` | Force reinstall all dependencies |
-| `--init` | Init all domains (stage input files + deps) |
-| `-i <domain>` | Init single domain |
-| `-i <domain1>,<domain2>` | Init specific domains |
-| `-i --force-deps` | Force reinstall deps for all domains |
-| `-i --skip <domain>` | Init all domains except specified |
-| `--check-deps` | Audit dependency version mismatches |
-| `--cleanup` | Remove venv + env (preserve data) |
-| `--cleanup --all` | Full reset (remove everything including data) |
-
-## Environment Configuration
-
-The main domain uses `omnia.env` as the single source of truth for environment configuration:
-
-```bash title="File: /opt/omnia/omnia.env"
-OMNIA_VERSION=2.3.0
-OMNIA_BRANCH=main
-OIM_HOSTNAME=oim.example.com
-OIM_IP=192.168.1.100
-ADMIN_PASSWORD=your_password
-TIMEZONE=UTC
-LANG=en_US.UTF-8
-```
-
-## How-to Guides
-
-- [Setup the OIM](setup_oim.md) -- Set up the OIM environment with omnia.sh
-- [Initialize Domains](initialize_domains.md) -- Stage input files and install dependencies
-- [Run Domains](run_domains.md) -- Execute domain workflows with tags
-- [Check Domain Status](check_domain_status.md) -- Monitor domain health with omnia-cli
-- [View Domain Logs](view_domain_logs.md) -- Browse and troubleshoot domain logs
-- [Edit Credentials](edit_credentials.md) -- Manage encrypted domain credentials
-
-## Related Guides
-
-- [Getting Started: Full Deployment](../../GetStarted/full_deployment.md)
-- [Domain Execution](../../Overview/domain_execution.md)
-- [Migration Guide](../../GetStarted/migration_guide.md)
-
+After setup, continue with the [Repository Manager flow](../repo_manager/index.md).

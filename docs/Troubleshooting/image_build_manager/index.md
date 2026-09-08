@@ -1,4 +1,4 @@
-# image_build_manager Domain
+# Image Build Manager module
 
 Image building and S3 storage issues - OS image creation, MinIO uploads, architecture-specific builds
 
@@ -10,7 +10,7 @@ For detailed troubleshooting information, see [Build Cluster Image Issues](build
 
 ## Image Build Manager Issues
 
-Issues related to the image_build_manager domain operations.
+Issues related to Image Build Manager module operations.
 
 For detailed troubleshooting information, see [Image Build Manager Issues](image_build_manager.md).
 

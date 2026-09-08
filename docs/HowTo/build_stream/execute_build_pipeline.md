@@ -23,11 +23,14 @@ The build pipeline is automatically triggered when you update the `catalog_rhel.
 
 !!! note
 
-    Build Stream does not support execution of multiple pipelines in parallel. Only one pipeline can be executed at a time. Attempting to run multiple pipelines simultaneously may result in unexpected behavior or failures.
+    The current GitLab configuration does not serialize pipelines. Concurrent
+    pipelines can access shared resources, so avoid overlapping operations that
+    update the same catalog, mapping, image, or deployment state.
 
 !!! note
 
-    Build Stream does not support execution of multiple pipelines in parallel. Only one pipeline can be executed at a time.
+    Wait for another pipeline that uses the same catalog or image resources to
+    finish before starting this build.
 
 ## Prerequisites
 
@@ -131,17 +134,14 @@ After the pipeline completes:
 ## Next Steps
 
 - [Execute Deploy Pipeline](execute_deploy_pipeline.md) -- Deploy the built images to cluster nodes
-- [Cleanup Operations](cleanup_operations.md) -- Remove old Image Groups
+- [Cleanup Operations](../../Operations/build_stream/cleanup_operations.md) -- Remove old Image Groups
 
 ## Troubleshooting
 
 - **Parse-Catalog stage failing**: Ensure the JSON is aligned with the expected schema. See catalog examples at [https://github.com/dell/omnia/tree/pub/build_stream/examples/catalog](https://github.com/dell/omnia/tree/pub/build_stream/examples/catalog).
 - **Create-Local-Repo stage failing**: Check the log path from the API response and verify `local_repo_config.yml` settings.
 - **Build-Image stage failing**: Ensure the catalog has valid functional groups.
-- For additional issues, see [Build Stream Troubleshooting](../../Troubleshooting/build_stream.md).
-
-
-
+- For additional issues, see [Build Stream Troubleshooting](../../Troubleshooting/build_stream/buildstream.md).
 
 
 

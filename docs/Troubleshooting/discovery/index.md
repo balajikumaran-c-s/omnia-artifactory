@@ -1,4 +1,4 @@
-# discovery Domain
+# Discovery module
 
 Node discovery and mapping file generation issues - OME integration, PXE mapping file creation
 

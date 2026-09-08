@@ -17,9 +17,8 @@ ldap_connection_type: "TLS"
 
 !!! info
 
-    - [Deployment LDAP Server](../../HowTo/orchestrator/configure_authentication.md) -- Centralized authentication for your Omnia cluster.
+    - [Deployment LDAP Server](../../HowTo/Authentication/deploy_external_ldap.md) -- Centralized authentication for your Omnia cluster.
     - [Ports](../../SecurityConfigurationGuide/network_security.md#openldap-port-requirements) -- Ports required by LDAP.
-
 
 
 

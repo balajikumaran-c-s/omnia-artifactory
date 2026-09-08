@@ -1,26 +1,13 @@
+# user_registry_credential.yml is retired
 
-# user_registry_credential.yml
+The current Repo Manager source does not consume the plaintext
+`user_registry_credential.yml` format. Configure registry authentication in
+`repo_manager_config.yml` with `auth.type: basic` and a
+`credentials.vault_path`, then run the Repo Manager credential workflow.
 
-This file provides authentication credentials for user-defined container or
-package registries referenced in `local_repo_config.yml`.
+The workflow writes encrypted credentials to
+`repo_manager_config_credentials.yml` and stores its key in
+`.repo_manager_config_credentials_key` in the Repo Manager project input
+directory.
 
-## Parameter Reference
-
---8<-- "html/user_registry_credential.html"
-
-## Usage example
-```yaml title="File: /opt/omnia/input/user_registry_credential.yml"
----
-user_registry_credential:
-  - name: "my_private_registry"
-    username: "admin"
-    password: ""
-  - name: "docker_hub"
-    username: "user"
-    password: ""
-```
-
-!!! note
-
-    - The `name` field must match the exact registry name provided in `local_repo_config.yml`.
-    - Leave `username` and `password` empty if the registry does not require authentication.
+See [Repo Manager configuration](repo_manager_config.md).

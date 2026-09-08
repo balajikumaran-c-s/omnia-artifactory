@@ -31,7 +31,7 @@ When you encounter an issue, follow this general diagnostic flow:
 
 ## Troubleshooting Topics
 
-### repo_manager Domain
+### Repository Manager module
 
 Repository mirroring and synchronization issues - Pulp operations, package downloads, container registry sync
 
@@ -39,7 +39,7 @@ Repository mirroring and synchronization issues - Pulp operations, package downl
 | --- | --- |
 | [Local Repository and Pulp Issues](repo_manager/repo_manager.md) | Pulp container operations, repository synchronization, and package downloads |
 
-### image_build_manager Domain
+### Image Build Manager module
 
 Image building and S3 storage issues - OS image creation, MinIO uploads, architecture-specific builds
 
@@ -48,7 +48,7 @@ Image building and S3 storage issues - OS image creation, MinIO uploads, archite
 | [Build Cluster Image Issues](image_build_manager/build_cluster_images.md) | OS image creation and S3 storage issues |
 | [Image Build Manager Issues](image_build_manager/image_build_manager.md) | Image building and MinIO operations |
 
-### discovery Domain
+### Discovery module
 
 Node discovery and mapping file generation issues - OME integration, PXE mapping file creation
 
@@ -56,13 +56,13 @@ Node discovery and mapping file generation issues - OME integration, PXE mapping
 | --- | --- |
 | [Discovery Issues](discovery/discovery.md) | OME integration and PXE mapping file generation |
 
-### orchestrator Domain
+### Orchestrator module
 
 Slurm, Kubernetes, networking, storage, and authentication issues - Node provisioning, cluster configuration
 
 | Topic | Description |
 | --- | --- |
-| [Orchestrator Issues](orchestrator/orchestrator.md) | General orchestrator domain issues |
+| [Orchestrator Issues](orchestrator/orchestrator.md) | General Orchestrator module issues |
 | [Provisioning Issues](orchestrator/provisioning.md) | Node provisioning and PXE boot issues |
 | [Slurm Issues](orchestrator/slurm.md) | Slurm job scheduling and configuration issues |
 | [Kubernetes Issues](orchestrator/kubernetes.md) | Kubernetes service cluster issues |
@@ -70,7 +70,7 @@ Slurm, Kubernetes, networking, storage, and authentication issues - Node provisi
 | [Authentication Issues](orchestrator/authentication.md) | LDAP and authentication issues |
 | [Kernel Version Override](orchestrator/kernel_version_override.md) | Kernel version management issues |
 
-### telemetry Domain
+### Telemetry module
 
 Monitoring and metrics collection issues - iDRAC telemetry, LDMS samplers, Kafka, VictoriaMetrics, VictoriaLogs
 
@@ -78,7 +78,7 @@ Monitoring and metrics collection issues - iDRAC telemetry, LDMS samplers, Kafka
 | --- | --- |
 | [Telemetry Issues](telemetry/telemetry.md) | iDRAC telemetry, LDMS samplers, Kafka, VictoriaMetrics, and VictoriaLogs |
 
-### build_stream Domain
+### Build Stream module
 
 GitOps-based CI/CD pipeline issues - BuildStreaM execution, GitLab integration, catalog validation
 
@@ -87,7 +87,7 @@ GitOps-based CI/CD pipeline issues - BuildStreaM execution, GitLab integration, 
 | [BuildStreaM Issues](build_stream/build_stream.md) | BuildStreaM pipeline stage failures, API registration, and catalog parsing |
 | [BuildStream Issues](build_stream/buildstream.md) | BuildStream pipeline execution issues |
 
-### utils Domain
+### Utils module
 
 Helper utilities issues - Backup, install, and prepare operations
 
@@ -95,7 +95,7 @@ Helper utilities issues - Backup, install, and prepare operations
 | --- | --- |
 | [Utils Issues](utils/utils.md) | Backup, install, and prepare operations |
 
-### Cross-Domain Issues
+### Cross-module issues
 
 | Topic | Description |
 | --- | --- |
@@ -109,7 +109,6 @@ Helper utilities issues - Backup, install, and prepare operations
     If you cannot resolve an issue using this guide, open an issue on the
     [Omnia GitHub repository](https://github.com/dell/omnia/issues) with
     the relevant log output and a description of your environment.
-
 
 
 

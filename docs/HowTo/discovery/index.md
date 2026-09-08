@@ -1,27 +1,41 @@
 # Discovery
 
-The discovery domain manages node inventory, BMC/PXE mapping file generation, and hardware discovery using OME or manual methods.
+The Discovery deployment module queries Dell OpenManage Enterprise (OME), generates node
+inventory and BMC/PXE mapping artifacts, and hands the reviewed mapping to
+Orchestrator. Administrators who do not use OME create the Orchestrator mapping
+file directly; manual inventory is not a Discovery execution mechanism.
+
+For the complete configuration, execution, and verification workflow, see
+[Discover nodes using OME](discover_nodes.md).
 
 ## Overview
 
-The discovery domain (collection: `omnia.discovery`) discovers hardware (servers) via management platforms (e.g., Dell OpenManage Enterprise) and produces a PXE mapping file that serves as the primary data contract between Discovery and the Orchestrator domain. It runs bare-metal on the OIM host with `connection: local`.
+The Discovery module (internal identifier: `discovery`; collection:
+`omnia.discovery`) discovers hardware through management platforms such as Dell
+OpenManage Enterprise. It produces a PXE mapping file that serves as the
+primary data contract between the Discovery and Orchestrator modules. It runs
+bare-metal on the OIM host with `connection: local`.
 
 ## Prerequisites
 
-Before using the discovery domain, ensure the following prerequisites are met:
+Before using the Discovery module, ensure the following prerequisites are met:
 
-- **Main domain setup completed**: The omnia.sh CLI must be installed and configured (`./omnia.sh -s`)
+- **Main setup completed**: The omnia.sh CLI must be installed and configured (`./omnia.sh -s`)
 - **OME access**: OpenManage Enterprise must be accessible from the OIM host for automated discovery
 - **Network connectivity**: OIM must have network access to BMC/iDRAC interfaces of target servers
 - **Input files configured**: `discovery_config.yml` and `network_spec.yml` must be properly configured
-- **Credentials prepared**: OME credentials must be available (or manual discovery method selected)
+- **Credentials prepared**: OME credentials must be available when
+  `enable_bmc_discovery` is `true`.
+- **OME static groups planned**: Create the required case-sensitive functional
+  groups and assign each server to no more than one group. See [Create OME
+  static groups](discover_nodes.md#create-ome-static-groups).
 
 ## System Context
 
 ```
   discovery_config.yml                          bmc_pxe_mapping_file.csv
-  network_spec.yml                               bmc_discovery_report.csv
-  omnia_config_credentials.yml                  +---------------------+
+  network_spec.yml                               bmc_discovery_report_<timestamp>.csv
+  discovery_credentials.yml                    +---------------------+
   +---------------------+     +-----------------+ |                     |
   |   Administrator     |---->|   Discovery      |---->|   Orchestrator      |
   |  (input provider)    |     |  (ome_discovery) |     |   (consumer)        |
@@ -31,17 +45,17 @@ Before using the discovery domain, ensure the following prerequisites are met:
                                (inventory query)
 ```
 
-## When to Use This Domain
+## When to use this module
 
 - Use when discovering cluster nodes for the first time
 - Use when generating PXE mapping files
-- Required for all deployment paths
+- Optional when administrators provide a valid Orchestrator PXE mapping file manually
 - Use when adding new nodes to the cluster
-- Fourth domain in execution order (after image_build_manager)
+- Optional third module in the direct deployment sequence (after Image Build Manager)
 
-## Domain Workflow
+## Module workflow
 
-The domain supports the following execution tags:
+The module supports the following execution tags:
 
 | Tag | Description | Credentials | Destructive |
 |-----|-------------|-------------|-------------|
@@ -52,19 +66,22 @@ The domain supports the following execution tags:
 ## Execution Flow
 
 1. **Setup** - Set project name, input/output directories, load discovery_config.yml
-2. **Validate** - Run domain-specific validation (L1 schema + L2 cross-field logic)
+2. **Validate** - Run module-specific validation (L1 schema + L2 cross-field logic)
 3. **Credentials** - Validate credential file existence, prompt for missing OME credentials, encrypt credential files
-4. **Discovery** - Validate discovery_mechanism, validate OME inputs, collect inventory via OME API, generate PXE mapping CSV, generate discovery report
+4. **Discovery** - Validate `enable_bmc_discovery` and `ome_ip`, collect
+   inventory through the OME API, generate the PXE mapping CSV, and generate
+   the discovery report
 
 ## Output Contract
 
-The discovery domain produces the following output contract:
+The Discovery module produces the following output contract:
 
 | Output | Location | Purpose |
 |--------|----------|---------|
-| `bmc_pxe_mapping_file_<timestamp>.csv` | `/opt/omnia/discovery/output/<project>/discovery/` | Maps discovered servers to PXE boot parameters for orchestrator consumption |
-| `bmc_pxe_mapping_file.csv` (symlink) | `/opt/omnia/discovery/output/<project>/discovery/` | Symlink to latest timestamped mapping file |
-| `bmc_discovery_report_<timestamp>.csv` | `/opt/omnia/discovery/output/<project>/discovery/` | NIC link status report for operator review (informational only) |
+| `bmc_pxe_mapping_file_<timestamp>.csv` | `/opt/omnia/discovery/output/<project>/` | Maps discovered servers to PXE boot parameters for Orchestrator consumption |
+| `bmc_pxe_mapping_file.csv` (symlink) | `/opt/omnia/discovery/output/<project>/` | Symbolic link to the latest timestamped mapping file |
+| `bmc_discovery_report_<timestamp>.csv` | `/opt/omnia/discovery/output/<project>/` | NIC and inventory report for operator review |
+| `discovery_status.yml` | `/opt/omnia/discovery/output/<project>/` | Overall result, mechanism, mapping path, discovered-server count, and failure details when applicable |
 
 ## bmc_pxe_mapping_file.csv Structure
 
@@ -75,7 +92,7 @@ The mapping file contains:
 - SERVICE_TAG - Dell server service tag
 - HOSTNAME - Generated hostname (e.g., nid00001)
 - ADMIN_MAC, ADMIN_IP - Admin NIC MAC and IP
-- BMC_MAC, BMC_IP, BMC_HOSTNAME - BMC/iDRAC information
+- BMC_MAC, BMC_IP - BMC/iDRAC information
 - IB_NIC_NAME, IB_IP - InfiniBand NIC and IP (if present)
 
 This contract is consumed by:
@@ -149,12 +166,9 @@ The PXE mapping file generated by discovery contains the following key concepts:
 
 ## Related Guides
 
-- [Discover Nodes](discover_nodes.md) -- Discover nodes via OME and generate mapping files
+- [Discover Nodes](discover_nodes.md) -- Create and populate OME static groups,
+  discover nodes, and generate mapping files
 - [Create Mapping File](create_mapping_file.md) -- Manually create PXE mapping files
 - [Getting Started: Full Deployment](../../GetStarted/full_deployment.md)
-- [Domain Contract](../../Reference/domain_contracts/discovery_contract.md)
-- [Related Domain: orchestrator](../orchestrator/index.md) -- Consumer of discovery output
-
-
-
-
+- [Module Contract](../../Reference/domain_contracts/discovery_contract.md)
+- [Related Module: Orchestrator](../orchestrator/index.md) -- Consumer of Discovery output

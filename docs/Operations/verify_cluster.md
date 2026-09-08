@@ -17,7 +17,7 @@ After booting the nodes, verify the following:
 - Nodes are booted and provisioned.
 - Slurm and/or Kubernetes have been deployed (see [Setup Slurm](../HowTo/orchestrator/deploy_slurm.md) or [Setup Service K8S](../HowTo/orchestrator/deploy_kubernetes.md)).
 - For GPU verification: GPU-enabled Slurm nodes are configured (see [Slurm With Gpu](../HowTo/orchestrator/slurm_with_gpu.md)).
-- For PAM verification: External LDAP is deployed (see [Deploy External LDAP](../HowTo/orchestrator/configure_authentication.md)).
+- For PAM verification: External LDAP is deployed (see [Deploy External LDAP](../HowTo/Authentication/deploy_external_ldap.md)).
 
 ## Procedure
 
@@ -101,14 +101,13 @@ Slurm PAM restricts SSH access to compute nodes for non-root users. You can log 
 ## Next Steps
 
 - [Slurm With GPU](../HowTo/orchestrator/slurm_with_gpu.md) -- Configure GPU support for Slurm.
-- [Deploy External LDAP](../HowTo/orchestrator/configure_authentication.md) -- Set up centralized authentication for the PAM feature.
+- [Deploy External LDAP](../HowTo/Authentication/deploy_external_ldap.md) -- Set up centralized authentication for the PAM feature.
 
 ## Troubleshooting
 
 - **Slurm services not running**: Check the Slurm controller logs at `/var/log/slurm/slurmctld.log` and verify that munge keys are synchronized across all nodes.
 - **Slurm nodes in `down` state**: Run `scontrol update nodename=<node> state=idle` after verifying the node is reachable and `slurmd` is running.
 - **Kubernetes pods not in Running state**: Run `kubectl describe pod <pod_name> -n <namespace>` to identify the root cause of the failure.
-
 
 
 

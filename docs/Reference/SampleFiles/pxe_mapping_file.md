@@ -143,21 +143,18 @@ os_aarch64,grp7,ABEF78,,os-node2,xx:yy:zz:aa:bb:ab,172.16.107.61,xx:yy:zz:aa:bb:
 
 !!! important
 
-    When `dns_enabled` is `false` in `provision_config.yml`, `HOSTNAME` values can be customized. When `dns_enabled` is `true` (the default for fresh installations), `HOSTNAME` values must use the `nidxxx` format (e.g., `nid001`). See
+    When `dns_enabled` is `false` in `orchestrator_config.yml` (the source default), `HOSTNAME` values can be customized. When `dns_enabled` is `true`, `HOSTNAME` values must use the `nidxxx` format (e.g., `nid001`). See
     [Cluster DNS](../../Overview/cluster_dns.md) for details.
 
 !!! note
 
-    - PXE mapping file must exist at `/opt/omnia/input/project_default/` inside the omnia_core container.
+    - The default PXE mapping file location is `/opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv`.
 
 !!! info
 
-    - [Provision Config](../Configuration/provision_config.md) -- Where the mapping
+    - [Orchestrator Config](../Configuration/orchestrator_config.md) -- Where the mapping
       file path is specified.
-    - [Software Config](../Configuration/software_config.md) -- Software packages
-      per functional group.
     - [Hostname Requirements](../Appendices/hostname_requirements.md) -- Hostname rules.
-
 
 
 

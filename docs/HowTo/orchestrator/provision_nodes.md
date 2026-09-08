@@ -1,198 +1,160 @@
 # Provision Nodes
 
-Provision bare-metal cluster nodes using the orchestrator domain. This process reads the PXE mapping file, configures boot scripts and cloud-init based on functional groups, and prepares all target servers for PXE boot.
-
 ## Overview
 
-The orchestrator domain provisions nodes by functional group (Kubernetes, Slurm, OS, or custom). It reads the PXE mapping file from discovery, configures BSS boot parameters and cloud-init configurations, and prepares all target servers for PXE boot.
+Orchestrator provisions nodes from `pxe_mapping_file.csv`. It classifies each
+functional group, registers the corresponding nodes and groups in OpenCHAMI
+SMD, creates boot-service and metadata-service configuration, prepares category
+bolt-ons, generates inventories, and optionally reboots physical servers
+through iDRAC PXE boot.
+
+The source recognizes these categories:
+
+| Functional-group prefix | Provisioning path |
+|---|---|
+| `service_kube_` | Kubernetes |
+| `slurm_` | Slurm |
+| `login_node_`, `login_compiler_node_` | Slurm, including login nodes |
+| `os_` | OS-only |
+| Any other value | Custom |
 
 ## Prerequisites
 
-- The [Setup the OIM](../main/setup_oim.md) procedure is complete (main domain setup is complete)
-- The [Initialize Domains](../main/initialize_domains.md) procedure is complete (orchestrator domain is initialized)
-- The [Configure Repos](../repo_manager/configure_repos.md) procedure is complete (repo_manager domain executed)
-- The [Build Images](../image_build_manager/build_images.md) procedure is complete (image_build_manager domain executed)
-- The [Discover Nodes](../discovery/discover_nodes.md) procedure is complete (discovery domain executed)
-- The [Deploy OpenCHAMI](deploy_openchami.md) procedure is complete (OpenCHAMI containers are running)
-- The [Deploy OpenLDAP](deploy_openldap.md) procedure is complete (if authentication is enabled)
-
-### Input Contract
-
-The orchestrator domain requires the following inputs for node provisioning:
-
-| Input | Location | Purpose |
-|-------|----------|---------|
-| `build_status.yml` | `/opt/omnia/image_build_manager/output/<project>/build_status.yml` | Boot image paths from image_build_manager |
-| `pxe_mapping_file.csv` | `/opt/omnia/discovery/output/<project>/discovery/bmc_pxe_mapping_file.csv` | BMC/PXE mapping from discovery |
-| `orchestrator_config.yml` | `/opt/omnia/orchestrator/input/<project>/orchestrator_config.yml` | Main orchestrator configuration |
-| `omnia_config_credentials.yml` | `/opt/omnia/orchestrator/input/<project>/omnia_config_credentials.yml` | Vault-encrypted credentials |
-
-**Required Files:**
-- `build_status.yml` - Required for boot image configuration
-- `pxe_mapping_file.csv` - Required for functional group generation
-- `orchestrator_config.yml` - Always required
-- `omnia_config_credentials.yml` - Auto-created if missing
-
-**Input Sources:**
-- **image_build_manager** - Provides `build_status.yml` with boot image paths
-- **discovery** - Provides `pxe_mapping_file.csv` with BMC/PXE mapping
-- **Administrator** - Provides `orchestrator_config.yml`
-- **Domain initialization** - Stages input files from samples directory
+- Complete Repo Manager and Image Build Manager successfully. Orchestrator
+  requires a successful `repo_status.yml`, a valid Pulp public certificate, and
+  a successful `build_status.yml` containing an image for each functional
+  group.
+- Provide the discovery mapping with these case-sensitive columns:
+  `FUNCTIONAL_GROUP_NAME`, `GROUP_NAME`, `SERVICE_TAG`,
+  `PARENT_SERVICE_TAG`, `HOSTNAME`, `ADMIN_MAC`, `ADMIN_IP`, `BMC_MAC`, and
+  `BMC_IP`. `IB_NIC_NAME` and `IB_IP` are supported optional columns.
+- Use unique service tags, hostnames, and admin IPs. Hostnames must be lowercase,
+  must not begin with a number, and must not contain underscores, dots, or
+  spaces.
+- Configure `network_spec.yml`. Every mapped admin IP must be valid for the
+  configured network.
+- For physical-server PXE boot, provide reachable Dell iDRAC addresses and BMC
+  credentials. For virtual machines or environments without iDRAC, set
+  `enable_pxe_boot: false`.
+- Configure `omnia_config.yml`, `storage_config.yml`,
+  `high_availability_config.yml`, and `security_config.yml` for the catalog
+  features used by the mapped functional groups.
 
 ## Procedure
 
-1. **Verify all prerequisites are complete**:
+### 1. Initialize and configure the module
 
-    - Verify boot images exist:
+```bash title="Run on: OIM"
+cd /omnia/src/orchestrator
+./domain-init.sh
+```
 
-        ```bash title="Run on: OIM host"
-        s3cmd ls -Hr s3://boot-images
-        ```
+The input directory is
+`$OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/`. In
+`orchestrator_config.yml`, configure the mapping and any non-default upstream
+paths:
 
-2. **Run the orchestrator provision tag**:
+```yaml title="orchestrator_config.yml"
+pxe_mapping_file_path: "/path/to/pxe_mapping_file.csv"
+image_build_manager_output_path: ""
+repo_manager_output_path: ""
+catalog_file_path: ""
+enable_pxe_boot: true
+```
 
-    ```bash title="Run on: OIM host"
-    ./omnia.sh --run orchestrator --tags provision
-    ```
+Empty upstream paths use the current project defaults. For a mapping already
+copied into the project input directory, use its absolute path for
+`pxe_mapping_file_path`.
 
-    This performs the following:
-    - SSH key distribution and OpenCHAMI authentication
-    - Provision Kubernetes functional groups (if present)
-    - Provision Slurm+Login functional groups (if present)
-    - Provision OS-only functional groups (if present)
-    - Provision custom functional groups (if present)
-    - Configures BSS boot parameters
-    - Configures cloud-init for each node
-    - Generates inventories and verifies provisioning
+### 2. Validate the inputs and prerequisites
 
-3. **PXE boot the nodes** using one of the following methods:
+```bash title="Run on: OIM"
+ansible-playbook playbooks/orchestrator.yml --tags validate
+ansible-playbook playbooks/orchestrator.yml --tags precheck
+```
 
-    - **Manual PXE boot**: Power on target servers and select network boot from the BIOS boot menu
-    - **Automated PXE boot**: Use the orchestrator pxeboot tag. For detailed steps, see [Configure PXE Boot](../Configure/configure_pxe_boot.md)
+### 3. Run the complete or staged workflow
 
-4. **Monitor provisioning progress**:
+For a complete run, use the playbook without tags. The default path runs
+precheck, prepare, and execute; `execute` includes provisioning and PXE boot
+when `enable_pxe_boot` is `true`.
 
-    ```bash title="Run on: OIM host"
-    omnia-cli logs orchestrator
-    ```
+```bash title="Run on: OIM"
+ansible-playbook playbooks/orchestrator.yml
+```
 
-!!! note
+To control each phase, run one tag at a time:
 
-    - Ansible runs concurrently on multiple nodes by default. To change this, update the `forks` value in the orchestrator configuration
-    - Omnia does not track the OS installation on the target node. Verify the installation status manually
-    - While the `admin_nic` on cluster nodes is configured by Omnia to be static, the public NIC IP address must be configured by the user
+```bash title="Run on: OIM"
+ansible-playbook playbooks/orchestrator.yml --tags credentials
+ansible-playbook playbooks/orchestrator.yml --tags deploy
+ansible-playbook playbooks/orchestrator.yml --tags provision
+ansible-playbook playbooks/orchestrator.yml --tags pxeboot
+```
 
-!!! caution
-
-    - In case of any IP route conflict between the admin network and an additional NIC (for example, an internet NIC), delete the admin route or configure the IP route priority based on your cluster requirements
-    - If internet connectivity is required on the target node, configure it after the node is booted
-    - To avoid breaking the password-less SSH channel on the OIM, do not run `ssh-keygen` commands after execution of the provision tag
-
-!!! important
-
-    After running the provision tag, the file `/opt/omnia/orchestrator/input/<project>/omnia_config_credentials.yml` is encrypted. To edit it, use:
-
-    ```bash title="Run on: OIM host"
-    ansible-vault edit omnia_config_credentials.yml --vault-password-file .omnia_config_credentials_key
-    ```
-
-    Post execution of the provision tag, IPs and hostnames cannot be reassigned by changing the mapping file.
+`provision` configures every category present in the mapping and writes a
+provisioning report. It does not trigger iDRAC. `pxeboot` sets the boot source,
+restarts mapped physical servers, waits for SSH on their admin IPs, verifies
+that each boot occurred after the PXE trigger, and writes the final status.
 
 ## Verification
 
-1. **Check provision logs for errors**:
+Inspect the generated status and provisioning report:
 
-    ```bash title="Run on: OIM host"
-    omnia-cli logs orchestrator
-    ```
+```bash title="Run on: OIM"
+cat "$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/orchestrator_status.yml"
+cat "$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/provisioning_report.yml"
+cat "$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/failed_nodes.json"
+```
 
-2. **Check cloud-init output on a provisioned node**:
+The provisioning validation compares expected mapping xnames with SMD,
+confirms boot-service configurations for functional groups, checks
+metadata-service group data and hostname assignments, and generates
+`orchestrator_inventory.yaml` and `bmc_group_data.csv` in the same output
+directory.
 
-    ```bash title="Run on: provisioned compute node"
-    cat /var/log/cloud-init-output.log | tail -30
-    ```
+After PXE boot, `orchestrator_status.yml` reports `overall_status`, total,
+success, and failure counts, plus each node's `pxe_boot` or
+`node_registration` failure stage.
 
-3. **Verify all nodes are reachable**:
+## Next steps
 
-    ```bash title="Run on: OIM host"
-    ansible all -m ping
-    ```
-
-## Output Contract
-
-After successful execution, the orchestrator domain produces the following output contract for provisioning:
-
-| Output | Location | Purpose |
-|--------|----------|---------|
-| Functional groups configuration | `/opt/omnia/orchestrator/output/<project>/orchestrator/` | Generated functional groups from PXE mapping |
-| BSS configurations | `/opt/omnia/orchestrator/output/<project>/orchestrator/` | Boot parameter configurations |
-| Cloud-init configurations | `/opt/omnia/orchestrator/output/<project>/orchestrator/` | Default/group/node cloud-init configs |
-| `/opt/omnia/hosts` | `/opt/omnia/hosts` | Ansible inventory for cluster nodes |
-
-This contract is consumed by:
-- **Cluster workflows** - For ongoing operations
-- **Administrators** - For manual cluster management
-
-## Next Steps
-
-- [Configure PXE Boot](../Configure/configure_pxe_boot.md) -- Automate PXE boot for provisioned nodes
-- [Add Nodes](add_nodes.md) -- Add new nodes to the cluster
-- [Remove Nodes](remove_nodes.md) -- Remove nodes from the cluster
+- Use [Deploy Slurm](deploy_slurm.md) or
+  [Deploy Kubernetes](deploy_kubernetes.md) to verify the provisioned service.
+- Use [Add Nodes](../../Operations/add_nodes.md) to provision a new subset without rebooting
+  existing nodes.
+- Use [Remove Slurm Nodes](../../Operations/remove_slurm_nodes.md) for source-supported Slurm compute
+  node removal.
 
 ## Troubleshooting
 
-**Provision fails at "Waiting for node registration"**
+**Input validation fails for the mapping**
 
-   Verify the admin network switch is configured and nodes can PXE boot. Check DHCP and TFTP services on the OIM:
+Confirm the configured path, uppercase headers, unique identifiers, valid admin
+IPs, and lowercase hostnames. Review the generated validation log under
+`$OMNIA_DATA_PATH/log/core/playbooks/`.
 
-   ```bash title="Run on: OIM host"
-   systemctl status coredhcp.service
-   systemctl status tftpd.service
-   ```
+**OpenCHAMI provisioning fails**
 
-**Cloud-init did not complete on provisioned node**
+The provision phase requires the configuration created by deployment. Check the
+services and retry the appropriate phase:
 
-   Check the cloud-init log on the affected node:
+```bash title="Run on: OIM"
+systemctl status openchami.target
+systemctl status metadata-service
+/usr/bin/ochami smd service status
+ansible-playbook playbooks/orchestrator.yml --tags deploy
+ansible-playbook playbooks/orchestrator.yml --tags provision
+```
 
-   ```bash title="Run on: provisioned compute node"
-   cat /var/log/cloud-init-output.log
-   journalctl -u cloud-init --no-pager -n 50
-   ```
+**PXE boot reports no BMC hosts**
 
-**Nodes not reachable after provisioning**
+Populate `BMC_IP` in column 9 of every physical-node row. Ensure the OIM can
+reach each iDRAC and rerun `--tags pxeboot`.
 
-   Verify admin network connectivity and NIC configuration:
+**Node registration times out**
 
-   ```bash title="Run on: OIM host"
-   ping -c 3 <admin-ip>
-   arping -D -I <admin-nic> <admin-ip>
-   ```
-
-   Check for IP route conflicts between admin and public networks on the node.
-
-**omnia_config_credentials.yml is encrypted and cannot be edited**
-
-   Use the vault password file to edit:
-
-   ```bash title="Run on: OIM host"
-   ansible-vault edit omnia_config_credentials.yml --vault-password-file .omnia_config_credentials_key
-   ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Check admin-network TCP port 22, metadata-service, and cloud-init on the target
+node. The polling window is controlled by `node_registration_pause_minutes`,
+`node_registration_retries`, and `node_registration_delay` in
+`set_pxe_boot_config.yml`. Failure details are written to `failed_nodes.json`.

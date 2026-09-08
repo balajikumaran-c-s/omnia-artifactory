@@ -1,151 +1,147 @@
 # Deploy OpenCHAMI
 
-Deploy OpenCHAMI on the OIM to enable PXE boot orchestration, image resolution, and node management for the cluster.
-
 ## Overview
 
-OpenCHAMI is a bare-metal orchestration framework that provides:
-- **SMD (Services Management Daemon)** - Service discovery and management
-- **BSS (Boot Script Service)** - Boot parameter configuration
-- **cloud-init-server** - Cloud-init configuration delivery
-- **PXE boot orchestration** - Automated node boot via BMC/iDRAC
+Orchestrator deploys OpenCHAMI on the Omnia Infrastructure Manager (OIM) as
+containerized services managed by `openchami.target`. The services used by the
+source provisioning workflow include SMD for node state, boot-service for boot
+parameters, metadata-service for cloud-init data, tokensmith, ACME certificate
+deployment, HAProxy, and the S3 endpoint supplied by Image Build Manager.
 
-The orchestrator domain deploys OpenCHAMI as containerized services on the OIM host. OpenCHAMI is **always required** as it is the foundation for node provisioning.
+The top-level Orchestrator entry point deploys OpenCHAMI and conditionally
+deploys OpenLDAP in the same `prepare` or `deploy` phase. It does not provide a
+`deploy_openchami` tag.
+
+### OpenCHAMI components
+
+| Component | Purpose |
+|---|---|
+| `openchami.target` | Manages the OpenCHAMI systemd service group on the OIM. |
+| SMD | Stores node, component, and functional-group state. |
+| boot-service | Stores the kernel, initrd, root image, and boot parameters used by provisioned nodes. |
+| metadata-service | Serves cloud-init and hostname metadata to provisioned nodes. |
+| tokensmith | Generates access tokens for authenticated OpenCHAMI API operations. |
+| ACME and local CA | Generate and deploy certificates used by the OpenCHAMI endpoints. |
+| HAProxy | Provides the TLS entry point for OpenCHAMI APIs. |
+| PostgreSQL | Stores persistent SMD service data. |
+| CoreDHCP | Provides DHCP and PXE information on the configured admin networks. |
+| coresmd and CoreDNS | Provide SMD-backed cluster DNS when `dns_enabled` is `true`. |
+
+The components installed by the OpenCHAMI package can vary by package version.
+Use `systemctl list-dependencies openchami.target` to view the deployed service
+set on the OIM.
 
 ## Prerequisites
 
-- The [Setup the OIM](../main/setup_oim.md) procedure is complete (main domain setup is complete)
-- The [Initialize Domains](../main/initialize_domains.md) procedure is complete (orchestrator domain is initialized)
-- The [Configure Repos](../repo_manager/configure_repos.md) procedure is complete (repo_manager domain executed)
-- The [Build Images](../image_build_manager/build_images.md) procedure is complete (image_build_manager domain executed)
-- The [Discover Nodes](../discovery/discover_nodes.md) procedure is complete (discovery domain executed)
-
-### Input Contract
-
-The orchestrator domain requires the following inputs for OpenCHAMI deployment:
-
-| Input | Location | Purpose |
-|-------|----------|---------|
-| `build_status.yml` | `/opt/omnia/image_build_manager/output/<project>/build_status.yml` | Boot image paths from image_build_manager |
-| `pxe_mapping_file.csv` | `/opt/omnia/discovery/output/<project>/discovery/bmc_pxe_mapping_file.csv` | BMC/PXE mapping from discovery |
-| `orchestrator_config.yml` | `/opt/omnia/orchestrator/input/<project>/orchestrator_config.yml` | Main orchestrator configuration |
-| `omnia_config_credentials.yml` | `/opt/omnia/orchestrator/input/<project>/omnia_config_credentials.yml` | Vault-encrypted credentials |
-
-**Required Files:**
-- `build_status.yml` - Required for S3 access configuration
-- `pxe_mapping_file.csv` - Required for functional group generation
-- `orchestrator_config.yml` - Always required
-- `omnia_config_credentials.yml` - Auto-created if missing
-
-**Input Sources:**
-- **image_build_manager** - Provides `build_status.yml` with boot image paths
-- **discovery** - Provides `pxe_mapping_file.csv` with BMC/PXE mapping
-- **Administrator** - Provides `orchestrator_config.yml`
-- **Domain initialization** - Stages input files from samples directory
+- Run the workflow on the OIM with root or equivalent privileges.
+- Ensure `/etc/omnia/omnia.env` has been created and the configured system
+  hostname, domain, and admin IP match the OIM. `SYSTEM_DOMAIN_NAME` must be a
+  non-empty domain and `SYSTEM_ADMIN_NIC_IPV4` must be assigned locally.
+- Run Repo Manager successfully. Orchestrator requires `repo_status.yml` to
+  report `overall_status: success` and provide a valid Pulp public certificate.
+- Run Image Build Manager successfully. Its `build_status.yml` must contain a
+  reachable S3 endpoint and images for every functional group in the PXE
+  mapping.
+- Copy the discovery mapping to the Orchestrator project input directory. The
+  mapping must contain the required uppercase columns and unique service tags,
+  hostnames, and admin IP addresses.
 
 ## Procedure
 
-1. **Initialize the orchestrator domain**:
+1. From the Orchestrator source directory, initialize the module. This installs
+   its Python and Ansible dependencies, creates runtime directories, and stages
+   the input templates without overwriting existing project files unless you
+   approve the prompt.
 
-    ```bash title="Run on: OIM host"
-    ./omnia.sh -i orchestrator
+    ```bash title="Run on: OIM"
+    cd /omnia/src/orchestrator
+    ./domain-init.sh
     ```
 
-    This stages input files and installs dependencies.
+2. Edit the project inputs under
+   `$OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/`:
 
-2. **Configure the orchestrator settings**:
+   - In `orchestrator_config.yml`, set `pxe_mapping_file_path` to the mapping
+     CSV. Set `image_build_manager_output_path`, `repo_manager_output_path`, or
+     `catalog_file_path` only when their files are not in the default project
+     locations.
+   - In `network_spec.yml`, configure the OIM admin NIC, admin subnet, OIM admin
+     IP, router, DHCP dynamic range, and any DNS, NTP, InfiniBand, or additional
+     subnet data used by the cluster.
+   - Keep `language: "en_US.UTF-8"`. Set `default_lease_time` to a positive
+     number of seconds.
 
-    ```bash title="Run on: OIM host"
-    vi /opt/omnia/orchestrator/input/project_default/orchestrator_config.yml
+3. Validate the input files, then run the prerequisite checks.
+
+    ```bash title="Run on: OIM"
+    ansible-playbook playbooks/orchestrator.yml --tags validate
+    ansible-playbook playbooks/orchestrator.yml --tags precheck
     ```
 
-    Configure the following parameters:
+4. Run the `prepare` phase. It collects missing provisioning and BMC
+   credentials, deploys OpenCHAMI, conditionally deploys catalog-selected
+   OpenLDAP, and runs both readiness gates.
 
-    ```yaml title="File: orchestrator_config.yml"
-    # Upstream dependency paths
-    image_build_manager_output_path: "/opt/omnia/image_build_manager/output/project_default/build_status.yml"
-    discovery_output_path: "/opt/omnia/discovery/output/project_default/discovery/bmc_pxe_mapping_file.csv"
-
-    # OpenCHAMI configuration
-    domain_name: "example.com"
-    admin_nic_ip: "10.20.0.1"
+    ```bash title="Run on: OIM"
+    ansible-playbook playbooks/orchestrator.yml --tags prepare
     ```
 
-3. **Run the OpenCHAMI deployment**:
-
-    ```bash title="Run on: OIM host"
-    ./omnia.sh --run orchestrator --tags deploy_openchami
-    ```
-
-    This performs the following:
-    - Validates inputs and parameters
-    - Configures S3 access from build_status.yml
-    - Deploys OpenCHAMI containers (SMD, BSS, cloud-init-server)
-    - Validates OpenCHAMI health and readiness
+   After the initial preparation, use `--tags deploy` to retry the OpenCHAMI
+   and conditional OpenLDAP deployment and its health checks without running
+   the credential collection phase.
 
 ## Verification
 
-1. **Check OpenCHAMI container status**:
+Run the source-defined deployment health checks:
 
-    ```bash title="Run on: OIM host"
-    podman ps | grep openchami
-    ```
+```bash title="Run on: OIM"
+ansible-playbook playbooks/orchestrator.yml --tags validate-deployment
+```
 
-    Expected output: Running containers for SMD, BSS, and cloud-init-server.
+The check succeeds only when `openchami.target` is active, the authenticated
+SMD readiness endpoint responds, boot-service and metadata-service respond,
+tokensmith and ACME are active, and the configured S3 health endpoint is
+reachable.
 
-2. **Verify S3 access**:
+You can also inspect the systemd target directly:
 
-    ```bash title="Run on: OIM host"
-    s3cmd ls s3://boot-images
-    ```
+```bash title="Run on: OIM"
+systemctl status openchami.target
+systemctl list-dependencies openchami.target
+```
 
-    Should list boot images from the image_build_manager output.
+## Next steps
 
-3. **Review the domain logs**:
-
-    ```bash title="Run on: OIM host"
-    omnia-cli logs orchestrator
-    ```
-
-## Output Contract
-
-After successful execution, the orchestrator domain produces the following output contract for OpenCHAMI:
-
-| Output | Location | Purpose |
-|--------|----------|---------|
-| `functional_groups_config.yml` | `/opt/omnia/orchestrator/output/<project>/orchestrator/` | Generated functional groups from PXE mapping |
-| `orchestrator_state.yml` | `/opt/omnia/orchestrator/output/<project>/orchestrator/` | Support flags for standalone runs |
-| BSS configurations | `/opt/omnia/orchestrator/output/<project>/orchestrator/` | Boot parameter configurations |
-| Cloud-init configurations | `/opt/omnia/orchestrator/output/<project>/orchestrator/` | Default/group/node cloud-init configs |
-
-This contract is consumed by:
-- **Provisioning** - For node boot configuration
-- **Cluster workflows** - For ongoing operations
-
-## Next Steps
-
-- [Deploy OpenLDAP](deploy_openldap.md) -- Deploy OpenLDAP authentication service (optional)
-- [Provision Nodes](provision_nodes.md) -- Provision cluster nodes using OpenCHAMI
+- If the catalog enables OpenLDAP, review [Deploy OpenLDAP](deploy_openldap.md).
+- Continue with [Provision Nodes](provision_nodes.md) to register functional
+  groups and create boot and cloud-init configuration.
 
 ## Troubleshooting
 
-**OpenCHAMI containers not starting**
+**A required Repo Manager output or certificate is missing**
 
-Check the container logs:
-```bash
-podman logs <container-name>
+Run Repo Manager again or set `repo_manager_output_path` to its successful
+`repo_status.yml`. The file must contain `cluster_os_type`, a `repositories`
+mapping, and `repo_manager.certificates.server_crt`; the referenced certificate
+must exist.
+
+**A functional-group image cannot be found**
+
+Run Image Build Manager for the missing functional group and confirm that its
+successful `build_status.yml` contains the corresponding kernel, initrd, and
+root image. If `kernel_version_override` is set, the requested kernel must exist
+in S3; clear the setting to let Orchestrator select the latest available image.
+
+**OpenCHAMI is not ready**
+
+Use the checks emitted by the provisioning role, then rerun the deployment:
+
+```bash title="Run on: OIM"
+systemctl status openchami.target
+journalctl -u openchami.target -n 50
+systemctl status smd boot-service metadata-service
+ansible-playbook playbooks/orchestrator.yml --tags deploy
 ```
 
-**S3 access configuration failed**
-
-Verify build_status.yml exists and is accessible:
-```bash
-cat /opt/omnia/image_build_manager/output/project_default/build_status.yml
-```
-
-**PXE mapping file not found**
-
-Verify discovery domain completed successfully:
-```bash
-cat /opt/omnia/discovery/output/project_default/discovery/bmc_pxe_mapping_file.csv
-```
+Review `/var/log/omnia/orchestrator/orchestrator.log` for the failed Ansible
+task.

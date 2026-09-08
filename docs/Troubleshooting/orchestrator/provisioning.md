@@ -229,5 +229,5 @@ Issues related to PXE booting, node discovery, cloud-init configuration, and the
 !!! info
 
     - [Discover Nodes](../../HowTo/Setup/discover_nodes.md) -- Full node discovery procedure.
-    - [PXE Boot Playbook](../../HowTo/Setup/configure_pxe_boot.md) -- PXE boot configuration guide.
+    - [PXE Boot Playbook](../../HowTo/orchestrator/configure_pxe_boot.md) -- PXE boot configuration guide.
     - [Log Management](../../Operations/log_management.md) -- Log locations for deeper diagnosis.

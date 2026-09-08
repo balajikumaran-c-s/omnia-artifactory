@@ -33,22 +33,27 @@ operational cluster.
 | **C** | [Full Deployment](full_deployment.md) | Slurm + Service K8s + Telemetry | 8 | ~4 hrs | Production-grade deployment with Slurm scheduling, a highly available 3-node Kubernetes service cluster, LDAP authentication, and full telemetry (For example: iDRAC, VictoriaMetrics). Best for teams running mixed HPC/AI workloads with monitoring requirements. |
 | **D** | [Buildstream Deployment](buildstream_deployment.md) | BuildStreaM (Catalog-Driven CI/CD) | 8+ | ~6 hrs | Automated, catalog-driven deployment using GitLab CI/CD pipelines. BuildStreaM reads a declarative catalog to provision and configure the entire cluster. Best for organizations with GitOps workflows or repeated, reproducible deployments at scale.
 
-## Omnia Domains
+## Omnia deployment modules
 
-Omnia uses a domain-based architecture where each domain handles a specific aspect of cluster deployment. Domains communicate via YAML contracts and can be executed independently using the `omnia.sh` CLI.
+Omnia uses a modular, capability-based architecture in which each deployment
+module handles a specific part of cluster deployment. Modules exchange
+documented input/output contracts and can be invoked separately using the
+`omnia.sh` CLI. End-to-end paths run the required modules in dependency order.
 
-|| Domain | Description |
-|| --- | --- |
-|| [discovery](../HowTo/discovery/index.md) | BMC discovery and PXE mapping file generation using OME or manual methods |
-|| [repo_manager](../HowTo/repo_manager/index.md) | Local repository creation and package management for air-gapped deployments |
-|| [image_build_manager](../HowTo/image_build_manager/index.md) | Diskless OS image building for each functional group |
-|| [orchestrator](../HowTo/orchestrator/index.md) | Node provisioning, boot configuration, and cluster setup |
-|| [telemetry](../HowTo/Telemetry/index.md) | Telemetry pipeline deployment (iDRAC, LDMS, Kafka, VictoriaMetrics, VictoriaLogs) |
-|| [utils](../HowTo/utils/index.md) | Utility operations including aarch64 node preparation and configuration backup |
+| Deployment module | Description |
+| --- | --- |
+| [Repository Manager](../HowTo/repo_manager/index.md) (`repo_manager`) | Local repository creation and package management for air-gapped deployments |
+| [Image Build Manager](../HowTo/image_build_manager/index.md) (`image_build_manager`) | Diskless OS image building for each functional group |
+| [Discovery](../HowTo/discovery/index.md) (`discovery`) | BMC discovery and PXE mapping file generation using OME or manual methods |
+| [Orchestrator](../HowTo/orchestrator/index.md) (`orchestrator`) | Node provisioning, boot configuration, and cluster setup |
+| [Telemetry](../HowTo/Telemetry/index.md) (`telemetry`) | Telemetry pipeline deployment (iDRAC, LDMS, Kafka, VictoriaMetrics, VictoriaLogs) |
+| [Build Stream](../HowTo/build_stream/index.md) (`build_stream`) | GitLab CI/CD automation for catalog-driven build and deployment pipelines |
+| [Utilities](../HowTo/utils/index.md) (`utils`) | Utility operations including unattended OS installation and log collection |
 
 !!! info
 
-    For detailed information on domain execution order and dependencies, see [Domain Execution](../Overview/domain_execution.md). |
+    For detailed information on module execution order and dependencies, see
+    [Running Deployment Modules](../Overview/domain_execution.md).
 
 ## Which Path Should I Choose?
 

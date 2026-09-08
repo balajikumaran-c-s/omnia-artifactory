@@ -1,217 +1,296 @@
 # Create Local Repositories
 
-The repo_manager domain downloads all software packages to the Pulp container and facilitates
-air-gapped installation (without access to a public network) on the cluster
-nodes. The Pulp container, set up on an NFS share, acts as a centralized
-storage unit and hosts all software packages and images required and supported
-by Omnia. These packages or images are then accessed by the cluster nodes from
-that NFS share.
-
 ## Overview
 
-The repo_manager domain (collection: `omnia.repo_manager` v3.0.0) deploys an HTTPS Pulp content server and synchronizes catalog content for offline Omnia clusters. It supports RPM repositories and packages, container images, Python packages, files and source artifacts for `x86_64` and `aarch64`.
+Repo Manager creates the local HTTPS Pulp service used by Omnia image-building
+and provisioning workflows. It reads three customer inputs:
 
-Once the Pulp container is ready, you provide inputs in the following files:
+| Input | Purpose |
+|---|---|
+| Catalog JSON from `CATALOG_FILE_PATH` | Selects functional layers, groups, packages, OS versions, architectures, and sources |
+| `repo_manager_config.yml` | Maps catalog RPM sources and private registries to reachable upstream endpoints |
+| `repo_manager_endpoint_config.yml` | Sets the host-facing Pulp IP and HTTPS port |
 
-- `/opt/omnia/repo_manager/input/project_default/software_config.json`
-- `/opt/omnia/repo_manager/input/project_default/repo_manager_config.yml`
-- `/opt/omnia/repo_manager/input/project_default/repo_manager_endpoint_config.yml`
-
-Based on these inputs, the required packages or images are accessed from the
-container and downloaded to the cluster nodes (without Internet access).
-
-With `repo_config` set to `always` in `software_config.json`, all images and
-artifacts will be downloaded to the Pulp container present on the NFS share,
-and the OIM serves as the default Pulp registry.
+Repo Manager processes catalog contexts in ascending OS minor-version order.
+For each context, a catalog RPM source is matched by `version`, `architecture`,
+and `reponame`; an image source is matched by `registry`.
 
 ## Prerequisites
 
-- The [Setup the OIM](../main/setup_oim.md) procedure is complete (main domain setup is complete).
-- The [Initialize Domains](../main/initialize_domains.md) procedure is complete (repo_manager domain is initialized).
-- The OIM has access to the public network, in order to download and store
-  packages/images to the desired NFS share.
-- All required certificates are stored using Ansible Vault to ensure complete
-  confidentiality and integrity within the cluster.
-- All repository URLs for the software packages are accessible. If not, the
-  download will fail for that specific package.
-- By default, an active RHEL subscription may configure the repository to
-  RHEL 10.1. However, Omnia requires the repository to be set to **RHEL 10.0**.
-  Before starting, verify and adjust:
-
-   ```bash title="Run on: OIM host"
-   subscription-manager release --show
-   sudo subscription-manager release --set=10.0
-   ```
-
-- The [Configure Inputs](../main/configure_inputs.md) procedure is complete
-  (`software_config.json`, `repo_manager_config.yml`, and `repo_manager_endpoint_config.yml` are configured).
+- Complete the prerequisites on the [Repository Manager](index.md) page.
+- Prepare an existing catalog JSON file. Each functional layer must reference
+  exactly one group with `type: "base_os"`, and every group and package
+  reference must resolve.
+- Ensure all selected source URLs are reachable from the OIM.
+- Have credentials available for the Pulp administrator and for any private
+  registries that use basic authentication. Docker Hub credentials are
+  optional for anonymous public pulls.
+- If custom Pulp storage paths are configured in the source variables, create
+  each directory and make it writable before running `prepare`; Repo Manager
+  does not create filesystems or mount storage.
 
 ## Procedure
 
-1. **Initialize the repo_manager domain**:
+### 1. Load the environment
 
-    ```bash title="Run on: OIM host"
-    ./omnia.sh -i repo_manager
-    ```
+```bash title="Run on: OIM host"
+cd <OMNIA_SOURCE_PATH>
+./src/main/omnia.sh --setup-venv
+source /opt/omnia/venv/bin/activate
+set -a
+source /etc/omnia/omnia.env
+set +a
+```
 
-    This stages input files and installs dependencies.
+At minimum, the environment must contain:
 
-2. **Verify software_config.json is configured** with the desired software
-   stacks:
+```bash
+SYSTEM_ADMIN_NIC_IPV4=<OIM-admin-network-IPv4>
+CATALOG_FILE_PATH=/absolute/path/to/catalog.json
+```
 
-    ```bash title="Run on: OIM host"
-    cat /opt/omnia/repo_manager/input/project_default/software_config.json | python3 -m json.tool
-    ```
+`OMNIA_DATA_PATH` defaults to `/opt/omnia`, and `OMNIA_PROJECT_NAME` defaults
+to `project_default`. `REPO_MANAGER_DATA_PATH` can override the Repo Manager
+runtime root for playbook execution.
 
-    Confirm the `softwares` list includes all packages you need (e.g.,
-    `service_k8s`, `slurm_custom`, `openldap`, `openmpi`, `ucx`,
-    `csi_driver_powerscale`).
+### 2. Configure RPM repositories
 
-3. **Run the repo_manager domain**:
+Edit `src/repo_manager/input/repo_manager_config.yml`. The minimum structure is:
 
-    ```bash title="Run on: OIM host"
-    ./omnia.sh --run repo_manager --tags execute
-    ```
+```yaml
+repo_config: partial
+caching_policy: true
 
-    The domain will:
+registries:
 
-    - Download and save software packages/images to the Pulp container.
-    - All cluster nodes can then access these packages from the Pulp container.
+repositories:
+  "10.0":
+    x86_64:
+      baseos: {}
+      appstream: {}
+      epel:
+        url: "https://mirror.example/rhel/10/epel/x86_64/"
+        gpgkey: "https://mirror.example/keys/RPM-GPG-KEY-EPEL-10"
+        policy: partial
+        caching: true
+        priority: 99
+```
 
-    !!! warning
+Use the catalog source values to build the lookup path. For example, this
+source:
 
-        Initial synchronization can take a significant amount of time depending
-        on the number of repositories, internet bandwidth, and selected software
-        stacks. CUDA repositories are particularly large.
+```json
+{
+  "architecture": "x86_64",
+  "name": "rhel",
+  "version": ["10.0"],
+  "reponame": "epel"
+}
+```
 
-4. **Check the status report** after execution:
+requires `repositories."10.0".x86_64.epel`.
 
-    After the repo_manager domain has been executed, a status report is displayed
-    containing the status for each downloaded package along with the complete
-    domain execution time:
+The exact keys `baseos`, `appstream`, and `codeready-builder` may be empty when
+the OIM has usable subscription content. Repo Manager prefers the matching EUS
+repository and falls back to the standard subscription repository. An explicit
+URL always takes precedence. Without usable subscription access, every
+catalog-referenced repository requires a non-empty URL.
 
-    - **SUCCESS**: The package has been successfully downloaded to the Pulp container.
-    - **FAILED**: The package couldn't be downloaded successfully.
+Repository entries accept `url`, `gpgkey`, `policy`, `caching`, `priority`,
+`sslcacert`, `sslclientkey`, and `sslclientcert`. `priority` must be from 1
+through 100.
 
-!!! note
+### 3. Choose the RPM content policy
 
-    - The repo_manager domain execution fails if any software package
-      has a **FAILED** status. In such a scenario, re-run the repo_manager domain.
-    - If any software package fails to download, other scripts/domains that
-      rely on the package may also fail.
-    - To download additional software packages, update
-      `/opt/omnia/repo_manager/input/project_default/software_config.json` with the new
-      software information and re-run the repo_manager domain.
+Global settings apply unless a repository overrides them:
 
+| `repo_config` or repository `policy` | `caching` | Pulp policy |
+|---|---:|---|
+| `always` | `false` | `immediate` |
+| `always` | `true` | `on_demand` |
+| `partial` | `false` | `streamed` |
+| `partial` | `true` | `on_demand` |
+| `never` (repository override only) | either | `streamed` |
 
-### Metadata Report
+A catalog item with `packagetype: "rpm_repo"` requires retained content and
+must not resolve to `streamed`. Container synchronization uses an independent
+policy and defaults to `immediate`.
 
-After a successful execution of the repo_manager domain, a metadata file called
-`localrepo_metadata.yml` is created under `/opt/omnia/repo_manager/offline_repo/.data/`.
-This file captures the `repo_config` (`always`, `partial`) details provided
-during domain execution. If the repo_manager domain is re-run, it compares the
-current repository policy with the previously captured metadata:
+### 4. Configure private registries when required
 
-- **If a change in policy is detected**, the system displays a warning:
+Known public registries can be used without a `registries` entry. For a private
+registry, add a mapping such as:
 
-   ```
-   WARNING: Metadata has changed since last run. Execution may fail if there
-   is no internet on OIM. Proceeding automatically in 15 seconds...
-   ```
+```yaml
+registries:
+  private_registry:
+    base_url: "https://harbor.example.com"
+    port: 443
+    auth:
+      type: basic
+      credentials:
+        vault_path: "registries/harbor-production"
+    tls:
+      ca_path: "/path/to/harbor-ca.crt"
+      client_cert_path: ""
+      client_key_path: ""
+      insecure: false
+```
 
-   The domain pauses for 15 seconds and then continues automatically. After
-   successful execution, the metadata file is updated with the new policy.
+The image's catalog source must use `registry: "private_registry"`, while its
+package `name` must start with the actual configured `host[:port]`, for example
+`harbor.example.com:443/library/image`. Repo Manager collects the credentials
+for the `vault_path` during `prepare` and stores them in an Ansible Vault file;
+do not put credentials in the catalog or repository configuration.
 
-- **If there is no change in policy**, the domain proceeds without prompting.
+### 5. Configure the Pulp endpoint
 
+Edit `src/repo_manager/input/repo_manager_endpoint_config.yml`:
 
-## Advanced Configuration
+```yaml
+pulp_server_port: 2225
+# Optional; SYSTEM_ADMIN_NIC_IPV4 is used when omitted.
+# pulp_server_ip: "192.0.2.10"
+```
 
-For advanced configuration options, see:
+The selected host port maps to port `443` in the Pulp container. HTTPS is
+mandatory, and certificate paths are derived automatically.
 
-- [Add Additional Packages](adding_additional_packages.md) -- Add new software packages
-- [Add Additional Repositories](adding_additional_repositories.md) -- Add new repositories
-- [Configure Specific Software](configuring_specific_software.md) -- Configure specific software packages
-- [Configure Default Packages and Admin Debug Packages](default_packages.md) -- Configure system and debug packages
-- [Update Local Repositories](updating_local_repositories.md) -- Update after JSON changes
-- [Resync Local Repositories](local_repository_resync.md) -- Resync repositories with remote sources
+### 6. Stage and validate the inputs
 
+```bash title="Run on: OIM host"
+cd <OMNIA_SOURCE_PATH>/src/repo_manager
+./domain-init.sh
+cd playbooks
+ansible-playbook repo_manager.yml --tags precheck
+```
 
-## Output Contract
+`domain-init.sh` copies the flat source YAML inputs to
+`<OMNIA_DATA_PATH>/repo_manager/input/<OMNIA_PROJECT_NAME>/`. It prompts before
+overwriting existing project files; use `--force` only after reviewing the
+files that will be replaced.
 
-After successful execution, the repo_manager domain produces the following output contract:
+### 7. Deploy Pulp, synchronize content, and generate status
 
-| Output | Location | Purpose |
-|--------|----------|---------|
-| `repo_status.yml` | `/opt/omnia/repo_manager/output/<project>/repo_status.yml` | Pulp URLs, repositories, file content and certificate paths for downstream consumers |
-| Package/group state | `/opt/omnia/repo_manager/log/<os>/<version>/<arch>/` | Per-group CSV and worker results |
-| Mirror indexes | `/opt/omnia/repo_manager/log/<os>/<version>/mirror_status/` | Composite catalog and Pulp mirror state |
+```bash title="Run on: OIM host"
+ansible-playbook repo_manager.yml \
+  --tags "prepare,precheck,download,status"
+```
 
-### repo_status.yml Structure
-
-The `repo_status.yml` file contains:
-
-- HTTPS repository URLs for RPM repositories
-- Container registry URLs for OCI images
-- File content URLs for additional artifacts
-- Certificate paths for HTTPS trust
-- Repository status and availability information
-
-This contract is consumed by:
-- **image_build_manager** - For accessing OS images and container artifacts
-- **Cluster workflows** - For package installation during provisioning
-- **Administrators** - For manual repository access and verification
-
+Credentials are stored in
+`<REPO_MANAGER_DATA_PATH>/input/<project>/repo_manager_config_credentials.yml`
+with the matching `.repo_manager_config_credentials_key`. Both files are
+root-owned, mode `0600`, and the credential YAML is encrypted with Ansible
+Vault.
 
 ## Verification
 
-Verify that local repositories were synced successfully:
+### 1. Verify Pulp and synchronized content
+
+Verify the service and inspect each Pulp content family used by the catalog:
 
 ```bash title="Run on: OIM host"
-pulp rpm distribution list
+systemctl status pulp.service
+pulp status
+pulp rpm distribution list --limit 1000
+pulp container distribution list --limit 1000
+pulp file distribution list --limit 1000
+pulp python distribution list --limit 1000
 ```
 
-Confirm that each expected repository distribution is listed and accessible.
+### 2. Verify the output contract for image building
 
-## Next Steps
+Repo Manager publishes the synchronized repository information for Image Build
+Manager and cluster provisioning workflows at:
 
+```text
+<REPO_MANAGER_DATA_PATH>/output/<project>/repo_status.yml
+```
 
-- [Build Cluster Images](../image_build_manager/build_images.md) -- Build OS boot images using the local repos.
-- [Discover Nodes](../discovery/discover_nodes.md) -- Discover and PXE-boot target nodes.
+The default path is
+`/opt/omnia/repo_manager/output/project_default/repo_status.yml`. Inspect the
+file before starting an image build:
+
+```bash title="Run on: OIM host"
+cat /opt/omnia/repo_manager/output/project_default/repo_status.yml
+```
+
+The generated contract has this structure; versions, architectures,
+repository names, and URLs reflect the active catalog and the distributions
+available in Pulp:
+
+```yaml
+overall_status: "success"
+cluster_os_type: "rhel"
+repo_config: "partial"
+execution_contexts:
+  - context_id: "rhel_10.0"
+    os_type: "rhel"
+    os_version: "10.0"
+    architectures: ["x86_64"]
+overall_status_by_version:
+  "10.0": "success"
+repo_manager:
+  port: 2225
+  certificates:
+    server_crt: "/opt/omnia/repo_manager/pulp_config/settings/certs/pulp_webserver.crt"
+    certs_dir: "/opt/omnia/repo_manager/pulp_config/settings/certs"
+repositories:
+  "10.0":
+    x86_64:
+      baseos:
+        url: "https://192.0.2.10:2225/pulp/content/.../baseos/"
+```
+
+Before proceeding to Image Build Manager, verify the following contract
+conditions:
+
+| Check | Expected value |
+|---|---|
+| Aggregate readiness | `overall_status` is `success` |
+| Selected OS versions | Every entry in `overall_status_by_version` is `success` |
+| Catalog context | `execution_contexts` contains the required OS version and architecture |
+| RPM content | `repositories.<version>.<architecture>` contains every catalog-required repository and its Pulp `url` |
+| HTTPS access | `repo_manager.port`, `repo_manager.certificates.server_crt`, and `repo_manager.certificates.certs_dir` identify the Pulp endpoint and trust certificate |
+
+Repository entries can also contain `priority` when it was explicitly
+configured. Depending on the selected catalog, the contract can contain
+`file_repos`, non-secret `registries` settings, content-type base URLs, and
+backward-compatible `offline_*_path` values.
+
+Image Build Manager must trust the Pulp CA certificate and must not consume a
+contract whose `overall_status` is not `success`. If a catalog-required RPM
+distribution is missing, Repo Manager writes `overall_status: failed`, marks
+the affected version as `failed`, and leaves the corresponding repository maps
+without consumable URLs. Correct the synchronization failure and rerun the
+`download,status` tags before building the image.
+
+## Next steps
+
+- [Build Cluster Images](../image_build_manager/build_images.md).
+- [Add packages to the catalog](adding_additional_packages.md).
+- [Configure a new RPM repository](adding_additional_repositories.md).
+- [Update synchronized content after catalog changes](../../Operations/repo_manager/updating_local_repositories.md).
 
 ## Troubleshooting
 
-- **repo_manager domain fails with FAILED status for a package**: Re-run `repo_manager domain`. If the failure persists, verify that the repository URL is accessible and the package exists in the remote repository.
-- **Pulp sync takes too long or times out**: Check network bandwidth and connectivity from the OIM to the remote repositories. CUDA repositories are particularly large.
-- **Metadata warning about policy change**: This is expected when switching between `always` and `partial` policies. The domain proceeds automatically after 15 seconds.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- **`Additional properties are not allowed`**: Remove unknown keys and use the
+  implemented version → architecture → repository structure. Configuration
+  keys are lowercase.
+- **A referenced RPM repository is missing**: Add the exact catalog
+  `reponame` under the matching version and architecture. A mapping for one
+  architecture does not satisfy another.
+- **An empty subscription repository fails**: Check the subscription with
+  `subscription-manager identity`, `subscription-manager status`, and
+  `subscription-manager repos --list-enabled`. If subscription content is
+  unavailable, provide an explicit URL.
+- **Private registry validation fails**: Check the complete chain from catalog
+  `source.registry`, through `registries.<key>` and `vault_path`, to the
+  encrypted registry credential entry. Rerun `prepare` to collect credentials.
+- **Pulp health validation fails**: Inspect `systemctl status pulp.service` and
+  `podman logs --tail 200 pulp`, correct storage or registry access, and rerun
+  `prepare`.
+- **Synchronization fails for one package**: Inspect the package status and
+  worker logs below
+  `<REPO_MANAGER_DATA_PATH>/log/<os>/<version>/<architecture>/` and rerun
+  `download` after fixing the source.

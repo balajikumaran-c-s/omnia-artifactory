@@ -1,108 +1,47 @@
-
 # Verify VAST Telemetry
 
 ## Overview
 
-This page provides verification steps for the VAST telemetry data flow to VictoriaMetrics and VictoriaLogs.
+Verify the Kubernetes integration objects that expose the configured VAST
+Prometheus endpoint to the shared VictoriaMetrics scraper.
 
 ## Prerequisites
 
+- Complete [Configure VAST Telemetry](configure_vast.md).
+- Run Kubernetes commands on the configured VIP.
 
-- The [Configure VAST Telemetry](../Telemetry/configure_vast.md) procedure is complete.
-- The service Kubernetes cluster is running with telemetry pods deployed.
+## Procedure
 
+Inspect the VAST Service, Endpoints, and optional credential Secret:
 
-## Verify VAST Telemetry Pods
+```bash title="Run on: Kubernetes VIP"
+kubectl get service vast-external -n telemetry
+kubectl get endpoints vast-external -n telemetry
+kubectl get secret vast-telemetry-credentials -n telemetry
+```
 
-1. Verify that the VictoriaMetrics pods are running:
+The Secret is expected for basic authentication or CA-signed TLS; it may not be
+created when authentication is `none` and TLS is self-signed.
 
-    ```bash title="Run on K8s control plane"
-    kubectl get pods -n telemetry -o wide | grep vm
-    ```
+## Verification
 
-    ![VictoriaMetrics Pods](../../assets/images/vast_telemetry_1.png)
+The endpoint address and metrics port must match `vast_configuration`. Confirm
+`sources.vast.metrics: deployed` in `telemetry_status.yml`, then query the
+generated VictoriaMetrics endpoint for an end-to-end ingestion check. If VAST
+logs are enabled, confirm `sources.vast.logs: deployed`, verify
+`vlagent.available: true` in the external Victoria output, and query for a log
+sent by VAST.
 
-2. Verify that the VictoriaMetrics service is running:
+## Next steps
 
-    ```bash title="Run on K8s control plane"
-    kubectl get service -n telemetry -o wide | grep vm
-    ```
+- Export the [VictoriaMetrics query and UI endpoints](configure_external_victoria.md).
+- Retain the VAST CA file on the OIM when CA-signed TLS is used.
 
-    ![VictoriaMetrics Service](../../assets/images/vast_telemetry_2.png)
-    ![VictoriaMetrics Service Detail](../../assets/images/vast_telemetry_3.png)
+## Troubleshooting
 
-3. Verify VMagent logs for VAST scraping to view recent logs:
-
-    ```bash title="Run on K8s control plane"
-    VMAGENT_POD=$(kubectl get pods -n telemetry -l app.kubernetes.io/name=vmagent -o jsonpath='{.items[0].metadata.name}')
-    kubectl logs $VMAGENT_POD -n telemetry -c vmagent --tail=10
-    ```
-
-    ![VMAgent VAST Logs](../../assets/images/vast_telemetry_4.png)
-
-
-## View VAST Metrics in VictoriaMetrics UI (VMUI)
-
-Use the VMUI to validate that VAST telemetry data is being collected.
-
-1. Note the **External IP** and **port number** of the VictoriaMetrics service:
-
-    ```bash title="Run on K8s control plane"
-    kubectl get svc -n telemetry | grep vmselect
-    ```
-
-    ![vmselect Service](../../assets/images/vast_telemetry_5.png)
-
-2. Access the VMUI in a web browser:
-
-    ```
-    https://<external vmselect loadbalancer IP>:8481/select/0/vmui
-    ```
-
-    ![VMUI for VAST](../../assets/images/vast_telemetry_7.png)
-
-## View VAST Logs in VictoriaLogs
-
-1. Retrieve the VLAgent LoadBalancer IP and configure it on the VAST appliance:
-
-    ```bash title="Run on K8s control plane"
-    kubectl get svc -n telemetry | grep -E "(vlagent|victoria-logs)"
-    ```
-
-    ![VLAgent Service](../../assets/images/view_vast_logs_1.png)
-
-2. Retrieve the external IP and port of the vlselect service:
-
-    ```bash title="Run on K8s control plane"
-    kubectl get svc -n telemetry | grep vlselect
-    ```
-
-    ![vlselect Service](../../assets/images/view_vast_logs_3.png)
-
-3. Access the VictoriaLogs UI in a web browser:
-
-    ```
-    https://<external vlselect loadbalancer IP>:9471/select/vmui
-    ```
-
-    ![VAST Logs in VictoriaLogs](../../assets/images/view_vast_logs_4.png)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- **The Service is absent:** Confirm `telemetry_sources.vast.metrics_enabled` is
+  `true` and rerun deployment.
+- **The endpoint is wrong:** Correct `vast_endpoint`, `vast_metrics_port`, or
+  `metrics_path` and redeploy.
+- **Scraping fails:** Check endpoint reachability, credentials, CA content,
+  scrape interval, and scrape timeout.

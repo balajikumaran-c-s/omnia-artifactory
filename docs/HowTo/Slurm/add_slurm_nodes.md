@@ -71,7 +71,7 @@ new nodes into the cluster during provisioning.
 
 ## Next Steps
 
-- [Slurm with GPU](slurm_with_gpu.md) -- Verify GPU support on the new nodes
+- [Slurm with GPU](../orchestrator/slurm_with_gpu.md) -- Verify GPU support on the new nodes
 - [Config Backup](slurm_config_backup.md) -- Back up the updated configuration
 
 ## Troubleshooting

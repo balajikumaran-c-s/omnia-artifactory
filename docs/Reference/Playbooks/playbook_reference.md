@@ -1,104 +1,129 @@
+# Module Playbook Entry Points
 
-# Playbook Reference
-The playbooks generate the bootable node images and cloud-init configurations required for provisioning diskless nodes. During the PXE boot process, each node downloads the kernel, initramfs, and root filesystem image from the provisioning infrastructure, while cloud-init applies node-specific configuration such as networking, hostname, SSH keys, and system settings. This enables automated, consistent deployment and stateless operation of the cluster nodes without requiring a locally installed operating system on disk. This page provides a quick-reference table for all Omnia playbooks, including
-their purpose, where they run, and what input files they require.
+## Overview
 
-## Playbook summary table
+Omnia does not use one centralized deployment playbook. Each deployment module exposes a
+top-level playbook at `src/<domain>/playbooks/<domain>.yml`. The `src/main/omnia.sh`
+script selects one of those playbooks, activates the shared Python environment,
+and passes the requested tags and additional Ansible arguments to it.
 
-| Playbook | Purpose |
-| --- | --- |
-| <b>provision/provision.yml</b> | Validates provision inputs and images, configures OIM/CoreDNS name resolution, provisions nodes via OpenCHAMI (BSS and cloud-init), and deploys mount, Kubernetes, Slurm, OpenLDAP, and telemetry configuration on the provisioned cluster nodes. |
-| <b>input_validation/validate_config.yml</b> | Validates RHEL subscription status and repository URLs, then runs the `validate_input` role to perform schema and cross-file (L1/L2) validation of all Omnia input files, scoped by the tags of the calling playbook. |
-| <b>utils/credential_utility/get_config_credentials.yml</b> | Creates and updates the encrypted `omnia_config_credentials.yml` file, prompting for any mandatory or conditional credentials (root password, BMC credentials, database passwords, LDAP bind password) that are missing. |
-| <b>utils/oim_cleanup.yml</b> | Removes all Omnia-deployed containers, services, and configuration from the OIM (and, with the `credentials` tag, Omnia credential files), returning the OIM to a pre-Omnia state. Does **not** affect cluster nodes. |
-| <b>prepare_oim/prepare_oim.yml</b> | Validates inputs and credentials, then deploys the `omnia_core`, Pulp, OpenLDAP, and OpenCHAMI containers on the OIM, configures the Pulp registry (HTTP/HTTPS), and installs required OIM packages and services. |
-| <b>local_repo/local_repo.yml</b> | Validates the Pulp container and network configuration, then downloads and mirrors the software packages/images listed in `software_config.json` into the Pulp container on the OIM for air-gapped cluster installation. |
-| <b>discovery/discovery.yml</b> | Discovers bare-metal nodes via the specified `discovery_mechanism` and registers them using Dell OpenManage Enterprise (OME) as the discovery source. |
-| <b>build_image_x86_64/build_image_x86_64.yml</b> | Fetches required packages and builds the OpenCHAMI-based provisioning OS image for x86_64 functional groups, using BuildStream prerequisites when `enable_build_stream` is set. |
-| <b>build_image_aarch64/build_image_aarch64.yml</b> | Prepares the aarch64 admin node, fetches required packages, and builds the OpenCHAMI-based provisioning OS image for aarch64 functional groups. |
-| <b>gitlab/gitlab.yml</b> | Bootstraps passwordless SSH and deploys a hosted GitLab CE instance on the designated `gitlab_server` host for the BuildStreaM catalog pipeline, after validating OIM and provision prerequisites. |
-| <b>gitlab/cleanup_gitlab.yml</b> | Removes the GitLab installation, packages, and directories from the `gitlab_server` host, then verifies that GitLab packages, directories, and processes are fully removed. |
-| <b>telemetry/telemetry.yml</b> | Validates telemetry inputs, then deploys the telemetry pod stack on the service Kubernetes cluster and enables iDRAC telemetry collection. |
-| <b>telemetry/telemetry_enable.yml</b> | Selectively re-enables a previously disabled telemetry source (for example, `--tags powerscale`) by scaling the corresponding Kubernetes workloads back up. |
-| <b>telemetry/telemetry_disable.yml</b> | Selectively disables a telemetry source (for example, `--tags powerscale`) by scaling down its Kubernetes workloads while leaving storage components (VictoriaMetrics, VictoriaLogs) running. |
-| <b>utils/create_container_group.yml</b> | Creates the Ansible `oim` inventory group used by other playbooks to target the Omnia Infrastructure Manager over SSH. |
-| <b>utils/generate_functional_groups.yml</b> | Generates the functional group configuration from the PXE mapping file, used to organize cluster nodes by role for provisioning and image builds. |
-| <b>utils/set_pxe_boot.yml</b> | Sets the boot source override on discovered nodes via the iDRAC Redfish API, reboots them to PXE, and (for BuildStreaM) verifies cloud-init phone-home completion and uploads results to GitLab. |
-| <b>utils/slurm_config_util.yml</b> | Utility playbook that identifies the Slurm controller from the node inventory and runs Slurm configuration backup, cleanup, or rollback tasks (selected via `config_backup`, `slurm_cleanup`, or `config_rollback` tags). |
-| <b>utils/update_cloud_init_bss.yml</b> | Updates the BSS boot parameters and/or cloud-init configuration for a specified functional group using pre-rendered YAML files on the OIM. Callable standalone or imported by upgrade/rollback flows. |
-| <b>utils/external_kafka_connect_details.yml</b> | Resolves the service Kubernetes control-plane VIP from `high_availability_config.yml` and displays the external Kafka connection details for telemetry integration. |
-| <b>utils/external_victoria_connect_details.yml</b> | Resolves the service Kubernetes control-plane VIP from `high_availability_config.yml` and displays the external VictoriaMetrics connection details for telemetry integration. |
-| <b>utils/delete_migrated_pulp_rpm_repos.yml</b> | Deletes old- or new-format RPM repositories in Pulp (`-e repo_format=old\|new`) after a repo-name migration or rollback, and regenerates `/etc/yum.repos.d/pulp.repo` from the remaining distributions. |
-| <b>log_collector/collect.yml</b> | Collects Kubernetes, Slurm controller, Slurm node, and login node logs across the cluster, then bundles them into a single archive with a summary for troubleshooting and diagnostics. |
-| <b>rollback/rollback.yml</b> | Rolls back Slurm, Kubernetes/telemetry, BuildStreaM, and OIM (in that order) to the previous Omnia version recorded in `oim_metadata.yml`, tracking progress in `rollback_manifest.yml`. Fails if an upgrade is in progress. |
-| <b>upgrade/prepare_upgrade.yml</b> | Run after `omnia.sh --upgrade`: transforms 2.1.0.0 input files to the 2.2.0.0 format, restores and re-encrypts credentials from backup, and displays a summary of migrated files and new fields requiring review before running `upgrade.yml`. |
-| <b>upgrade/upgrade.yml</b> | Tag-based upgrade orchestrator that upgrades OIM, BuildStreaM, local repo, build images, provisioning, Kubernetes, telemetry, and Slurm (in dependency order) after operator approval, tracking progress in `upgrade_manifest.yml`. |
+Use this page to identify the executable entry point and supported customer
+operations for each module. For configuration fields and generated artifacts,
+use the linked module contract.
 
-## Execution order
+## Invocation methods
 
-The individual playbooks are to be executed in this order:
-
-| Step | Playbook | Description |
-| --- | --- | --- |
-| 1 | <b>prepare_oim/prepare_oim.yml</b> | Prepare the OIM (Podman, networking, OpenCHAMI). |
-| 2 | <b>local_repo/local_repo.yml</b> | Synchronize local repository mirror. |
-| 3 | <b>build_image_x86_64/build_image_x86_64.yml</b> | Build x86_64 provisioning image. |
-| 4 | <b>build_image_aarch64/build_image_aarch64.yml</b> | Build AArch64 provisioning image (if ARM nodes present). |
-| 5 | <b>provision/provision.yml</b> | Deploy Slurm, K8s and Telemetry. |
-
-## How to run
-
-All playbooks are executed from within the `omnia_core` container on the OIM:
+The recommended method is to run the module through `omnia.sh` from the Omnia
+source tree:
 
 ```bash title="Run on: OIM host"
-# SSH into the omnia_core container
-ssh omnia_core
-
-# or
-
-# Execute directly in the container
-podman exec -it omnia_core /bin/bash
+cd src/main
+./omnia.sh --run <domain> --tags <tag>
 ```
 
-```bash title="Run on: omnia_core container"
-# Navigate to the omnia directory
-cd /omnia
+The equivalent direct Ansible invocation is:
 
-# Run a specific playbook
-ansible-playbook <playbook_name>.yml
-
-# Run with verbose output
-ansible-playbook <playbook_name>.yml -vv
-
-# Run with a specific inventory (if not using default)
-ansible-playbook <playbook_name>.yml -i <absolute or relative path to inventory file>
+```bash title="Run on: OIM host"
+cd src/<domain>
+ansible-playbook playbooks/<domain>.yml --tags <tag>
 ```
 
-!!! note
+`--run` accepts one module's internal domain identifier. Unless a module entry
+point explicitly supports a combination, run one tag at a time. Omitting
+`--tags` follows that module's own default flow; it is not a universal alias
+for `execute`.
 
-   - The playbooks are to be executed in the specified order as per the execution order table.
+## Module entry points
 
-!!! info
+| Deployment module | Executable entry point | Implemented customer operations | Module guidance |
+| --- | --- | --- | --- |
+| Build Stream | `src/build_stream/playbooks/build_stream.yml` | `precheck`, `validate`, `credentials`, `prepare`, `execute`, `build`, `cleanup` | [How-to guide](../../HowTo/build_stream/index.md) · [Contract](../domain_contracts/build_stream_contract.md) |
+| Discovery | `src/discovery/playbooks/discovery.yml` | `validate`, `credentials`, `execute` | [How-to guide](../../HowTo/discovery/index.md) · [Contract](../domain_contracts/discovery_contract.md) |
+| Image Build Manager | `src/image_build_manager/playbooks/image_build_manager.yml` | `precheck`, `validate`, `credentials`, `prepare`, `execute`, `build`, `cleanup`, `cleanup_images` | [How-to guide](../../HowTo/image_build_manager/index.md) · [Contract](../domain_contracts/image_build_manager_contract.md) |
+| Orchestrator | `src/orchestrator/playbooks/orchestrator.yml` | `precheck`, `validate`, `credentials`, `prepare`, `deploy`, `provision`, `execute`, `validate-deployment`, `pxeboot`, `cleanup`, `cleanup_credentials`, `upgrade`, `rollback` | [How-to guide](../../HowTo/orchestrator/index.md) · [Contract](../domain_contracts/orchestrator_contract.md) |
+| Repository Manager | `src/repo_manager/playbooks/repo_manager.yml` | `precheck`, `credentials`, `prepare`, `deploy`, `execute`, `download`, `status`, `cleanup_pulp`, `cleanup_repos`, and catalog operations | [How-to guide](../../HowTo/repo_manager/index.md) · [Contract](../domain_contracts/repo_manager_contract.md) |
+| Telemetry | `src/telemetry/playbooks/telemetry.yml` | `precheck`, `validate`, `validation`, `execute`, `deploy`, `cleanup`, component cleanup tags, `external_kafka`, `external_victoria` | [How-to guide](../../HowTo/Telemetry/index.md) · [Contract](../domain_contracts/telemetry_contract.md) |
+| Utils | `src/utils/playbooks/utils.yml` | `precheck`, `collect`, `install_os`, `cleanup`, `cleanup_logs`, `cleanup_install_os` | [How-to guide](../../HowTo/utils/index.md) · [Contract](../domain_contracts/utils_contract.md) |
 
-    - [Provision Config](../Configuration/provision_config.md) -- Provisioning parameters.
-    - [Omnia Config](../Configuration/omnia_config.md) -- Cluster deployment
-      parameters.
-    - [PXE Mapping File](../SampleFiles/pxe_mapping_file.md) -- PXE mapping CSV format.
+Discovery's `precheck`, `prepare`, and cleanup lifecycle files currently contain
+placeholders. Build Stream's upgrade and rollback files, Image Build Manager's
+upgrade and rollback files, and Repo Manager's upgrade and rollback files are
+also placeholders. Do not use a placeholder operation as a deployment step.
+Utils is an on-demand utility module and does not implement the standard
+`validate`, `credentials`, `prepare`, or `execute` tags.
 
+## Dependency order
 
+For direct module execution, use the output contracts to establish the order:
 
+```text
+Repository Manager
+        │ repo_status.yml
+        ▼
+Image Build Manager
+        │ build_status.yml
+        ├───────────────┐
+        ▼               │
+Discovery (optional)    │
+        │ PXE mapping   │
+        └───────┬───────┘
+                ▼
+          Orchestrator
+                │ Kubernetes cluster, when selected
+                ▼
+          Telemetry (optional)
 
+Utils: run on demand
+```
 
+Build Stream provides a separate catalog-driven automation path. Its build
+pipeline invokes Repository Manager and Image Build Manager, and its deploy
+pipeline invokes Orchestrator. Telemetry is initialized separately after a
+Kubernetes cluster is available.
 
+## Command examples
 
+Run these commands from `src/main` on the OIM host after the environment and the
+selected modules have been initialized.
 
+| Task | Command |
+| --- | --- |
+| Synchronize catalog content | `./omnia.sh --run repo_manager --tags download` |
+| Generate Repository Manager status | `./omnia.sh --run repo_manager --tags status` |
+| Prepare image services | `./omnia.sh --run image_build_manager --tags prepare` |
+| Build images | `./omnia.sh --run image_build_manager --tags build` |
+| Discover BMC endpoints through OME | `./omnia.sh --run discovery --tags execute` |
+| Deploy Orchestrator services | `./omnia.sh --run orchestrator --tags deploy` |
+| Provision the selected node categories | `./omnia.sh --run orchestrator --tags provision` |
+| Deploy enabled telemetry sources and sinks | `./omnia.sh --run telemetry --tags deploy` |
+| Deploy Build Stream infrastructure and GitLab | `./omnia.sh --run build_stream --tags build` |
+| Collect logs with Utils | `./omnia.sh --run utils --tags collect` |
 
+The Repository Manager entry point supports the standard workflow combination
+`prepare,precheck,download,status`. The other module entry points validate tag
+combinations and generally require one operation tag at a time.
 
+## Outputs and verification
 
+Each module reads project input from and writes project output to its own runtime
+directory:
 
+```text
+<OMNIA_DATA_PATH>/<domain>/input/<OMNIA_PROJECT_NAME>/
+<OMNIA_DATA_PATH>/<domain>/output/<OMNIA_PROJECT_NAME>/
+```
 
+Verify the output named in the module contract before invoking a dependent
+module. In particular, verify `repo_status.yml` before building images,
+`build_status.yml` before provisioning, and the Discovery PXE mapping output
+when Discovery supplies the Orchestrator inventory.
 
+Cleanup operations can remove services, images, repositories, or generated
+artifacts. Review the module-specific cleanup guide and any required extra
+variables before running them.
 
+## Related documentation
 
-
-
+- [Running deployment modules](../../Overview/domain_execution.md)
+- [Module contracts](../index.md#module-contracts)
+- [Main environment configuration](../Configuration/omnia_env.md)

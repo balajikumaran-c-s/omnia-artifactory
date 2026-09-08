@@ -1221,5 +1221,5 @@ state problems, job submission errors, and GPU detection.
 !!! info
 
     - [Setup Slurm](../../HowTo/Slurm/setup_slurm.md) -- Slurm cluster setup guide.
-    - [Slurm With GPU](../../HowTo/Slurm/slurm_with_gpu.md) -- GPU configuration for Slurm.
-    - [Add Remove Nodes](../../Operations/add_remove_nodes.md) -- Adding or removing Slurm nodes.
+    - [Slurm With GPU](../../HowTo/orchestrator/slurm_with_gpu.md) -- GPU configuration for Slurm.
+    - [Add Nodes](../../Operations/add_nodes.md) and [Remove Slurm Compute Nodes](../../Operations/remove_slurm_nodes.md) -- Supported Slurm node lifecycle procedures.

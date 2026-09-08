@@ -1,353 +1,159 @@
 # Architecture
 
-## OMNIA Domain-Based Architecture
+## Modular deployment architecture
 
-Omnia introduces a domain-based architecture that organizes functionality into independent, reusable domains with clear contracts and workflows. This architecture improves maintainability, scalability, and modularity of the infrastructure management platform.
+Omnia runs from an Omnia Infrastructure Manager (OIM). The OIM hosts the
+shared Python virtual environment, project input and output directories, module
+logs, and the services deployed by the selected modules.
 
-## Architecture Overview
-
-The domain-based architecture centers around the Omnia Infrastructure Manager (OIM) as the central control plane, with functionality organized into seven distinct domains:
-
-## What Are Domains?
-
-Omnia domains are specialized components that each handle a specific aspect of cluster deployment. Each domain:
-
-- **Has a clear responsibility**: Each domain focuses on one aspect (e.g., discovery finds hardware, repo_manager handles packages)
-- **Works independently**: Domains can run on their own without depending on other domains
-- **Communicates through contracts**: Domains exchange information via standardized YAML files
-- **Can be combined**: You can use just the domains you need for your specific deployment
-
-This approach makes Omnia more flexible, easier to maintain, and simpler to scale as your cluster grows.
-
-## OMNIA Architecture
+Omnia separates deployment responsibilities into seven capability-based
+deployment modules. Each module has a top-level Ansible playbook at
+`src/<domain>/playbooks/<domain>.yml` and a `domain-init.sh` script that
+installs its declared dependencies and stages its input templates. In these
+implementation paths, `<domain>` is the module's internal identifier. The
+`src/main/omnia.sh` script initializes the modules and invokes one module
+playbook at a time. `main` is the common controller and is not an eighth module.
 
 ![Omnia Architecture](../assets/images/omnia_arch_s.svg)
 
-Omnia provides a comprehensive infrastructure management platform that orchestrates the deployment, configuration, and monitoring of HPC clusters. The architecture centers around the Omnia Infrastructure Manager (OIM), which serves as the central control plane for managing all cluster operations.
+## Deployment module responsibilities
 
-## OIM Role and Responsibilities
+| Deployment module | Responsibility | Primary customer-facing output or service |
+|---|---|---|
+| `repo_manager` | Deploy an HTTPS Pulp service and synchronize catalog-selected RPM, container, Python, and file content. | `repo_status.yml` and the Pulp distributions it describes |
+| `image_build_manager` | Deploy MinIO and a local registry when selected, then build OS images for catalog or configured functional groups. | `build_status.yml` and image artifacts in S3 and the registry |
+| `discovery` | Query OpenManage Enterprise for BMC inventory and generate an Orchestrator-compatible mapping. | `bmc_pxe_mapping_file.csv` and `bmc_discovery_report.csv` |
+| `orchestrator` | Deploy OpenCHAMI and catalog-selected OpenLDAP, register mapped nodes, create boot and cloud-init configuration, configure Slurm or service Kubernetes, and optionally initiate iDRAC PXE boot. | `orchestrator_status.yml`, `orchestrator_inventory.yaml`, provisioning reports, and the deployed clusters |
+| `telemetry` | Deploy the enabled telemetry sources, bridges, Kafka, VictoriaMetrics, and VictoriaLogs on a service Kubernetes cluster. | `telemetry_status.yml`, Kubernetes workloads, and optional external connection exports |
+| `build_stream` | Deploy PostgreSQL, Build Stream Manager, the playbook watcher, GitLab integration, and the managed CI/CD project and runner. | `build_stream_status.yml`, the BSM API, and GitLab pipelines |
+| `utils` | Run independent operational utilities, including log collection and unattended OS installation. | `utils_status.yml` and operation-specific results |
 
-The OIM is the primary management node that coordinates all cluster activities.
+Modules can be invoked separately, but downstream workflows require the
+contracts produced upstream. Discovery is optional when the administrator
+provides a valid PXE mapping. Telemetry is optional and requires service
+Kubernetes. Utils runs only when its operation is needed.
 
-- **Provisioning**: Manages the Bare System Setup (BSS) and cloud-init configurations to provision nodes from bare metal
-- **Package Deployment**: Handles software distribution and configuration management across the cluster
-- **Monitoring**: Collects and aggregates metrics, logs, and telemetry data from all cluster components
-- **Orchestration**: Coordinates workflows for cluster operations including upgrades, scaling, and maintenance
+## Execution and contract flow
 
-## Node Relationships
+The direct deployment flow implemented by `omnia.sh` is:
 
-The OIM (Omnia Infrastructure Manager) sits at the center and manages all provisioned nodes. It PXE-boots, configures, and monitors every node via OpenCHAMI, Ansible, and cloud-init.
+```text
+omnia.sh setup
+      |
+      v
+repo_manager  -- repo_status.yml --> image_build_manager
+                                          |
+                                          +-- build_status.yml --+
+                                                               |
+discovery -- bmc_pxe_mapping_file.csv --+                     |
+                                         v                     v
+                                      orchestrator <------------+
+                                         |
+                                         +-- orchestrator_inventory.yaml
+                                         +-- bmc_group_data.csv
+                                         +-- provisioned Slurm/Kubernetes
+                                                        |
+                                                        v
+                                                    telemetry
 
-- **Service Cluster**: Kubernetes cluster (k8s control-plane + worker nodes) running core services such as telemetry, logging, and scheduling
-- **Slurm Control Node**: Runs Slurm management services (slurmctld, slurmdbd) and dispatches jobs to compute nodes
-- **Compute Nodes**: Slurm-managed workload execution nodes
-- **Login Nodes**: User access points for job submission and cluster interaction (includes login_compiler_node variant)
-- **Storage Nodes**: Shared storage providers (NFS, PowerScale, VAST, MinIO) mounted by compute, login, and service nodes
-
-All nodes receive their OS image, hostname, IP, and functional group from the OIM during provisioning. The OIM communicates over the admin network (SSH/Ansible) and optionally the BMC network (IPMI/Redfish) for out-of-band management. The OIM is the authoritative source of truth for cluster state and configuration.
-
-## Component Integration
-
-The architecture integrates three primary subsystems.
-
-1. **Monitoring Service**: Collects metrics and logs from all cluster components using VictoriaMetrics and VictoriaLogs for time-series data storage and analysis
-2. **Provisioning System**: Automates node provisioning through BSS and cloud-init, ensuring consistent configuration across the cluster
-3. **Package Management**: Deploys and manages software packages using local repositories and build pipelines
-
-These subsystems work together through the OIM's orchestration layer to provide a unified, automated infrastructure management experience.
-
-- **repo_manager** - Repository mirroring and synchronization
-- **image_build_manager** - Image building and S3 storage
-- **discovery** - Node discovery and mapping file generation
-- **orchestrator** - Slurm, Kubernetes, networking, storage, authentication
-- **telemetry** - Monitoring and metrics collection
-- **build_stream** - GitOps-based CI/CD pipelines
-- **utils** - Helper utilities (backup, install, prepare)
-- **main** - Setup, initialization, and cross-domain coordination
-
-## Domain Architecture Diagram
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     OIM (Omnia Infrastructure Manager)          │
-│                                                               │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │ repo_manager │  │image_build_  │  │  discovery   │     │
-│  │              │  │   manager    │  │              │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-│                                                               │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │ orchestrator │  │  telemetry   │  │ build_stream │     │
-│  │              │  │              │  │              │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-│                                                               │
-│  ┌──────────────┐  ┌──────────────┐                        │
-│  │    utils     │  │    main      │                        │
-│  │              │  │              │                        │
-│  └──────────────┘  └──────────────┘                        │
-└─────────────────────────────────────────────────────────────┘
+utils: invoked independently for a selected operational task
+build_stream: alternate automation path for build and deploy pipelines
 ```
 
-## Domain Responsibilities
+The principal handoffs are:
 
-### repo_manager
+| Producer | Consumer | Contract |
+|---|---|---|
+| Repository Manager | Image Build Manager and Orchestrator | `repo_status.yml` |
+| Image Build Manager | Orchestrator | `build_status.yml` |
+| Discovery or administrator | Orchestrator | `pxe_mapping_file.csv` |
+| Orchestrator | Telemetry | `orchestrator_inventory.yaml` and, for iDRAC, `bmc_group_data.csv` |
+| Catalog | Repository Manager, Image Build Manager, and Orchestrator | JSON functional layers, groups, packages, and sources |
+| GitLab pipelines | Build Stream Manager | Uploaded catalog and module input files plus API job requests |
 
-The repo_manager domain handles repository mirroring, package synchronization, and local repository management using Pulp.
+Contracts are not limited to YAML. Omnia uses YAML configuration and status
+files, JSON catalogs and job data, and CSV mappings and reports.
 
-**Responsibilities**:
-- Mirror external repositories to local storage
-- Synchronize packages from remote to local
-- Manage repository metadata and package inventory
-- Support air-gapped deployments
+## Runtime layout
 
-**Dependencies**: None
+`omnia.sh --setup-venv` installs the shared environment, runs the selected
+modules' initialization scripts, and stages flat source inputs into a runtime
+project layout. With the supplied defaults, that layout is:
 
-**Output**: Synchronized package repositories in Pulp
-
-### image_build_manager
-
-The image_build_manager domain handles image creation, package installation, and image upload to S3 storage.
-
-**Responsibilities**:
-- Build diskless cluster images
-- Install packages from repositories
-- Upload images to S3 storage
-- Generate image manifests with checksums
-
-**Dependencies**: repo_manager
-
-**Output**: Bootable diskless images in S3
-
-### discovery
-
-The discovery domain handles node inventory collection, mapping file generation, and hardware discovery.
-
-**Responsibilities**:
-- Discover cluster nodes via OME or manual methods
-- Generate PXE mapping files
-- Collect BMC and NIC information
-- Validate node inventory
-
-**Dependencies**: None
-
-**Output**: PXE mapping files for node provisioning
-
-### orchestrator
-
-The orchestrator domain handles workload orchestration, service deployment, and cluster management.
-
-**Responsibilities**:
-- Deploy Slurm job scheduler
-- Deploy Kubernetes services
-- Configure networking (InfiniBand, Cluster DNS)
-- Configure storage (NFS, PowerScale)
-- Configure authentication (LDAP)
-- Deploy OpenCHAMI provisioning stack
-- PXE boot orchestration
-- Telemetry deployment
-
-**Dependencies**: repo_manager, image_build_manager, discovery
-
-**Output**: Configured Slurm and/or Kubernetes clusters
-
-### telemetry
-
-The telemetry domain handles metrics collection, monitoring, and data aggregation.
-
-**Responsibilities**:
-- Collect iDRAC hardware telemetry
-- Collect LDMS node-level metrics
-- Collect storage metrics (PowerScale, VAST)
-- Collect fabric metrics (UFM)
-- Deploy monitoring stack (Kafka, VictoriaMetrics)
-
-**Dependencies**: orchestrator
-
-**Output**: Monitoring dashboards and metrics storage
-
-### build_stream
-
-The build_stream domain handles GitOps-based CI/CD pipelines for automated image building and deployment.
-
-**Responsibilities**:
-- Deploy GitLab CI/CD infrastructure
-- Execute build pipelines from catalog
-- Execute deploy pipelines to nodes
-- Manage pipeline retries and cleanup
-
-**Dependencies**: image_build_manager, orchestrator
-
-**Output**: Automated image build and deploy workflows
-
-### utils
-
-The utils domain provides helper utilities for backup, installation, and node preparation.
-
-**Responsibilities**:
-- Backup Slurm configuration
-- Perform unattended OS installation
-- Prepare aarch64 nodes
-- Provide auxiliary utilities
-
-**Dependencies**: None
-
-**Output**: Configuration backups, installation artifacts
-
-### main
-
-The main domain handles setup, initialization, and cross-domain coordination.
-
-**Responsibilities**:
-- Environment configuration (omnia.env)
-- Setup and initialization (omnia.sh)
-- Virtual environment creation
-- Dependency installation
-- Input file staging
-- Cross-domain coordination
-
-**Dependencies**: None
-
-**Output**: Configured OIM environment, installed dependencies
-
-## Domain Execution Model
-
-### omnia.sh CLI
-
-Omnia introduces the `omnia.sh` CLI for domain-based execution:
-
-```bash
-# Setup (one-time)
-./omnia.sh -s
-
-# Initialize domains
-./omnia.sh --init
-
-# Execute a single domain
-./omnia.sh --run <domain> --tags <tag>
-
-# Execute multiple domains
-./omnia.sh --run repo_manager,image_build_manager --tags execute
-
-# Validate configuration
-./omnia.sh --validate
-
-# Check domain status
-omnia-cli status
+```text
+/opt/omnia/
+├── venv/
+├── .data/
+├── catalog/
+└── <domain>/
+    ├── input/project_default/
+    ├── output/project_default/
+    └── log/project_default/
 ```
 
-### Execution Tags
+The actual root and project are controlled by `OMNIA_DATA_PATH` and
+`OMNIA_PROJECT_NAME`. Component-specific data-path variables can override the
+default module directories. Build Stream currently fixes its entry-playbook
+input and output project to `project_default`.
 
-Each domain supports standardized execution tags:
+## OIM and managed services
 
-| Tag | Description |
-|-----|-------------|
-| `validate` | Validate configuration only |
-| `credentials` | Collect and encrypt credentials |
-| `prepare` | Deploy prerequisites (containers, services) |
-| `execute` | Main domain workflow |
-| `cleanup` | Remove infrastructure and artifacts |
+The OIM is the execution point for module playbooks and hosts services selected
+by the deployment:
 
-### Domain Contracts
+| Owner | Services or resources |
+|---|---|
+| Repository Manager | Pulp and its HTTPS content endpoints |
+| Image Build Manager | MinIO S3 storage and a local OCI registry |
+| Orchestrator | OpenCHAMI services, CoreDHCP, coresmd/CoreDNS, and optional OpenLDAP |
+| Build Stream | PostgreSQL, the BSM API, and the playbook watcher; GitLab and its runner are deployed on the configured GitLab host |
+| Telemetry | Kubernetes workloads on the service cluster, rather than an OIM-wide telemetry container |
 
-Each domain has input/output contracts that define:
+Node operating-system images, hostnames, network data, and functional groups
+are selected through the catalog and PXE mapping and are applied by
+Orchestrator through OpenCHAMI boot parameters and cloud-init.
 
-- **Input files** - Required configuration files
-- **Input parameters** - Configuration parameters
-- **Output files** - Generated output files
-- **Output artifacts** - Produced artifacts
-- **Execution flow** - Step-by-step execution
+## Network relationships
 
-See [Domain Contracts](../Reference/domain_contracts/) for detailed contract documentation.
+Omnia distinguishes several network purposes:
 
-## Typical Execution Order
+- The **admin network** connects the OIM and managed nodes and carries content,
+  provisioning, SSH, and cluster-management traffic.
+- The optional **BMC network** provides out-of-band access to iDRAC for
+  discovery, inventory, Telemetry, unattended installation, and PXE-boot
+  control when those features are selected.
+- The optional **InfiniBand network** provides the high-performance fabric for
+  supported Slurm and storage workloads.
+- Service Kubernetes pod and service networks are configured separately and
+  must not overlap the management networks used by the deployment.
 
-When deploying a full cluster end-to-end, domains are executed in this order:
+See [Network Topologies](network_topologies.md) for the supported layouts and
+[Orchestrator configuration](../Reference/Configuration/orchestrator_config.md)
+for the source-backed input fields.
 
-| Step | Domain | Purpose | Required |
-|------|--------|---------|----------|
-| 1 | **main** | Setup environment, install dependencies | Yes |
-| 2 | **repo_manager** | Mirror RPM repos, generate `repo_status.yml` | Yes |
-| 3 | **image_build_manager** | Build OS images using mirrored repos, upload to S3 | Yes |
-| 4 | **discovery** | Discover servers via OME, generate PXE mapping | Optional |
-| 5 | **orchestrator** | PXE boot nodes, deploy K8s/Slurm, configure services | Yes |
-| 6 | **telemetry** | Enable iDRAC/UFM telemetry collection | Optional |
-
-**BuildStream** orchestrates this sequence automatically via GitLab CI/CD pipeline, but each domain can also be run manually via `omnia.sh`.
-
-## Node Relationships
-
-The OIM (Omnia Infrastructure Manager) sits at the center and manages all provisioned nodes. It PXE-boots, configures, and monitors every node via domain-based execution.
-
-- **Service Cluster**: Kubernetes cluster (k8s control-plane + worker nodes) running core services such as telemetry, logging, and scheduling
-- **Slurm Control Node**: Runs Slurm management services (slurmctld, slurmdbd) and dispatches jobs to compute nodes
-- **Compute Nodes**: Slurm-managed workload execution nodes
-- **Login Nodes**: User access points for job submission and cluster interaction
-- **Storage Nodes**: Shared storage providers (NFS, PowerScale, VAST, MinIO) mounted by compute, login, and service nodes
-
-All nodes receive their OS image, hostname, IP, and functional group from the OIM during provisioning. The OIM communicates over the admin network (SSH/Ansible) and optionally the BMC network (IPMI/Redfish) for out-of-band management.
-
-## Component Integration
-
-The architecture integrates three primary subsystems through domain-based execution:
-
-1. **Monitoring Service**: Collects metrics and logs from all cluster components using VictoriaMetrics and VictoriaLogs
-2. **Provisioning System**: Automates node provisioning through BSS and cloud-init via the orchestrator domain
-3. **Package Management**: Deploys and manages software packages using local repositories via the repo_manager domain
-
-These subsystems work together through the OIM's domain-based orchestration layer to provide a unified, automated infrastructure management experience.
-
-## Omnia Stack
-
-Omnia provides two distinct deployment models tailored to different workload requirements: the Kubernetes Stack for containerized applications and the Slurm Stack for high-performance computing (HPC) workloads. These stacks can be deployed independently or in a converged configuration where both Kubernetes and Slurm coexist on the same infrastructure, enabling organizations to support diverse workload types within a single management framework.
-
-The following diagrams illustrate the architectural layers and component relationships for each deployment model.
-
-### Omnia Kubernetes Stack
+## Kubernetes stack
 
 ![Omnia Kubernetes Stack](../assets/images/omnia-k8s.svg)
 
-The Kubernetes stack provides a complete container orchestration platform for deploying and managing containerized applications. Key components include:
+Orchestrator provisions service Kubernetes only when the catalog and
+`omnia_config.yml` select the service Kubernetes functional groups. The source
+configures CRI-O storage for these nodes. Telemetry subsequently uses the
+generated Orchestrator inventory and Kubernetes control-plane virtual IP to
+deploy its selected workloads.
 
-- **Hardware / Virtual Hardware**: Physical Dell servers or virtualized infrastructure that provide the compute resources for the Kubernetes cluster
-- **Host OS / Virtual OS**: The operating system running on physical or virtual nodes that hosts Kubernetes components
-- **Accelerator / Fabric Drivers**: Drivers and software that enable access to GPUs, accelerators, and high-speed networking fabrics
-- **Container Runtime**: The runtime layer (such as containerd) responsible for creating and managing containers on each node
-- **Orchestration**: Kubernetes services that schedule, deploy, scale, and manage containerized workloads across the cluster
-- **Operators and Extensions**: Kubernetes operators, controllers, and add-ons that automate operations and extend cluster functionality
-- **Load Balance and Ingress**: Services that provide traffic routing, load balancing, and external access to applications
-- **Container**: An isolated environment that packages application components and dependencies for consistent execution
-- **Libraries**: Shared software dependencies required by applications running within containers
-- **Frameworks**: Development frameworks and platforms used to build and run containerized applications
-- **User Application**: The application or workload deployed and managed within the Kubernetes environment
-- **User**: Developers, administrators, or end users who interact with applications and services running on the cluster
-
-### Omnia Slurm Stack
+## Slurm stack
 
 ![Omnia Slurm Stack](../assets/images/omnia-slurm.svg)
 
-The Slurm stack provides a workload manager optimized for HPC and batch job scheduling. Key components include:
+Orchestrator provisions the Slurm control, compute, login, and login-compiler
+functional groups selected by the catalog and mapping. It configures the
+applicable shared storage, Slurm services, authentication, optional GPU and
+fabric software, and generated inventory. LDMS Telemetry additionally requires
+reachable Slurm control and compute nodes.
 
-- **Hardware / Virtual Hardware**: Physical Dell servers or virtualized infrastructure that provide compute resources for the cluster
-- **Host OS / Virtual OS**: The operating system running on physical or virtual nodes that hosts the Slurm environment
-- **Accelerator / Fabric Drivers**: Drivers and software that enable GPUs, accelerators, and high-performance networking fabrics for HPC workloads
-- **Scheduling**: The Slurm workload manager that allocates resources, schedules jobs, and manages workload execution
-- **Compilers and Runtimes**: Development toolchains and runtime environments required to build and execute HPC applications
-- **Libraries**: Shared HPC and application libraries that provide functionality for scientific and compute-intensive workloads
-- **User Application**: HPC applications, batch jobs, AI/ML workloads, and MPI programs executed on the cluster
-- **User**: Researchers, developers, and administrators who submit, monitor, and manage workloads on the cluster
+## Related documentation
 
-## Virtual Deployment Considerations
-
-The diagrams show Virtual OS and Virtual Hardware blocks to represent scenarios where Omnia can be deployed on virtualized infrastructure. However, Omnia is primarily designed and tested for bare-metal deployments to ensure optimal performance for both Kubernetes and Slurm workloads. Virtual deployments may be supported for specific test or development scenarios, but production environments should use bare-metal hardware to avoid performance limitations and ensure full compatibility with all Omnia features.
-
-## Migration from v2.2
-
-For information on migrating from Omnia 2.2 to 2.3, see the [Migration Guide](../GetStarted/migration_guide.md).
-
-## Related Documentation
-
-- [Domain Execution](domain_execution.md)
-- [Domain Contracts](../Reference/domain_contracts/repo_manager_contract.md)
-- [Migration Guide](../GetStarted/migration_guide.md)
-
-
+- [Running Deployment Modules](domain_execution.md)
+- [Module Contracts](../Reference/index.md#module-contracts)
+- [Get Started](../GetStarted/index.md)
+- [How-to Guides](../HowTo/index.md)

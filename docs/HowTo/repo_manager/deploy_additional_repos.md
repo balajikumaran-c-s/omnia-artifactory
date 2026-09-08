@@ -1,85 +1,81 @@
-
-# Deploy Additional Repositories
-
-
-This section explains how to add extra RPM repositories to the Omnia local
-repository so that packages can be installed ad-hoc on compute nodes.
-
+# Publish Additional RPM Repositories
 
 ## Overview
 
+The `additional_repos` section groups multiple upstream RPM repositories into
+one aggregate Pulp distribution per architecture. Use it when downstream image
+or provisioning workflows need a combined repository. For an independently
+published custom repository, use `user_repos` instead.
 
-Packages from these repositories are intended for ad-hoc installation on
-compute nodes using `dnf install` and are not used during image builds
-through `additional_packages.json`.
-
+Every `additional_repos` entry must resolve to the same effective priority.
+When `priority` is omitted, its effective value is 99.
 
 ## Prerequisites
 
-
-- Omnia Infrastructure Manager (OIM) is deployed and operational.
-- The `local_repo_config.yml` file is configured. See
-  [Local Repo Config](../../Reference/Configuration/repo_manager_config.md).
-
+- Complete [Create Local Repositories](configure_repos.md).
+- Ensure each upstream URL is reachable from the OIM and exposes valid RPM
+  repository metadata.
+- Identify packages in the catalog that reference each repository name.
+- Choose one effective DNF priority for all entries in the architecture's
+  `additional_repos` section.
 
 ## Procedure
 
+1. Add the repositories under the target version and architecture:
 
-1. In the `local_repo_config.yml` file, add your repository URLs under the key that matches the node architecture:
+    ~~~yaml
+    repositories:
+      "10.0":
+        x86_64:
+          additional_repos:
+            grafana:
+              url: "https://rpm.grafana.com/"
+              gpgkey: "https://rpm.grafana.com/gpg.key"
+              priority: 99
+              policy: partial
+              caching: true
+    ~~~
 
-   - `additional_repos_x86_64`
-   - `additional_repos_aarch64`
+2. Add catalog package sources whose `reponame` is exactly `grafana`, and make
+   their groups reachable from the required functional layers. When adding
+   more entries to `additional_repos`, keep their effective priorities equal.
 
-2. Rerun the `local_repo.yml` playbook for Omnia to sync the repositories and update the repository configuration.
+3. Stage the configuration and run the normal reconciliation workflow:
 
-3. For first time deployment, do the following:
-
-   - Build images: [Build Cluster Images](../image_build_manager/build_images.md)
-   - Discover nodes and PXE boot: [Discover Nodes](../Setup/../discovery/discover_nodes.md)
-
-4. If you are deploying after cluster provisioning, refresh metadata and install packages on compute nodes.
-
-   ```bash title="Run on: compute node"
-   sudo dnf clean all
-   sudo dnf makecache
-   sudo dnf install -y <package-name>
-   ```
-
+    ~~~bash title="Run on: OIM host"
+    cd <OMNIA_SOURCE_PATH>/src/repo_manager
+    ./domain-init.sh
+    cd playbooks
+    ansible-playbook repo_manager.yml \
+      --tags "precheck,download,status"
+    ~~~
 
 ## Verification
 
-After provisioning, verify the additional repositories are available on the target nodes:
+List the RPM distributions and inspect the generated consumer output:
 
-```bash title="Run on: target node"
-dnf repolist
-```
+~~~bash title="Run on: OIM host"
+pulp rpm distribution list --field name,base_path,base_url --limit 1000
+sed -n '1,240p' \
+  /opt/omnia/repo_manager/output/project_default/repo_status.yml
+~~~
+
+Confirm that the additional content is represented in the architecture's
+repository output and that `overall_status` is `success`.
+
+## Next steps
+
+- [Build Cluster Images](../image_build_manager/build_images.md).
+- [Make Additional Content Available to Image Builds](deploy_additional_packages.md).
+- [Resynchronize Local RPM Repositories](../../Operations/repo_manager/local_repository_resync.md).
 
 ## Troubleshooting
 
-- **Additional repository not available on nodes**: Verify the repository URL is correct in `local_repo_config.yml` and re-run `local_repo.yml`.
-- **Package installation fails from additional repository**: Confirm that the repository metadata is valid and the GPG key (if specified) is accessible.
-
-## Next Steps
-
-
-- [Deploy Additional Packages](../repo_manager/deploy_additional_packages.md) -- Deploy additional software packages and container images on cluster nodes.
-- [Apptainer](../orchestrator/use_apptainer.md) -- Pull and run container images using Apptainer.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- **Priorities conflict**: Give every entry in one `additional_repos` section
+  the same explicit priority, or omit all priorities so they resolve to 99.
+- **A repository is not synchronized**: Ensure a selected catalog package uses
+  the exact repository key as its `reponame`.
+- **A repository must remain independent**: Move it to `user_repos` and retain
+  its catalog mapping.
+- **An architecture is incomplete**: Define a separate `additional_repos` map
+  under each catalog-selected architecture.

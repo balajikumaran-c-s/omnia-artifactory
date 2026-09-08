@@ -115,7 +115,7 @@ The VAST client is installed on the cluster nodes after the `provision` playbook
 
 ## Next Steps
 
-- [Configure Mounts](configure_mounts.md) -- Configure NFS and other storage mounts.
+- [Configure Storage](../orchestrator/configure_storage.md) -- Configure NFS and other storage mounts.
 
 ## Verification
 

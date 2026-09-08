@@ -1,4 +1,4 @@
-# repo_manager Domain
+# Repository Manager module
 
 Repository mirroring and synchronization issues - Pulp operations, package downloads, container registry sync
 

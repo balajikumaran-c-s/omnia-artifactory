@@ -130,7 +130,7 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
 
     Verify the NFS export configurations and settings mentioned above, then re-run the `prepare_oim.yml` playbook.
 
-    For PowerScale-specific configuration details, see the PowerScale configuration on [Deploy PowerScale CSI](../../../../HowTo/orchestrator/deploy_powerscale_csi.md) page.
+    For PowerScale-specific configuration details, see the PowerScale configuration on [Deploy PowerScale CSI](../../HowTo/orchestrator/deploy_powerscale_csi.md) page.
 
 ## EPEL Repository Unavailable/Unstable/Too Slow
 
@@ -674,7 +674,6 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
     - [Create Local Repos](../../../../HowTo/repo_manager/configure_repos.md) -- Local repository setup guide.
     - [Log Management](../../../../Operations/log_management.md) -- Where to find logs for deeper diagnosis.
     - [Pulp Cleanup](../../../../Operations/pulp_cleanup.md) -- Pulp cleanup procedures.
-
 
 
 

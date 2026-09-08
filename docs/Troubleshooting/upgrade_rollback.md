@@ -1,6 +1,6 @@
 ---
 nav:
-  parent: Cross-Domain Issues
+  parent: Cross-Module Issues
 ---
 
 # Upgrade and Rollback Issues
@@ -660,7 +660,6 @@ conflicts, manifest tracking, and component-specific failures.
     - [General Troubleshooting Steps](general_troubleshooting.md) — Common troubleshooting steps.
     - [Upgrade Omnia](../Operations/upgrade_omnia.md) — Upgrade procedure.
     - [Rollback Omnia](../Operations/rollback_omnia.md) — Rollback procedure.
-
 
 
 

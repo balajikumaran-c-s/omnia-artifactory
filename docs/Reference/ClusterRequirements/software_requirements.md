@@ -40,7 +40,7 @@ This section outlines the key software and repository requirements for the compo
 ## Lightweight Directory Access Protocol (LDAP)
 
 - The LDAP server details are required to configure the `omnia_auth` container and OpenLDAP as a proxy server.
-- To deploy an external OpenLDAP server for authentication, ensure that the OpenLDAP server is deployed and configured with the required directory structure (users and groups). For the detailed steps, see [External LDAP Deployment](../../HowTo/orchestrator/configure_authentication.md).
+- To deploy an external OpenLDAP server for authentication, ensure that the OpenLDAP server is deployed and configured with the required directory structure (users and groups). For the detailed steps, see [External LDAP Deployment](../../HowTo/Authentication/deploy_external_ldap.md).
 
 ## Lightweight Distributed Metric Service (LDMS)
 
@@ -75,7 +75,6 @@ This section outlines the key software and repository requirements for the compo
 !!! info
 
     - [Installed Software](../SupportMatrix/installed_software.md) -- Refer to this document for the list of software installed in OMNIA.
-
 
 
 

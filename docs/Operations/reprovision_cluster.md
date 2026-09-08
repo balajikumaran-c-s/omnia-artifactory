@@ -12,7 +12,7 @@ Re-provisioning replaces the diskless image on existing cluster nodes. Since Omn
 
 ## Prerequisites
 
-- The OIM is healthy and all OIM services are running (verify with [Verify OIM Services](../HowTo/main/verify_oim_services.md)).
+- The OIM is healthy and the services required by the selected modules are running.
 - NFS or PowerScale shared storage is accessible from the OIM and all cluster nodes.
 
 ## Re-provision without modifications
@@ -102,14 +102,11 @@ kubectl get nodes
 
 !!! info
 
-    - [Add/Remove Nodes](add_remove_nodes.md) -- Add or remove nodes without re-imaging.
+    - [Add Nodes](add_nodes.md) or [Remove Slurm Compute Nodes](remove_slurm_nodes.md) -- Change the supported node inventory without re-imaging retained nodes.
     - [OIM Cleanup](oim_cleanup.md) -- Full teardown and rebuild of the OIM itself.
     - [Build Cluster Images](../HowTo/image_build_manager/build_images.md) -- Image build procedure.
     - [Configure Mounts](../HowTo/orchestrator/configure_storage.md) -- NFS mount configuration for cluster nodes.
     - [Configure PXE Boot](../HowTo/orchestrator/configure_pxe_boot.md) -- PXE boot configuration for cluster nodes.
-
-
-
 
 
 

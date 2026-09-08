@@ -1,4 +1,4 @@
-# telemetry Domain
+# Telemetry module
 
 Monitoring and metrics collection issues - iDRAC telemetry, LDMS samplers, Kafka, VictoriaMetrics, VictoriaLogs
 

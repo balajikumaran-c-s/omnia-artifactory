@@ -1,32 +1,18 @@
-# gitlab_config.yml
+# GitLab settings for Build Stream
 
-This file configures the GitLab instance for BuildStreaM, including host settings, project configuration, and resource requirements.
+GitLab settings are not stored in a standalone `gitlab_config.yml` in the
+current Build Stream source. They are part of the consolidated
+`build_stream_config.yml` at:
 
-## Parameter Reference
-
---8<-- "html/gitlab_config.html"
-
-## Usage example
-
-```yaml title="File: /opt/omnia/input/project_default/gitlab_config.yml"
----
-# Target host
-gitlab_host: "10.5.0.100"
-
-# Project settings
-gitlab_project_name: "omnia-catalog"
-gitlab_project_visibility: "private"
-gitlab_default_branch: "main"
-
-# Network
-gitlab_https_port: 443
-
-# Minimum requirements
-gitlab_min_storage_gb: 20
-gitlab_min_cpu_cores: 2
-gitlab_min_memory_gb: 4
-
-# Performance tuning
-gitlab_puma_workers: 2
-gitlab_sidekiq_concurrency: 10
+```text
+$OMNIA_DATA_PATH/build_stream/input/project_default/build_stream_config.yml
 ```
+
+Configure `gitlab_host`, `gitlab_project_name`,
+`gitlab_project_visibility`, `gitlab_default_branch`,
+`gitlab_https_port`, the `gitlab_min_*` resource checks,
+`gitlab_puma_workers`, and `gitlab_sidekiq_concurrency` there.
+
+See the [Build Stream configuration reference](build_stream_config.md) and
+[Build Stream contract](../domain_contracts/build_stream_contract.md) for the
+current schema and runtime paths.

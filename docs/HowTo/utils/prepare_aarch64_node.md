@@ -1,115 +1,98 @@
-# Prepare aarch64 Node for Image Building
+# Prepare an aarch64 Node for Image Building
 
 ## Overview
 
-Before building aarch64 compute images with `build_image_aarch64.yml`,
-you must manually install RHEL 10 on one aarch64 bare-metal node. This
-node is used as a build host to create diskless images for all aarch64
-functional groups.
+The Utils OS installation workflow supports `aarch64` through the same
+`install_os.yml` playbook used for `x86_64`. This guide describes only the
+architecture-specific choices. Follow
+[Install an OS unattended](install_os_unattended.md) for the complete input,
+credential, build, deployment, and verification procedure.
 
-!!! caution
-
-    Limited validation has been performed on the aarch64 platform.
+For `aarch64`, the generated GRUB configuration uses `linux` and `initrd`.
+For `x86_64`, it uses `linuxefi` and `initrdefi`.
 
 ## Prerequisites
 
-- A disk is available to the aarch64 node for full OS installation.
-- The aarch64 node has network connectivity to the PXE (admin) network.
-- The same NFS share used by the OIM is reachable on the aarch64 node.
-- The [Deploy Omnia Core](https://github.com/dell/omnia) procedure is complete
-  (with NFS share option selected during `omnia.sh --install`).
-- `prepare_oim.yml` has been executed (downloads the `regctl` binary for
-  aarch64).
-- `local_repo.yml` has been executed with `software_config.json` that
-  includes aarch64 packages (downloads the aarch64 image builder
-  container to the local registry).
-
-## Procedure
-
-### 1. Install RHEL 10 on the aarch64 node
-
-Manually install the **full Red Hat Enterprise Linux 10** OS on one of
-the aarch64 nodes with root password enabled.
+- Meet all prerequisites in
+  [Install an OS unattended](install_os_unattended.md#prerequisites).
+- Make an `aarch64` RHEL 10 installation ISO accessible to the OIM.
+- Confirm the installation disk and network-interface names on the target
+  hardware.
+- Confirm that the target server uses the `aarch64` architecture.
 
 !!! warning
 
-    - The root password must be at least 8 characters long, contain
-      alphanumeric characters, and must **not** include commas (`,`),
-      hyphens (`-`), single quotes (`'`), double quotes (`"`), or
-      backslashes (`\`).
-    - The password set during RHEL installation on the aarch64 node must
-      be supplied as `provision_password` when running `prepare_oim.yml`.
+    Kickstart clears and repartitions `install_disk`. Confirm the device name
+    on the target server before starting the workflow.
 
-### 2. Create an inventory file
+## Procedure
 
-Create an inventory file with the aarch64 node's admin IP address in the
-`admin_aarch64` group:
+1. Configure all common installation settings as described in
+   [Install an OS unattended](install_os_unattended.md#procedure).
 
-```ini title="Example: /omnia/build_image_aarch64/inventory"
-[admin_aarch64]
-<aarch64_node_admin_ip>
-```
+2. In
+   `$OMNIA_DATA_PATH/utils/input/$OMNIA_PROJECT_NAME/install_os_config.yml`,
+   use an `aarch64` ISO and set the target architecture:
 
-Replace `<aarch64_node_admin_ip>` with the actual admin IP address of
-the node where RHEL 10 was installed.
+    ```yaml title="install_os_config.yml"
+    source_iso_path: "/path/to/RHEL-10.0-aarch64-dvd.iso"
+    target_architecture: "aarch64"
+    network_device: "<target_interface>"
+    install_disk: "<target_disk>"
+    ```
 
-!!! note
+    Replace the example path and placeholders with values verified on the
+    target. If `target_architecture` is empty, the validator searches the
+    source ISO filename for `x86_64` or `aarch64` and otherwise defaults to
+    `x86_64`.
 
-    The `admin_aarch64` inventory group must contain exactly **one** host.
-    The `build_image_aarch64.yml` playbook will fail if the group is empty
-    or contains more than one host.
+3. Run the complete Utils installation workflow:
 
-### What happens during the build
+    ```bash title="Run from: <omnia-repository>/src/utils"
+    ansible-playbook playbooks/utils.yml --tags install_os
+    ```
 
-When you run `build_image_aarch64.yml -i inventory`, the playbook
-automatically performs the following on the aarch64 node:
-
-1. Sets up passwordless SSH from OIM host to the aarch64 node.
-2. Verifies the target machine architecture is `aarch64`.
-3. Adds the OIM PXE IP and hostname to `/etc/hosts`.
-4. Installs NFS utilities and mounts the OIM NFS share.
-5. Copies the Pulp repository configuration and certificate.
-6. Pulls the aarch64 image builder container from the local registry.
-7. Copies the `regctl` binary for registry operations.
-8. Builds diskless images for all aarch64 functional groups defined in
-   the PXE mapping file.
-9. Uploads the built images to MinIO (S3).
+Set `rebuild_iso: true` when an existing custom ISO was created with different
+architecture, network, disk, password, or SSH-key content.
 
 ## Verification
 
-Verify that the aarch64 node is prepared and accessible:
+Connect to the installed node and confirm its architecture:
 
-```bash title="Run on: OIM host"
-ssh <aarch64_node_admin_ip> uname -m
+```bash title="Run on: OIM"
+ssh root@<target_admin_ip> uname -m
 ```
 
-The output should return `aarch64`.
+The command must return:
 
-## Next Steps
+```text
+aarch64
+```
 
-- [Unattended OS Installation via iDRAC](install_os_unattended.md) -- Automate RHEL installation on the aarch64 node using iDRAC Virtual Media instead of a manual install.
-- [Build Cluster Images](../image_build_manager/build_images.md) -- Build x86_64 and aarch64 images for provisioning.
+Then inspect the installation result:
+
+```bash title="Run on: OIM"
+cat "$OMNIA_DATA_PATH/utils/output/$OMNIA_PROJECT_NAME/install_os_status.yml"
+```
+
+The `architecture` field must be `aarch64`. When SSH verification is enabled
+and succeeds, `ssh_verified` is `true`.
+
+## Next steps
+
+Use [Build OS Images](../image_build_manager/build_images.md) to configure the
+Image Build Manager and build the required `aarch64` functional-group images.
 
 ## Troubleshooting
 
-- **SSH connection to aarch64 node fails**: Verify the admin IP address is correct, the node is powered on, and network connectivity exists between the OIM and the aarch64 node.
-- **Build playbook fails with "architecture mismatch"**: Confirm that the target node is running on aarch64 hardware and that RHEL 10 was installed correctly.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- **Architecture validation fails**: Set `target_architecture: "aarch64"` and
+  confirm that `source_iso_path` references an `aarch64` ISO.
+- **The wrong boot commands are generated**: Inspect the `architecture` field
+  in `install_os_manifest.yml` and rebuild the ISO with
+  `rebuild_iso: true` after correcting the architecture.
+- **Networking or storage is not detected correctly**: Verify
+  `network_device` and `install_disk` against the target hardware. These
+  values are deployment-specific.
+- **The node does not become reachable**: Check the iDRAC job and the target
+  network configuration. The common installation guide documents the SSH
+  retry settings.

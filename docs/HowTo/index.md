@@ -2,7 +2,7 @@
 
 
 Task-oriented procedures for deploying, configuring, and managing Omnia
-clusters using the domain-based architecture. Each guide follows a consistent structure: **Overview**, **Prerequisites**,
+clusters using its modular deployment architecture. Each guide follows a consistent structure: **Overview**, **Prerequisites**,
 **Procedure**, **Verification**, **Next Steps**, and **Troubleshooting**.
 
 !!! tip
@@ -11,24 +11,33 @@ clusters using the domain-based architecture. Each guide follows a consistent st
     first. How-to guides assume you understand Omnia's architecture and have a
     working OIM.
 
-## Domain-Based Guides
+## Shared controller
 
-Omnia organizes functionality into independent domains. Each domain has its own how-to guides:
+Main prepares the common environment and coordinates module execution. It is
+not a deployment module.
 
-| Domain | Description | Index Page |
-|--------|-------------|------------|
-| **main** | Setup, initialization, and cross-domain coordination | [Main](main/index.md) |
+| Area | Description | Index page |
+|---|---|---|
+| **main** | Setup, initialization, and cross-module coordination | [Main](main/index.md) |
+
+## Deployment module guides
+
+Omnia organizes deployment capabilities into seven modules. Each module has
+its own task-oriented guides:
+
+| Deployment module | Description | Index page |
+|---|---|---|
 | **repo_manager** | Repository mirroring and package synchronization | [Repository Manager](repo_manager/index.md) |
-| **discovery** | Node inventory and PXE mapping file generation | [Discovery](discovery/index.md) |
 | **image_build_manager** | OS image building and S3 storage | [Image Build Manager](image_build_manager/index.md) |
+| **discovery** | Node inventory and PXE mapping file generation | [Discovery](discovery/index.md) |
 | **orchestrator** | Slurm, Kubernetes, networking, storage, authentication | [Orchestrator](orchestrator/index.md) |
 | **telemetry** | iDRAC, LDMS, storage, and fabric metrics collection | [Telemetry](Telemetry/index.md) |
 | **build_stream** | GitLab CI/CD pipeline automation | [BuildStreaM](build_stream/index.md) |
 | **utils** | Helper utilities for backup and installation | [Utilities](utils/index.md) |
 
-## Domain-Specific Procedures
+## Module-specific procedures
 
-Click on a domain above to view its specific how-to guides. Each domain includes:
+Select a module above to view its how-to guides. Depending on the module, these include:
 
 - Configuration procedures
 - Deployment workflows
@@ -37,8 +46,11 @@ Click on a domain above to view its specific how-to guides. Each domain includes
 
 !!! note
 
-    Domains are independent and can be executed standalone. However, typical deployments follow the execution order: main → repo_manager → image_build_manager → discovery → orchestrator → telemetry. BuildStreaM orchestrates this sequence automatically via GitLab CI/CD.
-
+    Modules can be invoked separately, but downstream modules require the
+    contracts produced upstream. A typical direct deployment follows:
+    Repository Manager → Image Build Manager → optional Discovery →
+    Orchestrator → optional Telemetry. Build Stream provides a separate GitLab
+    CI/CD automation path; Utilities runs on demand.
 
 
 
