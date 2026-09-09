@@ -110,7 +110,7 @@ Global settings apply unless a repository overrides them:
 | `always` | `true` | `on_demand` |
 | `partial` | `false` | `streamed` |
 | `partial` | `true` | `on_demand` |
-| `never` (repository override only) | either | `streamed` |
+
 
 A catalog item with `packagetype: "rpm_repo"` requires retained content and
 must not resolve to `streamed`. Container synchronization uses an independent
