@@ -4,8 +4,8 @@
 
 The `omnia.utils` collection provides optional utilities that run from the
 Omnia Infrastructure Manager (OIM). The current Utils entry point supports
-installing RHEL on a bare-metal node through iDRAC Virtual Media and cleaning
-up artifacts from that workflow.
+collecting Kubernetes and Slurm logs, installing RHEL on a bare-metal node
+through iDRAC Virtual Media, and cleaning up artifacts from those workflows.
 
 The OS installation workflow supports both `x86_64` and `aarch64`. The
 collection also contains reusable Slurm configuration backup, cleanup, and
@@ -32,6 +32,7 @@ requirements depend on the selected utility.
 | Task | Use it to |
 |---|---|
 | [Install an OS unattended](install_os_unattended.md) | Build a Kickstart-enabled ISO, attach it through iDRAC Virtual Media, and install one `x86_64` or `aarch64` node. |
+| [Collect cluster logs](../../Operations/collect_cluster_logs.md) | Collect Kubernetes and Slurm logs from configured nodes and create a support archive with metadata. |
 | [Use the Slurm configuration roles](../../Operations/slurm_configuration_roles.md) | Integrate the standalone Slurm backup, cleanup, and rollback roles into an administrator-maintained playbook. |
 
 ## Contract reference
