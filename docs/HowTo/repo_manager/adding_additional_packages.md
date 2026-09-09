@@ -50,7 +50,6 @@ duplicate component references.
     | Content | Format |
     |---|---|
     | RPM | `key, rpm, package_name, reponame` |
-    | RPM plus dependencies through DNF | `key, rpm_repo, package_name, reponame` |
     | Tarball | `key, tarball, artifact_name, https_url` |
     | Container image | `key, image, registry/image_path, registry, tag` |
 
