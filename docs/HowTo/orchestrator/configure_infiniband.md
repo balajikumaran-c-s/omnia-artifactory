@@ -56,6 +56,7 @@ Networks:
     netmask_bits: "24"
     primary_oim_admin_ip: "172.16.107.254"
     primary_oim_bmc_ip: ""
+    router: "172.16.107.254"
     dynamic_range: "172.16.107.201-172.16.107.250"
     dns: []
     ntp_servers: []
@@ -70,13 +71,12 @@ Networks:
 | Parameter      | Description                                                  |
 |----------------|--------------------------------------------------------------|
 | `subnet`       | Network address for the IB subnet (e.g., `192.168.0.0`)     |
-| `netmask_bits` | CIDR prefix length. **Must match** `admin_network.netmask_bits` |
+| `netmask_bits` | CIDR prefix length for the IB network. It can differ from the admin-network prefix length. |
 | `dns`          | List of DNS server IPs to configure on the IB interface      |
 
 !!! caution
-    The `ib_network.netmask_bits` value **must** be the same as
-    `admin_network.netmask_bits`. The IB subnet must not overlap with the
-    admin network range.
+    The IB subnet must not overlap with the admin network range. The two
+    networks do not need to use the same CIDR prefix length.
 
 ### Step 2: Add IB columns to the PXE mapping file
 
@@ -102,7 +102,10 @@ Supported formats:
 | `InfiniBand.Single-Y`         | `InfiniBand.Single-1`         | Single-device system, port Y         |
 
 !!! tip
-    Slot numbers support decimal values. To find the correct `IB_NIC_NAME` for a server, check the iDRAC inventory under **Network Devices** or use OME discovery, which auto-populates the `IB_NIC_NAME` column.
+    Slot numbers support decimal and hexadecimal values. To find the correct
+    `IB_NIC_NAME` for a server, check the iDRAC inventory under **Network
+    Devices** or use OME discovery, which auto-populates the `IB_NIC_NAME`
+    column.
 
 !!! important
     - `IB_NIC_NAME` and `IB_IP` must **both** be provided or **both** be
@@ -299,7 +302,6 @@ Only devices with `Link layer: InfiniBand` are used by Omnia.
     ```bash title="Run on: compute node"
     perfquery
     ```
-
 
 
 

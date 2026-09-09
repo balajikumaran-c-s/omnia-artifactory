@@ -42,6 +42,10 @@ At least one StatefulSet replica must be ready, each container must report
 return metrics. Confirm `sources.idrac.metrics: deployed` in
 `telemetry_status.yml`.
 
+The status and resource checks do not prove that a BMC is publishing records.
+Inspect the `idrac` topic and query VictoriaMetrics for a known BMC metric to
+complete end-to-end verification.
+
 ## Next steps
 
 - Review `<OMNIA_DATA_PATH>/telemetry/idrac_telemetry_report.yml` when a BMC
@@ -58,4 +62,3 @@ return metrics. Confirm `sources.idrac.metrics: deployed` in
 - **The pump endpoint is pending:** The role retries this check and treats a
   temporarily unavailable endpoint as pending; recheck after data begins to
   flow.
-

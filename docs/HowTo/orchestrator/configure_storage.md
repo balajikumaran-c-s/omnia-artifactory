@@ -14,7 +14,9 @@ The `storage_config.yml` file contains four sections:
 
 !!! note
 
-    Storage configuration is applied during node provisioning. Mounts can be targeted to specific node groups using `functional_group_prefix` or `groups`.
+    Storage configuration is applied during node provisioning. Entries in
+    `mounts` can use `functional_group_prefix` or exact `groups` targeting.
+    `powervault_config` and `swap` use `functional_group_prefix`.
 
 ### Functional group prefix
 
@@ -29,6 +31,7 @@ The `functional_group_prefix` parameter uses **prefix matching** against the `FU
 | `slurm_node_aarch64` | Slurm compute node (AArch64) |
 | `login_node_x86_64` | Login/SSH access node (x86_64) |
 | `login_node_aarch64` | Login/SSH access node (AArch64) |
+| `login_compiler_node_x86_64` | Login node with compiler toolchain (x86_64) |
 | `login_compiler_node_aarch64` | Login node with compiler toolchain (AArch64) |
 | `service_kube_control_plane_x86_64` | Kubernetes control plane |
 | `service_kube_node_x86_64` | Kubernetes worker node |
@@ -42,7 +45,7 @@ The `functional_group_prefix` parameter uses **prefix matching** against the `FU
 | `["slurm"]` | `slurm_control_node_x86_64`, `slurm_node_x86_64`, `slurm_node_aarch64` (all Slurm nodes) |
 | `["slurm_node"]` | `slurm_node_x86_64`, `slurm_node_aarch64` (compute nodes only, excludes controller) |
 | `["slurm_control_node"]` | `slurm_control_node_x86_64` (controller only) |
-| `["login"]` | `login_node_x86_64`, `login_node_aarch64`, `login_compiler_node_aarch64` (all login nodes) |
+| `["login"]` | `login_node_x86_64`, `login_node_aarch64`, `login_compiler_node_x86_64`, `login_compiler_node_aarch64` (all login nodes) |
 | `["service_kube"]` | `service_kube_control_plane_x86_64`, `service_kube_node_x86_64` (all Kubernetes nodes) |
 | `["service_kube_node"]` | `service_kube_node_x86_64` (Kubernetes workers only) |
 | `["os"]` | `os_x86_64`, `os_aarch64` (generic OS nodes only) |
@@ -57,7 +60,9 @@ The `functional_group_prefix` parameter uses **prefix matching** against the `FU
 
 - Access to edit `storage_config.yml` on the OIM host.
 - NFS server IP address or DNS-resolvable hostname and export path, for NFS mounts.
-- VAST storage appliance configured with NFS exports and access policies, for VAST mounts. See [Configure VAST Storage](../Telemetry/configure_vast.md).
+- VAST storage appliance configured separately with NFS exports and access
+  policies, for VAST mounts. The Telemetry VAST guide configures metrics and
+  log collection; it does not configure the storage appliance.
 - iSCSI initiator setup and network connectivity to the PowerVault controllers, for PowerVault volumes.
 - Functional group names defined in the PXE mapping file, to target mounts, swap, and PowerVault entries to specific node groups. See [PXE Mapping File](../../Reference/SampleFiles/pxe_mapping_file.md).
 
@@ -224,7 +229,8 @@ mounts:
 !!! note
 
     - RDMA transport requires InfiniBand or RoCE (RDMA over Converged Ethernet) connectivity between cluster nodes and the VAST appliance.
-    - The VAST storage appliance must be configured with NFS exports and appropriate access policies before defining mounts. See [Configure VAST Storage](../Telemetry/configure_vast.md) for VAST appliance setup.
+    - The VAST storage appliance must be configured with NFS exports and
+      appropriate access policies before defining mounts.
     - The `slurm_cluster` section in `omnia_config.yml` should reference VAST storage via the `vast_storage_name` parameter.
 
 #### K8s storage mounts
@@ -373,14 +379,15 @@ swap:
 
 ## Next steps
 
-- [Configure VAST Storage](../Telemetry/configure_vast.md) -- Set up VAST storage for high-performance RDMA mounts.
+- [Configure VAST Telemetry](../Telemetry/configure_vast.md) -- Collect VAST
+  metrics and logs after the storage appliance is configured.
 - [Provision Nodes](provision_nodes.md) -- Provision cluster nodes with the configured storage mounts.
 
 ## Troubleshooting
 
 - **Mount does not appear on the target node**: Confirm the node's functional group name matches a `functional_group_prefix` value, and re-run the provisioning playbook. See [PXE Mapping File](../../Reference/SampleFiles/pxe_mapping_file.md) to verify functional group names.
 - **NFS mount fails or times out**: Verify the NFS server IP/hostname is reachable and resolvable from the target node at boot time, and that the export path exists on the server.
-- **VAST RDMA mount fails to connect**: Confirm InfiniBand or RoCE connectivity between the node and the VAST appliance, and that the VAST appliance has NFS exports and access policies configured. See [Configure VAST Storage](../Telemetry/configure_vast.md).
+- **VAST RDMA mount fails to connect**: Confirm InfiniBand or RoCE connectivity between the node and the VAST appliance, and that the VAST appliance has NFS exports and access policies configured.
 - **PowerVault volume does not mount**: Verify iSCSI initiator configuration and network connectivity to the PowerVault controllers.
 
 !!! info
@@ -389,9 +396,9 @@ swap:
     - [Slurm Storage Architecture](deploy_slurm.md#slurm-storage-architecture) -- How Slurm uses NFS and VAST mounts.
     - [K8s Storage Architecture](deploy_kubernetes.md#k8s-storage-architecture) -- How service K8s uses NFS mounts.
     - [Storage Requirements](../../Reference/../Reference/../Reference/ClusterRequirements/storage_requirements.md) -- Storage sizing and prerequisites.
-    - [Configure VAST](../Telemetry/configure_vast.md) -- VAST storage setup.
+    - [Configure VAST Telemetry](../Telemetry/configure_vast.md) -- Metrics
+      and log collection from a configured VAST appliance.
     - [PXE Mapping File](../../Reference/SampleFiles/pxe_mapping_file.md) -- Functional groups and `GROUP_NAME` values.
-
 
 
 

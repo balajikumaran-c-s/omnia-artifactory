@@ -18,7 +18,10 @@ Both scopes support the following cloud-init directives:
 
 !!! caution
 
-    The following cloud-init keys are prohibited and cause validation to fail if present: `bootcmd`, `network`, `network-config`, `packages`. These keys are platform-managed by Omnia and do not allow overrides.
+    Do not use `bootcmd`, `network`, `network-config`, or `packages`. These
+    keys are platform-managed by Omnia and are outside the supported
+    additional cloud-init format. The current input validator does not reject
+    every unsupported key before provisioning.
 
 ## Prerequisites
 
@@ -54,7 +57,7 @@ additional_cloud_init_config_file: ""
 ### Step 2: Create the additional cloud-init configuration file
 
 A sample is provided in the source at
-`/omnia/src/orchestrator/examples/additional_cloud_init.yml`. Copy it into the
+`src/orchestrator/examples/additional_cloud_init.yml`. Copy it into the
 project input directory or create a file with the following structure:
 
 ```yaml title="File: /opt/omnia/orchestrator/input/project_default/additional_cloud_init.yml"
@@ -105,13 +108,14 @@ Each entry in the `runcmd` list must be a string. Commands execute during the fi
 ### Step 3: Run provisioning
 
 ```bash title="Run on: OIM"
-cd /omnia/src/orchestrator
-ansible-playbook playbooks/orchestrator.yml --tags provision
+cd src/main
+./omnia.sh --run orchestrator --tags provision
 ```
 
 The provisioning playbook:
 
-1. Validates the additional cloud-init configuration file (structure, allowed keys, functional group names).
+1. Confirms that the configured additional cloud-init file exists. Its
+   directives are parsed and merged later in the provisioning workflow.
 2. Creates SMD groups for common and per-functional-group cloud-init.
 3. Renders and registers the cloud-init configurations with the Boot Script Service (BSS).
 4. When nodes PXE boot, cloud-init merges: platform defaults → common additional → per-functional-group additional.
@@ -128,19 +132,20 @@ This ensures that platform-critical configurations (networking, boot parameters)
 
 ## Verification
 
-The following checks are performed during Orchestrator validation and
-provisioning:
+Use the following checks when preparing the file. Only file existence is
+currently enforced by the Orchestrator input validator; the remaining rows
+describe the supported format and must be reviewed before provisioning:
 
 | Check | Description |
 |-------|-------------|
 | File existence | The specified configuration file must exist. |
-| YAML syntax | The file must be valid YAML. |
-| Top-level keys | Only `common` and `groups` are allowed at the top level. |
-| Prohibited keys | `bootcmd`, `network`, `network-config`, and `packages` are not allowed in any section. |
-| Allowed keys | Only `write_files` and `runcmd` are allowed within each section. |
-| `write_files` path | Every `write_files` entry must include a `path` field. |
-| `runcmd` type | Every `runcmd` entry must be a string. |
-| Functional group names | Group names under `groups` must match a `FUNCTIONAL_GROUP_NAME` in the PXE mapping file. |
+| YAML syntax | Supply valid YAML. Parsing errors surface during provisioning rather than the initial file-existence check. |
+| Top-level keys | Use only `common` and `groups` at the top level. |
+| Prohibited keys | Do not use `bootcmd`, `network`, `network-config`, or `packages` in any section. |
+| Allowed keys | Use only `write_files` and `runcmd` within each section. |
+| `write_files` path | Include a `path` in every `write_files` entry. |
+| `runcmd` type | Supply every `runcmd` entry as a string. |
+| Functional group names | Match keys under `groups` to a `FUNCTIONAL_GROUP_NAME` in the PXE mapping file. |
 
 ### Examples
 
@@ -215,14 +220,16 @@ In this case, Slurm compute nodes have both the common `runcmd` and the group-sp
 
 - Customization granularity is at the functional-group level. Per-node cloud-init customization is not supported.
 - Only `write_files` and `runcmd` (config and final stage directives) are supported. Early-boot keys remain platform-managed.
-- If a functional group name in the `groups` section does not match any entry in the PXE mapping file, validation fails.
+- The current input validator checks that the configured file exists, but does
+  not enforce all supported keys, value types, or functional-group names.
+  Review these requirements before provisioning; unsupported content can fail
+  later or produce unintended merged cloud-init.
 
 !!! info
 
     - [Provision Nodes](provision_nodes.md) -- Run Orchestrator provisioning to apply cloud-init configurations.
     - [Orchestrator contract](../../Reference/domain_contracts/orchestrator_contract.md) -- Orchestrator input and output paths.
     - [Additional Cloud Init Reference](../../Reference/Configuration/additional_cloud_init.md) -- Configuration file reference.
-
 
 
 

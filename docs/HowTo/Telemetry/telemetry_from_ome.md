@@ -11,9 +11,9 @@ create the OME topics.
 ## Prerequisites
 
 - Complete the common [Telemetry deployment prerequisites](deploy_telemetry.md#prerequisites).
-- Enable Kafka through an enabled source collection target.
-- For metrics, enable VictoriaMetrics through an enabled source collection
-  target. For logs, enable VictoriaLogs in the same way.
+- Enable OME with the Kafka collection target. The Vector-OME bridge derives
+  the required VictoriaMetrics and VictoriaLogs sinks from its enabled
+  channels; another source is not required to select those sinks.
 - Have an OME instance that can reach the native Kafka LoadBalancer endpoint.
 - Install OpenSSL on the OIM if OME requires the exported client certificate in
   PKCS#12 format.
@@ -44,8 +44,9 @@ create the OME topics.
 2. Deploy Telemetry, then export the Kafka connection details:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags deploy
-    ./omnia.sh -r telemetry --tags external_kafka
+    cd src/main
+    ./omnia.sh --run telemetry --tags deploy
+    ./omnia.sh --run telemetry --tags external_kafka
     ```
 
 3. Create the client certificate file shown by the utility:
@@ -73,6 +74,10 @@ kubectl get pods -n telemetry -l app=vector-ome
 Confirm the requested OME channels are `deployed` under `sources.ome` and
 `bridges.vector_ome: deployed` in `telemetry_status.yml`.
 
+These values confirm that the bridge resources are deployed. Query the
+matching OME topics and the enabled Victoria sink to prove end-to-end data
+flow.
+
 ## Next steps
 
 - Use [Verify OME Telemetry](verify_ome.md) for repeatable bridge checks.
@@ -83,10 +88,10 @@ Confirm the requested OME channels are `deployed` under `sources.ome` and
 - **The bridge validation fails:** Ensure OME uses only the `kafka` collection
   target and enable each source channel required by the corresponding bridge
   channel.
-- **The metrics or logs bridge lacks a sink:** Ensure another enabled source
-  target causes VictoriaMetrics or VictoriaLogs to be deployed.
+- **The metrics or logs bridge lacks a sink:** Confirm the corresponding
+  Vector-OME channel is enabled. The bridge selection supplies the required
+  VictoriaMetrics or VictoriaLogs sink.
 - **No OME topics are consumed:** Confirm OME is publishing to the generated
   native Kafka endpoint and that topic names match the configured identifier.
 - **The export utility fails:** Verify Kafka pods are Running and Ready and both
   Kafka LoadBalancer services have external IPs.
-

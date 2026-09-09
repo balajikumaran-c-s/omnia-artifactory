@@ -176,11 +176,9 @@ nav:
       - Setup the OIM: HowTo/main/setup_oim.md
     - repo_manager:
       - HowTo/repo_manager/index.md
-      - Configure Repos: HowTo/repo_manager/configure_repos.md
-      - Add Packages to the Catalog: HowTo/repo_manager/adding_additional_packages.md
+      - Create Local Repositories: HowTo/repo_manager/configure_repos.md
+      - Configure Catalog Content and Add Packages: HowTo/repo_manager/adding_additional_packages.md
       - Add an RPM Repository: HowTo/repo_manager/adding_additional_repositories.md
-      - Configure Catalog Content: HowTo/repo_manager/configuring_specific_software.md
-      - Configure Base OS and Functional Package Groups: HowTo/repo_manager/default_packages.md
     - image_build_manager:
       - HowTo/image_build_manager/index.md
       - Build Images: HowTo/image_build_manager/build_images.md
@@ -194,6 +192,8 @@ nav:
       - Deploy Slurm: HowTo/orchestrator/deploy_slurm.md
       - Deploy Kubernetes: HowTo/orchestrator/deploy_kubernetes.md
       - Provision Nodes: HowTo/orchestrator/provision_nodes.md
+      - Upgrade Orchestrator: HowTo/orchestrator/upgrade_orchestrator.md
+      - Clean Up Orchestrator: HowTo/orchestrator/cleanup_orchestrator.md
       - Configure InfiniBand: HowTo/orchestrator/configure_infiniband.md
       - Cluster DNS Concepts: Overview/cluster_dns.md
       - Configure Cluster DNS: HowTo/orchestrator/configure_cluster_dns.md
@@ -220,7 +220,7 @@ nav:
       - UFM Telemetry: HowTo/Telemetry/configure_ufm.md
       - VAST Telemetry: HowTo/Telemetry/configure_vast.md
       - OME Telemetry: HowTo/Telemetry/telemetry_from_ome.md
-      - SFM Telemetry: HowTo/Telemetry/configure_sfm.md
+      - "Connect SFM to VictoriaMetrics": HowTo/Telemetry/configure_sfm.md
       - External Kafka: HowTo/Telemetry/configure_external_kafka.md
       - External VictoriaMetrics: HowTo/Telemetry/configure_external_victoria.md
       - External VictoriaLogs: HowTo/Telemetry/configure_external_victoria_logs.md

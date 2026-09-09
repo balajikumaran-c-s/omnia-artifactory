@@ -92,6 +92,42 @@ flags to `false`.
 
 Choose the guide that matches the operation you need to perform.
 
+Run customer-facing Orchestrator commands from `src/main`. Initialize the
+shared virtual environment and stage domain inputs before the first run:
+
+```bash title="Run on: OIM"
+cd src/main
+./omnia.sh --setup-venv
+```
+
+The setup command stages inputs under
+`$OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/` without changing
+the domain-scoped input and output contract. Use `./omnia.sh --run
+orchestrator --tags <tag>` for the workflows below. Direct
+`ansible-playbook` commands from `src/orchestrator` remain available for
+advanced or component-specific operations.
+
+### Workflow tags
+
+Run one Orchestrator workflow tag at a time, except when using the supported
+`cleanup,cleanup_credentials` combination.
+
+| Tag | Implemented behavior |
+|---|---|
+| `precheck` | Validate inputs, mapping data, storage prerequisites, environment settings, and functional-group images. |
+| `validate` | Validate input-file schemas and configuration logic only. |
+| `credentials` | Create or update the Vault-encrypted Orchestrator credentials. |
+| `prepare` | Collect credentials, deploy OpenCHAMI and catalog-selected OpenLDAP, and validate deployment readiness. |
+| `deploy` | Deploy or retry OpenCHAMI and catalog-selected OpenLDAP together with their readiness checks, without collecting credentials. |
+| `provision` | Configure SSH access, provision Kubernetes, Slurm, login, OS-only, and custom functional groups, and run post-provision validation. This workflow does not initiate PXE boot. |
+| `execute` | Run provisioning followed by PXE boot when `enable_pxe_boot` is `true`. |
+| `validate-deployment` | Validate OpenCHAMI and catalog-selected OpenLDAP service health and readiness. |
+| `pxeboot` | Set the boot source and restart mapped Dell iDRAC nodes when PXE boot is enabled. |
+| `cleanup` | Remove all enabled Orchestrator components while preserving credentials. Component-specific cleanup is available only through the standalone cleanup playbook. |
+| `cleanup_credentials` | Remove the Orchestrator credential file and Vault key. |
+| `upgrade` | Run the OpenCHAMI and OpenLDAP upgrade workflows. |
+| `rollback` | Enter the reserved rollback workflows. Both OpenCHAMI and OpenLDAP rollback are unsupported in this release and intentionally stop with an error. |
+
 ### Deployment and node lifecycle
 
 | Task | Use it to |
@@ -101,6 +137,8 @@ Choose the guide that matches the operation you need to perform.
 | [Deploy Slurm](deploy_slurm.md) | Configure Slurm and login functional groups, storage, and Slurm configuration. |
 | [Deploy Kubernetes](deploy_kubernetes.md) | Configure service Kubernetes functional groups, HA, networking, and storage. |
 | [Provision Nodes](provision_nodes.md) | Run the complete or staged provisioning and PXE-boot workflow. |
+| [Upgrade Orchestrator](upgrade_orchestrator.md) | Run the supported OpenCHAMI and OpenLDAP upgrade workflows and verify their target versions. |
+| [Clean Up Orchestrator](cleanup_orchestrator.md) | Review and run full, credential-only, or component-specific destructive cleanup. |
 | [Add Nodes](../../Operations/add_nodes.md) | Register and configure new nodes, then boot only the new physical nodes through a custom PXE inventory. |
 | [Remove Slurm Nodes](../../Operations/remove_slurm_nodes.md) | Drain and remove Slurm compute nodes omitted from the current PXE mapping. |
 
@@ -148,8 +186,8 @@ The provisioning and PXE-boot workflows write customer-readable results under
 |---|---|
 | `orchestrator_status.yml` | Overall status and per-node results. The PXE flow records the PXE or node-registration failure stage. |
 | `provisioning_report.yml` | Expected and SMD-registered node counts plus missing boot and metadata configurations. |
-| `orchestrator_inventory.yaml` | Generated inventory for all mapped nodes. |
-| `bmc_group_data.csv` | Generated BMC inventory data. |
+| `orchestrator_inventory.yaml` | Generated inventory for all mapped nodes. `kube_vip_group` is included only when a `service_kube_` functional group is mapped and a valid HA configuration supplies the VIP. |
+| `bmc_group_data.csv` | Generated BMC inventory data. The OIM is included only when `primary_oim_bmc_ip` is set in `network_spec.yml`. |
 | `failed_nodes.json` | Detailed failures from iDRAC PXE boot or node-registration. |
 
 Orchestrator also generates
@@ -169,6 +207,9 @@ Confirm that the generated artifacts meet the
 - After provisioning, use [Add Nodes](../../Operations/add_nodes.md) and
   [Remove Slurm Nodes](../../Operations/remove_slurm_nodes.md) for supported
   lifecycle changes.
+- Use [Upgrade Orchestrator](upgrade_orchestrator.md) or
+  [Clean Up Orchestrator](cleanup_orchestrator.md) only after reviewing their
+  lifecycle and data-retention behavior.
 
 ## Troubleshooting
 

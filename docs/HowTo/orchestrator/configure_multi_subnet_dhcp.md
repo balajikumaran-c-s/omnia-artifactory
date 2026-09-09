@@ -64,15 +64,15 @@ interfaces or BMC networks.
 3. Validate the Orchestrator inputs:
 
     ```bash title="Run on: OIM"
-    cd /omnia/src/orchestrator
-    ansible-playbook playbooks/orchestrator.yml --tags validate
-    ansible-playbook playbooks/orchestrator.yml --tags precheck
+    cd src/main
+    ./omnia.sh --run orchestrator --tags validate
+    ./omnia.sh --run orchestrator --tags precheck
     ```
 
 4. Deploy or refresh OpenCHAMI so CoreDHCP receives the new configuration:
 
     ```bash title="Run on: OIM"
-    ansible-playbook playbooks/orchestrator.yml --tags prepare
+    ./omnia.sh --run orchestrator --tags prepare
     ```
 
 ## Verification

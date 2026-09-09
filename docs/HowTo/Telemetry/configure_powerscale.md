@@ -40,8 +40,10 @@ or configure the PowerScale system itself.
       csm_observability_values_file_path: "/path/to/values.yaml"
     ```
 
-2. To prepare PowerScale log ingestion as well, set `logs_enabled: true` and
-   add `victoria_logs` to `collection_targets`.
+2. To prepare PowerScale log ingestion as well, keep metrics enabled, set
+   `logs_enabled: true`, and add `victoria_logs` to `collection_targets`.
+   The root workflow imports the PowerScale source only when
+   `metrics_enabled: true`; a logs-only configuration is not supported.
 
 3. Keep the `csm_metrics_powerscale_storage` and
    `csi_volume_exporter_storage` sections in `telemetry_storage_config.yml`.
@@ -49,15 +51,17 @@ or configure the PowerScale system itself.
 4. Run the precheck and deployment:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags precheck
-    ./omnia.sh -r telemetry --tags deploy
+    cd src/main
+    ./omnia.sh --run telemetry --tags precheck
+    ./omnia.sh --run telemetry --tags deploy
     ```
 
 5. When logs are enabled, export the generated VLAgent target and PowerScale
    `isi audit` commands:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags external_victoria
+    cd src/main
+    ./omnia.sh --run telemetry --tags external_victoria
     ```
 
     Run the commands recorded under `powerscale.isi_audit_commands` in the
@@ -75,6 +79,11 @@ kubectl get deployment otel-collector -n telemetry
 Confirm `sources.powerscale.metrics: deployed` in `telemetry_status.yml`. When
 logs are enabled, confirm `sources.powerscale.logs: deployed` and check that the
 generated external Victoria file reports `vlagent.available: true`.
+
+The log status confirms that the shared VLAgent is available; it does not
+configure PowerScale log forwarding or prove ingestion. Run the exported
+`isi audit` commands and query VictoriaLogs for an end-to-end check. Likewise,
+query VictoriaMetrics to confirm that PowerScale metrics are being ingested.
 
 ## Next steps
 
@@ -94,4 +103,3 @@ generated external Victoria file reports `vlagent.available: true`.
   has the permissions required by the enabled metrics or log path.
 - **CSI volume exporter is skipped:** Enable the external health monitor in the
   PowerScale CSI driver and rerun Telemetry.
-

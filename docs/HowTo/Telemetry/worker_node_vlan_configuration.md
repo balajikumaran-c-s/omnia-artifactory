@@ -2,11 +2,11 @@
 
 ## Overview
 
-When iDRAC Telemetry synchronizes its BMC inventory, it delegates Redfish
+When iDRAC Telemetry synchronizes its BMC inventory, it first delegates Redfish
 validation and telemetry enablement to the first service Kubernetes worker in
-the configured inventory. Each BMC must therefore be reachable from that
-worker over HTTPS. If the worker is not reachable from the Kubernetes VIP over
-SSH, the workflow falls back to running BMC validation on the VIP.
+the configured inventory. If that worker cannot be reached over SSH, it tries
+the second service worker when one exists, then falls back to the Kubernetes
+VIP. Each BMC must be reachable over HTTPS from the selected host.
 
 The Telemetry source does not create VLAN interfaces or routes. Those settings
 must already provide the connectivity required by the iDRAC workflow.
@@ -44,7 +44,8 @@ must already provide the connectivity required by the iDRAC workflow.
 5. Deploy iDRAC Telemetry:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags deploy
+    cd src/main
+    ./omnia.sh --run telemetry --tags deploy
     ```
 
 ## Verification
@@ -62,11 +63,10 @@ or unsupported results.
 ## Troubleshooting
 
 - **The worker SSH check fails:** Restore SSH reachability from the VIP. The
-  workflow falls back to the VIP for BMC validation, but worker access is the
-  intended path.
+  workflow retries the second service worker, when present, and then falls back
+  to the VIP for BMC validation, but worker access is the intended path.
 - **A BMC returns `401`:** Correct the common BMC credentials.
 - **A BMC returns `404`:** Enable its Redfish API.
 - **A BMC times out or has a connection error:** Correct the external network
   path. Telemetry reports the BMC as unreachable and does not configure the
   missing VLAN or route.
-

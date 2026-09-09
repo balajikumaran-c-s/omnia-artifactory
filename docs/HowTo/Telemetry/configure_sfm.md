@@ -4,7 +4,8 @@
 
 The Telemetry external Victoria utility generates the connection values needed
 to configure SmartFabric Manager (SFM) Prometheus remote write. SFM is an
-external producer; the Telemetry module does not deploy it.
+external producer; the Telemetry module does not deploy, configure, or clean up
+SFM. There is no SFM source role in the Telemetry domain.
 
 ## Prerequisites
 
@@ -20,7 +21,8 @@ external producer; the Telemetry module does not deploy it.
 1. Export the Victoria connection details:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags external_victoria
+    cd src/main
+    ./omnia.sh --run telemetry --tags external_victoria
     ```
 
 2. Read the generated SFM values from:

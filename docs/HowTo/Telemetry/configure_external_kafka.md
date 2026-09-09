@@ -20,7 +20,8 @@ the HTTP Bridge endpoint for REST-based validation.
 1. Run the export utility:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags external_kafka
+    cd src/main
+    ./omnia.sh --run telemetry --tags external_kafka
     ```
 
     The equivalent command from `src/telemetry` is:
@@ -48,6 +49,10 @@ the HTTP Bridge endpoint for REST-based validation.
     openssl pkcs12 -export -out user.pfx -inkey user.key -in user.crt
     ```
 
+    Each export run removes and recreates the `external_kafka` directory.
+    Generate `user.pfx` after the final export and move it to a secure location
+    before rerunning the utility.
+
 ## Verification
 
 Confirm that `external_kafka_connect_details.yml` contains non-empty values for
@@ -60,6 +65,8 @@ pods are absent, not Running, not Ready, or either endpoint is unavailable.
 - Use the exported native endpoint and certificates to
   [configure OME](telemetry_from_ome.md).
 - Protect `user.key` and the generated PKCS#12 file as client credentials.
+- Preserve any generated `user.pfx` outside the export directory before
+  rerunning the export utility.
 
 ## Troubleshooting
 
@@ -71,4 +78,3 @@ pods are absent, not Running, not Ready, or either endpoint is unavailable.
   external IP and port.
 - **The VIP cannot be reached:** Restore root SSH access from the OIM to the
   configured Kubernetes VIP.
-

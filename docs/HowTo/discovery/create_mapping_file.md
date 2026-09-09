@@ -118,29 +118,10 @@ OME-based BMC discovery is the recommended method for discovering target nodes. 
     - **Admin NIC**: Priority 1: First NIC that is active/UP. Priority 2: Second NIC if UP. Priority 3: First NIC regardless of link state (fallback).
     - **InfiniBand NIC**: If detected, IB NIC Name is captured and `IB_IP` is assigned. If absent, IB fields are left empty.
 - For a deployment with N Scalable Units, ensure one dedicated `service_kube_node` per Scalable Unit.
-- iDRAC hostnames must follow the Omnia naming convention:
-
-    ```text title="Example"
-    idrac-<SU><1-100>R<000-999>OU<1-54><Type><Instance>
-    ```
-
-    - **SU** -- Scalable Unit number (`SU1` through `SU100`, case-insensitive)
-    - **R** -- Rack number within the SU (`R1` through `R999`)
-    - **OU** -- ORv3 (Open Rack v3) Unit position (`OU1` through `OU54`)
-    - **C** -- Compute Node number (`C1` through `C99`)
-
-    ```text title="Example breakdown"
-    SU02   R1   OU05   C7
-    │      │     │      │
-    │      │     │      └──  Compute Node number
-    │      │     └─────────  ORv3 Unit position in the rack
-    │      └───────────────  Rack number within the Scalable Unit
-    └──────────────────────  Scalable Unit number
-    ```
-
-!!! warning
-
-    If the iDRAC hostname is not set correctly using this convention before discovery, Omnia generates incorrect PXE mapping information. Accurate, consistent naming is mandatory.
+- Plan the iDRAC hostnames before OME discovery. Discovery derives
+  `GROUP_NAME` from the iDRAC hostname reported by OME. See [Plan iDRAC
+  hostnames](discover_nodes.md#plan-idrac-hostnames) for the recommended
+  convention, component ranges, examples, parser behavior, and fallback.
 
 ## Verification
 
@@ -165,7 +146,6 @@ Confirm that each node entry has a valid `FUNCTIONAL_GROUP_NAME`, `GROUP_NAME`, 
 
     - [Provision Nodes](../orchestrator/provision_nodes.md) -- Run the Orchestrator provisioning workflow.
     - [Orchestrator contract](../../Reference/domain_contracts/orchestrator_contract.md) -- Review the mapping input and generated outputs.
-
 
 
 

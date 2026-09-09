@@ -35,6 +35,11 @@ The PowerScale metrics pod and OTEL Collector must be Running. Confirm
 enabled, confirm `sources.powerscale.logs: deployed` and a generated VLAgent
 endpoint.
 
+The log status confirms VLAgent availability; it does not prove that the
+PowerScale system is forwarding logs. Query VictoriaMetrics for a PowerScale
+metric and VictoriaLogs for a forwarded audit record to complete end-to-end
+verification.
+
 ## Next steps
 
 - Use [Export Victoria Connection Details](configure_external_victoria.md) to
@@ -50,4 +55,3 @@ endpoint.
   values file used by the release.
 - **Health metrics are absent:** Ensure the CSI driver's external health monitor
   container is running.
-

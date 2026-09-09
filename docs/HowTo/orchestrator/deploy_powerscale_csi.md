@@ -43,16 +43,18 @@ that includes delegation mappings of hostname to PowerScale IP addresses.
 Networks:
   - admin_network:
       oim_nic_name: <network name>
+      subnet: "172.16.107.0"
       netmask_bits: "24"
       primary_oim_admin_ip: "172.16.107.254"
       primary_oim_bmc_ip: ""
+      router: "172.16.107.254"
       dynamic_range: "172.16.107.201-172.16.107.250"
       dns: ["10.x.x.x", "11.x.x.x"]
 ```
 
 **After provisioning:** If the upstream DNS server was not specified during
 provisioning, add the DNS server IP to `network_spec.yml` and re-run the
-`provision.yml` playbook.
+Orchestrator `provision` workflow.
 
 
 ## Prerequisites
@@ -238,8 +240,8 @@ provisioning, add the DNS server IP to `network_spec.yml` and re-run the
     PowerScale role consume them.
 
     ```bash title="Run on: OIM"
-    cd /omnia/src/orchestrator
-    ansible-playbook playbooks/orchestrator.yml --tags credentials
+    cd src/main
+    ./omnia.sh --run orchestrator --tags credentials
     ansible-vault edit \
       --vault-password-file /opt/omnia/orchestrator/input/project_default/.omnia_config_credentials_key \
       /opt/omnia/orchestrator/input/project_default/omnia_config_credentials.yml
@@ -290,8 +292,8 @@ provisioning, add the DNS server IP to `network_spec.yml` and re-run the
    PowerScale CSI driver on the `service_k8s_cluster`:
 
     ```bash title="Run on: OIM"
-    cd /omnia/src/orchestrator
-    ansible-playbook playbooks/orchestrator.yml --tags provision
+    cd src/main
+    ./omnia.sh --run orchestrator --tags provision
     ```
 
 ## Verification
@@ -603,8 +605,6 @@ state. Check the pod status and logs:
 ```bash title="Run on: kube_control_plane"
 kubectl logs -n isilon deployment/isilon-controller --all-containers
 ```
-
-
 
 
 

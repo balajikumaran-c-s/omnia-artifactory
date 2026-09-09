@@ -24,7 +24,7 @@ The defaults are `/opt/omnia` and `project_default`.
 | `security_config.yml` | Conditional | Supplies security settings used by enabled services. |
 | `high_availability_config.yml` | Required for service Kubernetes | Defines the Kubernetes control-plane virtual IP. |
 | `additional_cloud_init.yml` | Conditional | Supplies global or functional-group cloud-init extensions when selected by `additional_cloud_init_config_file`. |
-| `set_pxe_boot_config.yml` | Optional for PXE boot | Overrides node-registration timing and PXE-boot settings. |
+| `set_pxe_boot_config.yml` | Optional for PXE boot | Overrides node-registration timing, supporting journal pattern, restart behavior, and PXE-boot settings. Use `node_registration_*`; legacy `phone_home_*` names are deprecated compatibility inputs. |
 | `omnia_config_credentials.yml` | Required for credential-consuming flows | Ansible Vault-encrypted provisioning, BMC, Slurm, OpenLDAP, and PowerScale credentials collected for enabled features. |
 | `.omnia_config_credentials_key` | With the credential file | Vault password file for the encrypted credentials. |
 
@@ -72,8 +72,8 @@ $OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/
 |---|---|
 | `orchestrator_status.yml` | Canonical overall and per-node provisioning or PXE-boot status. |
 | `provisioning_report.yml` | Expected and registered node counts, missing nodes, and missing boot or metadata configurations. |
-| `orchestrator_inventory.yaml` | Generated Ansible inventory for mapped nodes, including the service Kubernetes VIP when configured. |
-| `bmc_group_data.csv` | BMC inventory generated for downstream iDRAC telemetry. |
+| `orchestrator_inventory.yaml` | Generated Ansible inventory for mapped nodes. `kube_vip_group` is included only when a mapped functional group starts with `service_kube_` and `high_availability_config.yml` supplies the Kubernetes VIP. |
+| `bmc_group_data.csv` | BMC inventory generated for downstream iDRAC telemetry. It includes an OIM row only when `Networks.admin_network.primary_oim_bmc_ip` is set. |
 | `failed_nodes.json` | Per-node failures produced by the iDRAC PXE-boot and registration flow. |
 | `pxeboot_status.yml` | Status written when a custom PXE-boot subset is used. |
 | `orchestrator_state.yml` | Persisted feature flags used by subsequent and standalone flows. |
@@ -94,6 +94,14 @@ For provisioning, the status contains `overall_status`, `timestamp`,
 `total_nodes`, `success_count`, `failure_count`, and a `nodes` list. Each node
 entry contains its xname, status, and failure reason. The PXE-boot flow replaces
 the file with its node-registration results when PXE boot is enabled.
+
+Node registration first waits for admin-network TCP port 22 and then derives a
+boot epoch from `/proc/uptime`. The boot epoch must be newer than the current
+PXE operation. A matching metadata-service journal entry is secondary evidence
+and is not the primary success condition. Nodes that fail the iDRAC restart
+phase are retained in `failed_nodes.json` and excluded from registration
+polling. A custom `pxeboot_inventory` additionally produces
+`pxeboot_status.yml` for that subset.
 
 ### OpenCHAMI runtime artifacts
 
@@ -124,10 +132,45 @@ Kubernetes deployment. These service resources are not represented by
 generated `slurm_config.yml` or `kubernetes_config.yml` files in the project
 output directory.
 
+## Lifecycle contract
+
+### Cleanup
+
+The top-level `cleanup` tag removes all enabled components and preserves
+`omnia_config_credentials.yml` and `.omnia_config_credentials_key`. The
+`cleanup_credentials` tag removes only those credential files. The supported
+`cleanup,cleanup_credentials` combination removes both the enabled components
+and credentials.
+
+Component tags are not accepted by the top-level Orchestrator playbook. Run
+`playbooks/cleanup/cleanup_orchestrator.yml` directly for `openchami`,
+`openldap`, `slurm`, `k8s`, `storage_mounts`, or `artifacts`. Slurm and
+Kubernetes cleanup select storage unmounting as a dependency. When their
+shared data is reachable through a mounted share or a local NFS export, the
+workflow can permanently delete managed directories. `DRY_RUN=true` uses
+Ansible check mode. Destructive execution requires the exact interactive
+response `yes`, unless `SKIP_APPROVAL=true` explicitly enables non-interactive
+cleanup.
+
+### Upgrade and rollback
+
+The `upgrade` tag runs the OpenCHAMI and OpenLDAP upgrade workflows. The
+OpenCHAMI workflow targets the `0.1.7-1` to `0.2.0-1` migration, creates a
+timestamped backup, migrates legacy services when present, restarts the
+configured services, and performs health checks. The OpenLDAP workflow updates
+a deployed `omnia_auth` container to image tag `1.2` and skips it when the
+container is absent.
+
+The `rollback` tag is reserved. Both current component rollback playbooks
+intentionally fail with `ROLLBACK NOT SUPPORTED`; the OpenCHAMI upgrade backup
+does not provide an automated rollback path.
+
 ## Related documentation
 
 - [Orchestrator](../../HowTo/orchestrator/index.md)
 - [Provision nodes](../../HowTo/orchestrator/provision_nodes.md)
+- [Upgrade Orchestrator](../../HowTo/orchestrator/upgrade_orchestrator.md)
+- [Clean up Orchestrator](../../HowTo/orchestrator/cleanup_orchestrator.md)
 - [Repository Manager contract](repo_manager_contract.md)
 - [Image Build Manager contract](image_build_manager_contract.md)
 - [PXE mapping file](../SampleFiles/pxe_mapping_file.md)

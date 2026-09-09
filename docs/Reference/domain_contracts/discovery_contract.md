@@ -65,6 +65,16 @@ causes Discovery to stop. See [Create OME static
 groups](../../HowTo/discovery/discover_nodes.md#create-ome-static-groups) for
 the supported names and OME procedure.
 
+Discovery derives `GROUP_NAME` from the `SU` sequence in the OME-reported
+iDRAC hostname and uses `grp0` when no recognized sequence is present. For the
+recommended hostname convention and the sequence recognized by the current
+mapping generator, see [Plan iDRAC
+hostnames](../../HowTo/discovery/discover_nodes.md#plan-idrac-hostnames).
+
+Discovery generates `HOSTNAME` as `nid` followed by a three-digit sequence.
+The supported range is `nid000` through `nid999`, and automatic generation
+normally begins with `nid001`.
+
 Review and correct the generated values before copying the file to:
 
 ```text

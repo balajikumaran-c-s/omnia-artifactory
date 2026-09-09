@@ -89,6 +89,63 @@ backslash, single quote, double quote, or semicolon. The password must contain
 between 1 and 128 characters. Discovery prompts only for values that are empty
 or absent in the credential file.
 
+### Plan iDRAC hostnames
+
+Discovery uses the iDRAC hostname reported by OME to derive the physical
+`GROUP_NAME` written to the PXE mapping file. Configure consistent iDRAC
+hostnames before running Discovery so that servers in the same Scalable Unit
+resolve to the same group.
+
+Use the following complete naming convention when encoding the server's
+physical location:
+
+```text
+idrac-<SU><1-100>R<000-999>OU<1-54><Type><Instance>
+```
+
+| Component | Description | Recommended format |
+|-----------|-------------|--------------------|
+| `SU` | Scalable Unit containing the server. | `SU1` through `SU100`; matching is case-insensitive. |
+| `R` | Rack within the Scalable Unit. | `R1` through `R999`. |
+| `OU` | Open Rack v3 unit position within the rack. | `OU1` through `OU54`. |
+| `Type` | Server type at the rack position. | Use `C` for a compute node. |
+| `Instance` | Individual server instance at the rack position. | `1` through `99`. |
+
+For example:
+
+```text title="Example breakdown"
+SU02   R1   OU05   C7
+│      │     │      │
+│      │     │      └── Compute node instance
+│      │     └───────── Open Rack v3 unit position
+│      └─────────────── Rack within the Scalable Unit
+└────────────────────── Scalable Unit
+```
+
+`idrac-SU02R1OU05C7` identifies compute node 7 at unit position 5 in rack 1
+of Scalable Unit 02.
+
+The current mapping generator searches the OME-reported hostname for a
+case-insensitive `SU[optional-letter]<digits>R<digits>` sequence and writes the
+matched `SU` portion in uppercase. The complete naming convention and numeric
+ranges above are operational planning requirements; Discovery does not
+validate the entire hostname or those ranges.
+
+| OME-reported iDRAC hostname | Generated `GROUP_NAME` |
+|-----------------------------|------------------------|
+| `idrac-SU02R1OU05C7` | `SU02` |
+| `idrac-SUA99R999OU30C2` | `SUA99` |
+| `SU1R2OU1C5` | `SU1` |
+| `idrac-JCGT033` | `grp0` |
+
+!!! warning
+
+    OME can report an instrumentation name, a DNS name, or its device name for
+    the iDRAC. Verify the value visible in OME before running Discovery. If the
+    reported hostname does not contain a recognized `SU...R...` sequence,
+    Discovery uses `grp0`. An incorrect `GROUP_NAME` can also prevent or
+    misdirect `PARENT_SERVICE_TAG` assignment for Slurm compute nodes.
+
 ### Plan OME static groups
 
 When OME exposes a `Static Groups` container, Discovery uses its immediate
@@ -146,11 +203,6 @@ A server without a static-group assignment is placed in
 `slurm_node_aarch64`. A server assigned to a nonempty, unsupported static
 group is skipped when the mapping file is generated, although it remains in
 the discovery report.
-
-Discovery derives `GROUP_NAME` from an `SU` identifier in the iDRAC hostname.
-Recognized examples include `idrac-SUA99R999OU30C2` and `SU1R2OU1C5`, which
-produce `SUA99` and `SU1`, respectively. If the hostname does not contain a
-match, Discovery tries the OME group name and then defaults to `grp0`.
 
 For `slurm_node_x86_64` and `slurm_node_aarch64`, Discovery populates
 `PARENT_SERVICE_TAG` from a `service_kube_node_x86_64` server with the same
@@ -338,7 +390,7 @@ accordingly when this relationship is required.
     | `GROUP_NAME` | `SU` identifier derived from the iDRAC hostname, or `grp0` when no identifier is found. |
     | `SERVICE_TAG` | Service tag reported by OME. |
     | `PARENT_SERVICE_TAG` | Service tag of a `service_kube_node_x86_64` in the same group for Slurm compute-node roles; otherwise empty. |
-    | `HOSTNAME` | `nid` plus a three-digit sequence number based on discovery order. It normally begins with `nid001`; skipped devices can create gaps. |
+    | `HOSTNAME` | `nid` plus a three-digit sequence number based on discovery order. The supported range is `nid000` through `nid999`; automatic generation normally begins with `nid001`, and skipped devices can create gaps. |
     | `ADMIN_MAC` | MAC of the first non-iDRAC, non-InfiniBand port with link status `Up`; otherwise the first usable non-iDRAC, non-InfiniBand port. |
     | `ADMIN_IP` | Admin subnet's first two octets combined with the BMC IP's last two octets. |
     | `BMC_MAC` | iDRAC MAC address reported by OME. |

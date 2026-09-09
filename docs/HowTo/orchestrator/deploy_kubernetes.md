@@ -6,7 +6,15 @@ Orchestrator prepares service Kubernetes nodes whose functional-group names
 start with `service_kube_`. It registers those nodes and groups in OpenCHAMI,
 creates their boot and cloud-init data, mounts the selected storage on the OIM,
 stages Kubernetes configuration and offline content on that storage, and
-configures OpenLDAP clients when the catalog enables OpenLDAP.
+configures the Kubernetes software and mounts selected by the Kubernetes
+bolt-on list.
+
+The default Kubernetes bolt-ons are `mount_config`, `k8s_config`, and
+`telemetry`. The current Kubernetes provisioning playbook implements the first
+two. It does not run a Telemetry role, and its default list does not include
+OpenLDAP. Deploy Telemetry through the Telemetry domain after Kubernetes is
+available. Do not assume that selecting OpenLDAP in the catalog configures an
+OpenLDAP client on Kubernetes nodes.
 
 The source provides x86_64 templates for the first control-plane node,
 additional control-plane nodes, and worker nodes. During functional-group
@@ -102,17 +110,17 @@ etcd data.
    processes any Slurm, OS-only, login, or custom groups in the same mapping.
 
     ```bash title="Run on: OIM"
-    cd /omnia/src/orchestrator
-    ansible-playbook playbooks/orchestrator.yml --tags validate
-    ansible-playbook playbooks/orchestrator.yml --tags precheck
-    ansible-playbook playbooks/orchestrator.yml --tags prepare
-    ansible-playbook playbooks/orchestrator.yml --tags provision
+    cd src/main
+    ./omnia.sh --run orchestrator --tags validate
+    ./omnia.sh --run orchestrator --tags precheck
+    ./omnia.sh --run orchestrator --tags prepare
+    ./omnia.sh --run orchestrator --tags provision
     ```
 
 6. For physical servers, start the PXE and node-registration flow:
 
     ```bash title="Run on: OIM"
-    ansible-playbook playbooks/orchestrator.yml --tags pxeboot
+    ./omnia.sh --run orchestrator --tags pxeboot
     ```
 
 ## Verification
@@ -144,6 +152,9 @@ command should reach `Running` or `Completed`.
   project inputs.
 - If selected by the catalog, configure the PowerScale CSI files before
   rerunning provisioning.
+- After the service cluster is ready, configure and run the
+  [Telemetry domain](../Telemetry/index.md) separately when telemetry is
+  required.
 
 ## Troubleshooting
 

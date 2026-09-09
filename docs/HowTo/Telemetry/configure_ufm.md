@@ -46,21 +46,27 @@ Omnia does not deploy or configure the UFM appliance.
 2. Run validation and deployment:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags validate
-    ./omnia.sh -r telemetry --tags deploy
+    cd src/main
+    ./omnia.sh --run telemetry --tags validate
+    ./omnia.sh --run telemetry --tags deploy
     ```
 
-3. To collect UFM logs, also set `logs_enabled: true`, add
+3. To collect UFM logs, keep metrics enabled, set `logs_enabled: true`, add
    `victoria_logs` to `collection_targets`, deploy Telemetry, and export the
-   VLAgent target:
+   VLAgent target. The source role is imported only when metrics are enabled;
+   a logs-only configuration is not supported.
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags external_victoria
+    cd src/main
+    ./omnia.sh --run telemetry --tags external_victoria
     ```
 
     Configure the existing UFM appliance to send logs to the generated
     `vlagent.syslog_endpoint`. The Telemetry source exposes this endpoint but
     does not configure UFM itself.
+
+    UFM log forwarding is an external appliance configuration step; the
+    Telemetry source does not deploy a UFM log collector.
 
 ## Verification
 
@@ -88,8 +94,14 @@ appliance has begun sending logs.
 - **The endpoint is rejected:** Set a non-empty UFM IP address and a port from
   `1` through `65535`.
 - **Credentials are missing:** Supply UFM credentials when `auth_mode: basic`.
+- **Credentials are requested with `auth_mode: none`:** The current credential
+  collection is gated by enabled UFM metrics, not by `auth_mode`. Complete the
+  prompt while this source behavior remains in place.
 - **The CA file is rejected:** With `tls_mode: ca_signed`, provide an existing
   PEM certificate path on the OIM.
+- **Deployment fails with `auth_mode: none` and self-signed TLS:** The current
+  source can render an empty Secret while still attempting to apply it. Use
+  basic authentication or CA-signed TLS until that source limitation is fixed.
 - **No metrics arrive:** Confirm the UFM endpoint is reachable from Kubernetes
   and that its authentication, TLS mode, scrape interval, and timeout are
   correct.

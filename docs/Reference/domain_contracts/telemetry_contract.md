@@ -14,6 +14,12 @@ $OMNIA_DATA_PATH/telemetry/input/$OMNIA_PROJECT_NAME/
 `$OMNIA_DATA_PATH/telemetry`. The defaults resolve to
 `/opt/omnia/telemetry/input/project_default/`.
 
+The current deployment loader still reads the `project_default` input
+directory, regardless of the project selected during validation, and
+initialization and deployment do not consistently honor `TELEMETRY_DATA_PATH`.
+Use the default project and data root until these source limitations are
+corrected.
+
 | Input | Required | Purpose |
 |---|---|---|
 | `telemetry_config.yml` | Yes | Selects the cluster inventory, sources, routes, bridges, sinks, and source-specific settings. |
@@ -38,6 +44,13 @@ cross-field validators.
 | `telemetry_bridges.vector_ldms` | Optional | Routes LDMS data from Kafka to VictoriaMetrics. |
 | `telemetry_bridges.vector_ome` | Optional | Routes OME metrics or logs from Kafka to VictoriaMetrics or VictoriaLogs. |
 | Source-specific configuration | Conditional | Supplies endpoints, ports, inventory paths, and other fields required by enabled sources. |
+
+PowerScale, UFM, and VAST are imported by the root deployment only when their
+metrics channel is enabled. Logs for these external systems require manual
+configuration to forward syslog to VLAgent; a logs-only source configuration
+is not supported by the current root workflow. OME is an external Kafka
+producer, and SFM is an external VictoriaMetrics producer rather than a
+Telemetry source role.
 
 ### `telemetry_storage_config.yml`
 
@@ -86,6 +99,14 @@ instead.
 
 Component deployment values are `deployed`, `failed`, or `skipped`.
 
+The root deployment currently calls the sink playbook without a derived sink
+selection, so Kafka, VictoriaMetrics, and VictoriaLogs are deployed by
+default. Status values report the state evaluated by the deployment workflow;
+they do not prove end-to-end ingestion. In particular, PowerScale and UFM log
+status reflects VLAgent availability, and the current VAST summary does not
+consume its source-specific component check. Verify actual records in the
+selected sink.
+
 Cleanup rewrites the same file with `type: cleanup` and adds
 `cleanup_components`, `cleanup_unreachable_nodes`, and a `volumes` block.
 The `Delete_volume` or `delete_volume` boolean extra variable controls
@@ -101,6 +122,10 @@ workflow preserves `telemetry_status.yml` as the last-known result.
 
 These utilities fail when their required deployment or endpoint state is not
 available instead of presenting an incomplete export as valid.
+
+The domain supports setup, validation, precheck, deployment, cleanup, and the
+two external connection exports. The `upgrade` and `rollback` operations are
+placeholders in the current source and do not perform lifecycle changes.
 
 ## Related documentation
 

@@ -29,6 +29,9 @@ be Ready.
 Both deployments must have ready replicas, the `ldms` topic must exist, and
 `bridges.vector_ldms: deployed` must appear in `telemetry_status.yml`.
 
+These checks establish bridge readiness. Query VictoriaMetrics for an LDMS
+metric to verify that records traverse the complete pipeline.
+
 ## Next steps
 
 - Export [VictoriaMetrics connection details](configure_external_victoria.md)
@@ -43,4 +46,3 @@ Both deployments must have ready replicas, the `ldms` topic must exist, and
   Kafka, the `ldms` topic, and `vmagent-vector` are available.
 - **The bridge runs but no data arrives:** Verify the upstream LDMS aggregator,
   store, and sampler configuration first.
-

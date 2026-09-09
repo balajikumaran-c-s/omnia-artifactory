@@ -45,8 +45,8 @@ The source recognizes these categories:
 ### 1. Initialize and configure the module
 
 ```bash title="Run on: OIM"
-cd /omnia/src/orchestrator
-./domain-init.sh
+cd src/main
+./omnia.sh --setup-venv
 ```
 
 The input directory is
@@ -69,8 +69,8 @@ copied into the project input directory, use its absolute path for
 ### 2. Validate the inputs and prerequisites
 
 ```bash title="Run on: OIM"
-ansible-playbook playbooks/orchestrator.yml --tags validate
-ansible-playbook playbooks/orchestrator.yml --tags precheck
+./omnia.sh --run orchestrator --tags validate
+./omnia.sh --run orchestrator --tags precheck
 ```
 
 ### 3. Run the complete or staged workflow
@@ -80,16 +80,16 @@ precheck, prepare, and execute; `execute` includes provisioning and PXE boot
 when `enable_pxe_boot` is `true`.
 
 ```bash title="Run on: OIM"
-ansible-playbook playbooks/orchestrator.yml
+./omnia.sh --run orchestrator
 ```
 
 To control each phase, run one tag at a time:
 
 ```bash title="Run on: OIM"
-ansible-playbook playbooks/orchestrator.yml --tags credentials
-ansible-playbook playbooks/orchestrator.yml --tags deploy
-ansible-playbook playbooks/orchestrator.yml --tags provision
-ansible-playbook playbooks/orchestrator.yml --tags pxeboot
+./omnia.sh --run orchestrator --tags credentials
+./omnia.sh --run orchestrator --tags deploy
+./omnia.sh --run orchestrator --tags provision
+./omnia.sh --run orchestrator --tags pxeboot
 ```
 
 `provision` configures every category present in the mapping and writes a
@@ -143,8 +143,9 @@ services and retry the appropriate phase:
 systemctl status openchami.target
 systemctl status metadata-service
 /usr/bin/ochami smd service status
-ansible-playbook playbooks/orchestrator.yml --tags deploy
-ansible-playbook playbooks/orchestrator.yml --tags provision
+cd src/main
+./omnia.sh --run orchestrator --tags deploy
+./omnia.sh --run orchestrator --tags provision
 ```
 
 **PXE boot reports no BMC hosts**

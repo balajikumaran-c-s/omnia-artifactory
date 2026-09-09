@@ -33,6 +33,10 @@ The aggregator must have a ready replica, the store must be `Running`, and the
 ready replica. Confirm `sources.ldms.metrics: deployed` and the expected bridge
 state in `telemetry_status.yml`.
 
+The deployment status does not prove ingestion. Read records from the `ldms`
+topic and, when Vector-LDMS is enabled, query VictoriaMetrics for an LDMS
+metric to complete end-to-end verification.
+
 ## Next steps
 
 - Use [Verify Vector-LDMS](verify_vector_ldms.md) for the bridge-specific check.
@@ -46,4 +50,3 @@ state in `telemetry_status.yml`.
 - **The store is not Running:** Inspect the `nersc-ldms-store` pod logs.
 - **A sampler is unavailable:** Check `ldmsd` and the configured sampler port on
   that Slurm node.
-

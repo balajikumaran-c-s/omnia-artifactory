@@ -64,8 +64,9 @@ When enabled, Vector-LDMS consumes that topic and forwards metrics through
 4. Run the precheck and deployment:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags precheck
-    ./omnia.sh -r telemetry --tags deploy
+    cd src/main
+    ./omnia.sh --run telemetry --tags precheck
+    ./omnia.sh --run telemetry --tags deploy
     ```
 
 ## Verification
@@ -84,6 +85,10 @@ The Vector deployment is expected only when the bridge is enabled. Confirm
 in `telemetry_status.yml`. Review `deploy_unreachable_nodes.ldms` for skipped
 Slurm nodes.
 
+The status file records the resources and nodes handled by deployment. Query
+the `ldms` Kafka topic and, when enabled, VictoriaMetrics to verify end-to-end
+data flow.
+
 ## Next steps
 
 - Use [Verify LDMS Telemetry](verify_ldms.md) for the standalone checks.
@@ -101,4 +106,3 @@ Slurm nodes.
   Omnia opens that port automatically when `firewalld` is active.
 - **Vector-LDMS is rejected:** The bridge requires the LDMS source to be
   enabled. It also requires Kafka and VictoriaMetrics support.
-

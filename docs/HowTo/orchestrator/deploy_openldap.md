@@ -7,7 +7,8 @@ Repo Manager catalog contains an OpenLDAP group. The source derives the LDAP
 search base from `SYSTEM_DOMAIN_NAME`, uses `SYSTEM_ADMIN_NIC_IPV4` as the LDAP
 server address, collects the OpenLDAP database username and password in an
 Ansible Vault file, generates TLS material, and configures LDAP clients during
-Slurm and Kubernetes provisioning.
+Slurm provisioning. The standard Kubernetes bolt-on list does not configure
+an OpenLDAP client.
 
 OpenLDAP selection is catalog-driven. There is no `ldap_enabled` input and no
 `deploy_openldap` top-level tag.
@@ -45,8 +46,8 @@ OpenLDAP selection is catalog-driven. There is no `ldap_enabled` input and no
    the prepare phase.
 
     ```bash title="Run on: OIM"
-    cd /omnia/src/orchestrator
-    ansible-playbook playbooks/orchestrator.yml --tags precheck
+    cd src/main
+    ./omnia.sh --run orchestrator --tags precheck
     ```
 
 4. Run the `prepare` phase and supply
@@ -57,7 +58,7 @@ OpenLDAP selection is catalog-driven. There is no `ldap_enabled` input and no
    `.omnia_config_credentials_key`.
 
     ```bash title="Run on: OIM"
-    ansible-playbook playbooks/orchestrator.yml --tags prepare
+    ./omnia.sh --run orchestrator --tags prepare
     ```
 
    The phase creates `$OMNIA_DATA_PATH/auth/config`, `tls_certs`, `data`, and
@@ -70,7 +71,8 @@ OpenLDAP selection is catalog-driven. There is no `ldap_enabled` input and no
 Run the source-defined deployment health check and inspect the container:
 
 ```bash title="Run on: OIM"
-ansible-playbook playbooks/orchestrator.yml --tags validate-deployment
+cd src/main
+./omnia.sh --run orchestrator --tags validate-deployment
 podman ps --filter name=omnia_auth
 systemctl status omnia_auth
 ```
@@ -81,9 +83,11 @@ state is `running`.
 
 ## Next steps
 
-- Continue with [Provision Nodes](provision_nodes.md). The Slurm and Kubernetes
-  provisioning paths run the OpenLDAP client configuration only when the
-  catalog enables OpenLDAP.
+- Continue with [Provision Nodes](provision_nodes.md). The default Slurm
+  provisioning path runs the OpenLDAP client configuration when the catalog
+  enables OpenLDAP. Kubernetes does not include OpenLDAP in its default
+  bolt-on list; the standard input template does not expose a supported
+  Kubernetes OpenLDAP override.
 - Use [Deploy Slurm](deploy_slurm.md) or
   [Deploy Kubernetes](deploy_kubernetes.md) for service-specific inputs.
 
@@ -100,8 +104,9 @@ Orchestrator defaults `openldap_support` to `false`.
 Run the credential phase, then retry deployment:
 
 ```bash title="Run on: OIM"
-ansible-playbook playbooks/orchestrator.yml --tags credentials
-ansible-playbook playbooks/orchestrator.yml --tags deploy
+cd src/main
+./omnia.sh --run orchestrator --tags credentials
+./omnia.sh --run orchestrator --tags deploy
 ```
 
 **The `omnia_auth` container is not running**
@@ -114,4 +119,4 @@ podman logs omnia_auth
 systemctl status omnia_auth
 ```
 
-Then rerun `ansible-playbook playbooks/orchestrator.yml --tags deploy`.
+Then rerun `./omnia.sh --run orchestrator --tags deploy` from `src/main`.

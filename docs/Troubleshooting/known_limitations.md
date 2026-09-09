@@ -50,6 +50,45 @@ For tracking, see: [pulp_rpm issue #4241](https://github.com/pulp/pulp_rpm/issue
 - New VAST storage mounts added after an upgrade are not retained during rollback.
 - Slurm and Kubernetes upgrade or rollback operations reboot all affected nodes simultaneously, resulting in temporary cluster downtime. Schedule these operations during a maintenance window.
 
+### OpenCHAMI Deployment May Fail When the SMD Certificate Expires
+
+**Issue:**
+
+During `configure_ochami` execution, the `Get SMD group data` task may fail
+with an error similar to:
+
+```text
+failed to verify certificate: x509: certificate has expired or is not yet valid
+```
+
+The failure occurs when OpenCHAMI components attempt to retrieve group
+information from SMD using an expired TLS certificate.
+
+**Example error:**
+
+```text
+GetGroups(): error getting groups:
+failed to execute HTTP request:
+tls: failed to verify certificate: x509: certificate has expired or is not yet valid
+```
+
+**Workaround:**
+
+Regenerate the OpenCHAMI access token, update the OpenCHAMI certificates, and
+restart the OpenCHAMI services:
+
+```bash title="Run on: OIM host"
+export <OIM_HOSTNAME>_ACCESS_TOKEN=$(sudo bash -lc 'gen_access_token')
+sudo openchami-certificate-update update <OIM_hostname>.<domain>
+sudo systemctl restart openchami.target
+```
+
+**Verification:**
+
+After executing these commands, rerun the failed Omnia deployment command. The
+`configure_ochami` role should complete successfully without the certificate
+validation error.
+
 ### Upgrade Gets Stuck at omnia.sh --upgrade with External NFS
 
 **Applicable to:** Omnia Core upgrade (2.1.0.0 → 2.2.0.0 and later) when using an external NFS share (for example, Dell PowerScale, generic NFS server).
@@ -253,7 +292,6 @@ There is currently no workaround available.
 An enhancement request has been submitted to enable support for the complete set of iDRAC telemetry metrics on the PowerEdge XE8712 platform:
 
 **GitHub Enhancement Request:** [Enhancement Request: Support Complete iDRAC Telemetry Metrics on PowerEdge XE8712 with NVIDIA GB200](https://github.com/dell/iDRAC-Telemetry-Reference-Tools/issues/190)
-
 
 
 

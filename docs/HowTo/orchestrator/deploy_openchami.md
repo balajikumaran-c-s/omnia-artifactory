@@ -48,14 +48,14 @@ set on the OIM.
 
 ## Procedure
 
-1. From the Orchestrator source directory, initialize the module. This installs
-   its Python and Ansible dependencies, creates runtime directories, and stages
-   the input templates without overwriting existing project files unless you
-   approve the prompt.
+1. From `src/main`, initialize the shared environment. This installs the
+   Python and Ansible dependencies, creates runtime directories, and stages
+   domain input templates without overwriting existing project files unless
+   you approve the prompt.
 
     ```bash title="Run on: OIM"
-    cd /omnia/src/orchestrator
-    ./domain-init.sh
+    cd src/main
+    ./omnia.sh --setup-venv
     ```
 
 2. Edit the project inputs under
@@ -74,8 +74,8 @@ set on the OIM.
 3. Validate the input files, then run the prerequisite checks.
 
     ```bash title="Run on: OIM"
-    ansible-playbook playbooks/orchestrator.yml --tags validate
-    ansible-playbook playbooks/orchestrator.yml --tags precheck
+    ./omnia.sh --run orchestrator --tags validate
+    ./omnia.sh --run orchestrator --tags precheck
     ```
 
 4. Run the `prepare` phase. It collects missing provisioning and BMC
@@ -83,7 +83,7 @@ set on the OIM.
    OpenLDAP, and runs both readiness gates.
 
     ```bash title="Run on: OIM"
-    ansible-playbook playbooks/orchestrator.yml --tags prepare
+    ./omnia.sh --run orchestrator --tags prepare
     ```
 
    After the initial preparation, use `--tags deploy` to retry the OpenCHAMI
@@ -95,7 +95,8 @@ set on the OIM.
 Run the source-defined deployment health checks:
 
 ```bash title="Run on: OIM"
-ansible-playbook playbooks/orchestrator.yml --tags validate-deployment
+cd src/main
+./omnia.sh --run orchestrator --tags validate-deployment
 ```
 
 The check succeeds only when `openchami.target` is active, the authenticated
@@ -140,7 +141,8 @@ Use the checks emitted by the provisioning role, then rerun the deployment:
 systemctl status openchami.target
 journalctl -u openchami.target -n 50
 systemctl status smd boot-service metadata-service
-ansible-playbook playbooks/orchestrator.yml --tags deploy
+cd src/main
+./omnia.sh --run orchestrator --tags deploy
 ```
 
 Review `/var/log/omnia/orchestrator/orchestrator.log` for the failed Ansible

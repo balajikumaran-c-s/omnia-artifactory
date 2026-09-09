@@ -32,6 +32,10 @@ logs are enabled, confirm `sources.vast.logs: deployed`, verify
 `vlagent.available: true` in the external Victoria output, and query for a log
 sent by VAST.
 
+The current status aggregation can mark enabled VAST channels as `deployed`
+without using the VAST-specific component check. Treat the status as a summary
+only and rely on the resource and sink queries above for verification.
+
 ## Next steps
 
 - Export the [VictoriaMetrics query and UI endpoints](configure_external_victoria.md).

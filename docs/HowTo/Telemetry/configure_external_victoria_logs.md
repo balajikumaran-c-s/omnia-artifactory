@@ -19,7 +19,8 @@ are marked unavailable when their services are not deployed.
 1. Run the shared Victoria export utility:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags external_victoria
+    cd src/main
+    ./omnia.sh --run telemetry --tags external_victoria
     ```
 
 2. Read the generated connection file:
@@ -61,4 +62,3 @@ querying for records produced by that source.
   service in the `telemetry` namespace and assign an external IP.
 - **The export stops before checking logs:** Restore the required
   VictoriaMetrics deployment; the shared utility validates it first.
-

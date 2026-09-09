@@ -109,17 +109,17 @@ Pulp certificate. The optional `vast_storage_name` mount supplies the
    categories in the mapping, not only Slurm.
 
     ```bash title="Run on: OIM"
-    cd /omnia/src/orchestrator
-    ansible-playbook playbooks/orchestrator.yml --tags validate
-    ansible-playbook playbooks/orchestrator.yml --tags precheck
-    ansible-playbook playbooks/orchestrator.yml --tags prepare
-    ansible-playbook playbooks/orchestrator.yml --tags provision
+    cd src/main
+    ./omnia.sh --run orchestrator --tags validate
+    ./omnia.sh --run orchestrator --tags precheck
+    ./omnia.sh --run orchestrator --tags prepare
+    ./omnia.sh --run orchestrator --tags provision
     ```
 
 5. For physical nodes, PXE boot the mapped inventory after provisioning:
 
     ```bash title="Run on: OIM"
-    ansible-playbook playbooks/orchestrator.yml --tags pxeboot
+    ./omnia.sh --run orchestrator --tags pxeboot
     ```
 
 ## Verification

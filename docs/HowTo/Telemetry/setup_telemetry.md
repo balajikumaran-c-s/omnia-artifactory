@@ -6,6 +6,10 @@ Omnia provides `src/telemetry/containers/build_images.sh` as the entry point for
 building the telemetry container images maintained in the Telemetry source
 tree. The script can build all four images or a selected comma-separated set:
 
+This image-build utility is independent of Telemetry domain initialization.
+It does not create project inputs, run `omnia.sh --setup-venv`, or deploy the
+Telemetry stack.
+
 | Build selector | Image produced | Default tag | Build source |
 |----------------|----------------|-------------|--------------|
 | `kafkapump` | `kafkapump` | `1.3` | Dell iDRAC Telemetry Reference Tools |

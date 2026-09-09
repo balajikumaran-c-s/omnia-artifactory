@@ -32,8 +32,8 @@ compilation scripts.
 1. Synchronize the selected UCX and OpenMPI catalog content:
 
     ```bash title="Run on: OIM host"
-    cd /omnia/src/repo_manager/playbooks
-    ansible-playbook repo_manager.yml --tags "precheck,download,status"
+    cd src/main
+    ./omnia.sh --run repo_manager --tags "precheck,download,status"
     ```
 
 2. Confirm that Repo Manager published the selected tarballs and produced a
@@ -49,8 +49,8 @@ compilation scripts.
    `/usr/local/bin/` on login/compiler nodes:
 
     ```bash title="Run on: OIM host"
-    cd /omnia/src/orchestrator
-    ansible-playbook playbooks/orchestrator.yml --tags provision
+    cd src/main
+    ./omnia.sh --run orchestrator --tags provision
     ```
 
 4. On a provisioned login/compiler node, verify the shared mount and install

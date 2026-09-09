@@ -32,6 +32,9 @@ logs are enabled, confirm `sources.ufm.logs: deployed`, verify
 `vlagent.available: true` in the external Victoria output, and query for a log
 sent by UFM.
 
+The log status is based on the shared VLAgent state; it does not confirm that
+the UFM appliance was configured or has sent data.
+
 ## Next steps
 
 - Export the [VictoriaMetrics query and UI endpoints](configure_external_victoria.md).

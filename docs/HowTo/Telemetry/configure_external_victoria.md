@@ -20,7 +20,8 @@ URL, and CA certificate when TLS is enabled.
 1. Run the export utility:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags external_victoria
+    cd src/main
+    ./omnia.sh --run telemetry --tags external_victoria
     ```
 
 2. Read:
@@ -44,7 +45,8 @@ URL, and CA certificate when TLS is enabled.
 Confirm the output file contains non-empty vminsert and vmselect hosts. When
 TLS is enabled, also confirm that `ca.crt` exists in the same output directory.
 The utility embeds the current VictoriaMetrics pod status in the generated
-file.
+file. This is a component and endpoint check, not confirmation that a producer
+is writing data; query for a known metric to verify ingestion.
 
 ## Next steps
 
@@ -63,4 +65,3 @@ file.
   vmselect LoadBalancer services.
 - **The VIP cannot be reached:** Restore root SSH access from the OIM to the
   configured Kubernetes VIP.
-

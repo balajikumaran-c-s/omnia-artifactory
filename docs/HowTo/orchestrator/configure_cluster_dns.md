@@ -46,15 +46,15 @@ Cluster DNS replaces per-node `/etc/hosts` synchronization with coresmd, a CoreD
 3. Deploy or redeploy OpenCHAMI with coresmd (if not already deployed):
 
     ```bash title="Run on: OIM"
-    cd /omnia/src/orchestrator
-    ansible-playbook playbooks/orchestrator.yml --tags prepare
+    cd src/main
+    ./omnia.sh --run orchestrator --tags prepare
     ```
 
 4. Run the provisioning playbook so nodes receive cloud-init with `/etc/resolv.conf` configured:
 
     ```bash title="Run on: OIM"
-    cd /omnia/src/orchestrator
-    ansible-playbook playbooks/orchestrator.yml --tags provision
+    cd src/main
+    ./omnia.sh --run orchestrator --tags provision
     ```
 
 5. Reprovision (reboot) all compute nodes to apply the new cloud-init configuration.
@@ -73,14 +73,18 @@ Cluster DNS replaces per-node `/etc/hosts` synchronization with coresmd, a CoreD
 2. Re-run the provisioning playbook to regenerate cloud-init configuration:
 
     ```bash title="Run on: OIM"
-    cd /omnia/src/orchestrator
-    ansible-playbook playbooks/orchestrator.yml --tags provision
+    cd src/main
+    ./omnia.sh --run orchestrator --tags provision
     ```
 
 3. Reprovision (reboot) all compute nodes to apply the new cloud-init configuration.
 
     !!! note
-        No coresmd or OpenCHAMI changes are needed for rollback. coresmd continues running but compute nodes no longer query it.
+        No coresmd or OpenCHAMI changes are needed for this configuration
+        change. coresmd continues running but newly provisioned compute nodes
+        no longer query it. Setting `dns_enabled: false` does not restore a
+        resolver file that was previously changed on the OIM; review and
+        restore the OIM resolver settings manually when required.
 
 
 ## Verification
@@ -91,11 +95,17 @@ Cluster DNS replaces per-node `/etc/hosts` synchronization with coresmd, a CoreD
     cat /etc/resolv.conf
     ```
 
-    ```text title="Expected output"
+    ```text title="Expected entries"
     search <domain_name>
     nameserver <admin_nic_ip>
     options timeout:1 attempts:2
     ```
+
+    Orchestrator prepends the cluster search domain and OIM nameserver to the
+    existing resolver content. Existing search domains, nameservers, and
+    options are preserved. On the OIM, the generated resolver file is marked
+    immutable; account for that protection before making later manual resolver
+    changes.
 
 2. **Verify no peer entries exist in `/etc/hosts`** (only localhost entries should be present):
 

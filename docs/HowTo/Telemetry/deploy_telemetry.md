@@ -21,16 +21,16 @@ their tags are selected explicitly.
   on the VIP can access the cluster.
 - Make the shared `k8s_cluster_mount` available on the Kubernetes nodes. LDMS
   also requires the configured `slurm_cluster_mount` on the Slurm nodes.
+- Run customer-facing `omnia.sh` commands from `src/main`. The script is not
+  located at the root of the source checkout.
 
 ## Procedure
 
-1. From the Omnia source root, initialize the shared virtual environment and
-   Telemetry runtime files:
+1. From the Omnia source root, change to `src/main` and initialize the shared
+   virtual environment and Telemetry runtime files:
 
     ```bash title="Run on: OIM"
-    set -a
-    source src/main/omnia.env
-    set +a
+    cd src/main
     ./omnia.sh --setup-venv
     ```
 
@@ -52,23 +52,33 @@ their tags are selected explicitly.
 3. Run the opt-in environment precheck:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags precheck
+    cd src/main
+    ./omnia.sh --run telemetry --tags precheck
     ```
 
     It validates the VIP and SSH access, control-plane and worker readiness,
     non-Telemetry pod health, and the source-specific PowerScale and LDMS
-    prerequisites when those sources are enabled.
+    prerequisites when those sources are enabled. This operation is opt-in and
+    is not included in the untagged default flow.
 
 4. Validate only the input contract when desired:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags validate
+    cd src/main
+    ./omnia.sh --run telemetry --tags validate
     ```
+
+    Validation includes L1 JSON Schema checks and L2 cross-field checks. L2
+    also checks SSH access to the Kubernetes VIP and verifies the configured
+    Kubernetes mount remotely, so this is not an offline-only operation. Use
+    an absolute `cluster_inventory` path, normally
+    `<OMNIA_DATA_PATH>/orchestrator/output/<project>/orchestrator_inventory.yaml`.
 
 5. Deploy the enabled configuration:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags deploy
+    cd src/main
+    ./omnia.sh --run telemetry --tags deploy
     ```
 
     The credential role creates an encrypted `telemetry_credentials.yml` and
@@ -79,6 +89,23 @@ their tags are selected explicitly.
     ```bash title="Run on: OIM"
     ansible-playbook playbooks/telemetry.yml --tags deploy
     ```
+
+    Deployment loads the configuration and credentials, deploys sink
+    infrastructure, deploys enabled sources and Vector bridges, generates the
+    root Kustomization, applies the complete stack, checks component state, and
+    writes `telemetry_status.yml`.
+
+    The current source has these operational limitations:
+
+    - The deployment configuration loader reads `project_default`, even when a
+      different `OMNIA_PROJECT_NAME` was validated.
+    - `TELEMETRY_DATA_PATH` is not consistently applied by initialization and
+      deployment.
+    - The root deployment invokes the sink playbook with its default selection,
+      which deploys Kafka, VictoriaMetrics, and VictoriaLogs.
+    - PowerScale, UFM, and VAST are imported by the root deployment only when
+      their metrics channel is enabled. A logs-only configuration is not
+      supported by this path.
 
 ## Verification
 
@@ -110,8 +137,17 @@ their tags are selected explicitly.
   [Victoria](configure_external_victoria.md) connection details when external
   systems must publish or query Telemetry data.
 - To remove all Telemetry runtime resources while preserving PVCs and Kafka
-  identity metadata, run `./omnia.sh -r telemetry --tags cleanup`. Pass
-  `-e Delete_volume=true` only when persistent volumes must also be deleted.
+  identity metadata, run the following from `src/main`:
+
+    ```bash title="Run on: OIM"
+    ./omnia.sh --run telemetry --tags cleanup
+    ```
+
+  Pass `-e Delete_volume=true` only when persistent volumes must also be
+  deleted. Source-specific tags such as `cleanup_idrac`, `cleanup_ldms`, and
+  `cleanup_powerscale` remove their respective sources. Although sink-specific
+  cleanup tags are discoverable in the current playbook, sink cleanup is gated
+  by the full `cleanup` operation.
 
 ## Troubleshooting
 

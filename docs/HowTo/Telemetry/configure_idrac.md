@@ -47,8 +47,9 @@ firmware, and an iDRAC Datacenter license before enabling collection.
 3. Run the Telemetry precheck, then deploy:
 
     ```bash title="Run on: OIM"
-    ./omnia.sh -r telemetry --tags precheck
-    ./omnia.sh -r telemetry --tags deploy
+    cd src/main
+    ./omnia.sh --run telemetry --tags precheck
+    ./omnia.sh --run telemetry --tags deploy
     ```
 
     Enter the requested BMC and MySQL credentials when the credential workflow
@@ -71,6 +72,9 @@ a BMC CSV was configured, review
 `<OMNIA_DATA_PATH>/telemetry/idrac_telemetry_report.yml` for activated,
 unsupported, invalid, unreachable, and removed BMCs.
 
+These checks confirm the deployed resources. Confirm records in Kafka and
+VictoriaMetrics separately to verify end-to-end collection from a BMC.
+
 ## Next steps
 
 - Use [Verify iDRAC Telemetry](verify_idrac.md) for the repeatable source checks.
@@ -84,7 +88,9 @@ unsupported, invalid, unreachable, and removed BMCs.
 - **A BMC is listed as invalid:** Confirm the common BMC credentials, Redfish
   availability, required firmware, and Datacenter license.
 - **A BMC is unreachable:** Restore network access from a service worker or the
-  control-plane VIP. The Telemetry source validates reachability but does not
-  configure site VLANs or routes.
+  control-plane VIP. The workflow selects the first service worker and retries
+  the second service worker, when present, before it falls back to the VIP. The
+  Telemetry source validates reachability but does not configure site VLANs or
+  routes.
 - **Kafka or VictoriaMetrics is missing:** Confirm the corresponding sink is
   deployed; both are required by the iDRAC role.

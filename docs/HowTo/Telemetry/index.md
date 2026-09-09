@@ -13,11 +13,23 @@ run through SSH on the control-plane VIP obtained from the configured
 Orchestrator inventory.
 
 ```text
-sources -> optional Vector bridges -> Kafka / VictoriaMetrics / VictoriaLogs
-                                      |
-                                      v
-                        telemetry_status.yml and connection exports
+iDRAC ---------------------------> Kafka
+   `-----------------------------> VictoriaMetrics
+
+LDMS --> Kafka --> Vector-LDMS --> VictoriaMetrics
+OME ---> Kafka --> Vector-OME ----> VictoriaMetrics
+                               `--> VictoriaLogs
+
+PowerScale --> OTEL/VMAgent ------> VictoriaMetrics
+UFM/VAST ---> VMAgent ------------> VictoriaMetrics
+External syslog producers --> VLAgent --> VictoriaLogs
 ```
+
+`telemetry_status.yml` records deployment and cleanup results. The connection
+export workflows write the endpoints and certificates needed by external
+producers and consumers. Component status confirms the state checked by the
+deployment workflow; verify data in the selected sink to establish end-to-end
+collection.
 
 ## Prerequisites
 
@@ -51,6 +63,21 @@ before configuring the project inputs.
 | [Export VictoriaMetrics Connection Details](configure_external_victoria.md) | Export VictoriaMetrics write/query endpoints and the TLS CA when enabled. |
 | [Export VictoriaLogs Connection Details](configure_external_victoria_logs.md) | Export VictoriaLogs write/query endpoints and the VLAgent syslog target. |
 
+The domain entry point exposes these lifecycle operations:
+
+| Operation | Behavior |
+|---|---|
+| No tag | Run setup, input validation, and deployment. |
+| `validate` / `validation` | Run L1 schema and L2 logical and infrastructure validation. |
+| `precheck` | Check the Kubernetes VIP, cluster health, and enabled source prerequisites. |
+| `deploy` / `execute` | Deploy Telemetry sinks, sources, and bridges. |
+| `cleanup` | Remove all Telemetry runtime resources while preserving PVCs and Kafka identity by default. |
+| `external_kafka` | Export Kafka endpoints and client TLS material. |
+| `external_victoria` | Export VictoriaMetrics, VictoriaLogs, and VLAgent connection details. |
+
+The `upgrade` and `rollback` operations are placeholders in the current source
+and do not perform component lifecycle changes.
+
 The source-specific verification pages repeat the checks independently when a
 deployment must be inspected later: [iDRAC](verify_idrac.md),
 [LDMS](verify_ldms.md), [OME](verify_ome.md),
@@ -72,8 +99,12 @@ Telemetry reads these project-scoped runtime inputs:
 | `telemetry_packages.yml` | `/opt/omnia/telemetry/input/project_default/` |
 | `telemetry_credentials.yml` | Created and encrypted in the same directory when credentials are collected |
 
-`OMNIA_DATA_PATH` and `OMNIA_PROJECT_NAME` change the root and project portions
-of these paths. The deployment writes
+The domain contract uses `OMNIA_DATA_PATH` and `OMNIA_PROJECT_NAME` for the root
+and project portions of these paths. The current deployment configuration
+loader still resolves its input to the `project_default` directory, and
+`TELEMETRY_DATA_PATH` is not consistently honored by initialization and
+deployment. Use the default project and data root until those source
+limitations are corrected. The deployment writes
 `<OMNIA_DATA_PATH>/telemetry/output/<project>/telemetry_status.yml`. It records
 the overall result, Kubernetes namespace, VIP, package mode, per-sink and
 per-source results, bridge results, and LDMS nodes skipped as unreachable.

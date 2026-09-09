@@ -53,16 +53,16 @@ not install a kernel package or create a new image.
 4. Validate the Orchestrator input and upstream image output:
 
     ```bash title="Run on: OIM"
-    cd /omnia/src/orchestrator
-    ansible-playbook playbooks/orchestrator.yml --tags validate
-    ansible-playbook playbooks/orchestrator.yml --tags precheck
+    cd src/main
+    ./omnia.sh --run orchestrator --tags validate
+    ./omnia.sh --run orchestrator --tags precheck
     ```
 
 5. Provision and PXE boot the nodes:
 
     ```bash title="Run on: OIM"
-    ansible-playbook playbooks/orchestrator.yml --tags provision
-    ansible-playbook playbooks/orchestrator.yml --tags pxeboot
+    ./omnia.sh --run orchestrator --tags provision
+    ./omnia.sh --run orchestrator --tags pxeboot
     ```
 
 ## Verification
