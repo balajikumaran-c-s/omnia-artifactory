@@ -58,7 +58,8 @@ one aggregate Pulp distribution for an architecture.
     ~~~
 
     Also add the package key to a group that is reachable from the intended
-    functional layer. See [Add Packages to the Catalog](adding_additional_packages.md).
+    functional layer. See
+    [Configure Catalog Content and Add Packages](adding_additional_packages.md).
 
 3. Stage the updated YAML input:
 
@@ -99,7 +100,8 @@ Confirm that the repository URL is also present under
 
 ## Next steps
 
-- [Add packages](adding_additional_packages.md) that use the new `reponame`.
+- [Configure and add packages](adding_additional_packages.md) that use the new
+  `reponame`.
 - [Build Cluster Images](../image_build_manager/build_images.md) after
   `repo_status.yml` reports success.
 - [Force an RPM resynchronization](../../Operations/repo_manager/local_repository_resync.md) when the upstream

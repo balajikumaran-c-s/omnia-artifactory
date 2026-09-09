@@ -23,7 +23,7 @@ functional layer selects.
 
 1. Add the required package to the catalog and to a group referenced by the
    image's functional layer. See
-   [Add Packages to the Catalog](adding_additional_packages.md).
+   [Configure Catalog Content and Add Packages](adding_additional_packages.md).
 
 2. Add any required source mapping:
 
@@ -69,7 +69,7 @@ Then inspect
 ## Next steps
 
 - [Build Cluster Images](../image_build_manager/build_images.md).
-- [Configure Catalog Content](configuring_specific_software.md).
+- [Configure Catalog Content and Add Packages](adding_additional_packages.md).
 - [Add an RPM Repository](adding_additional_repositories.md).
 
 ## Troubleshooting

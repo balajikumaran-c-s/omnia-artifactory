@@ -42,9 +42,7 @@ catalog JSON + repository configuration + endpoint configuration
 | Task | Use it to |
 |---|---|
 | [Create Local Repositories](configure_repos.md) | Configure Repo Manager inputs, deploy Pulp, synchronize catalog content, and generate `repo_status.yml`. |
-| [Configure Catalog Content](configuring_specific_software.md) | Define how functional layers, groups, packages, and sources select content for synchronization. |
-| [Configure Base OS and Functional Package Groups](default_packages.md) | Define the `base_os` and regular groups referenced by catalog functional layers. |
-| [Add Packages to the Catalog](adding_additional_packages.md) | Add new packages or update existing packages in the configured catalog. |
+| [Configure Catalog Content and Add Packages](adding_additional_packages.md) | Define functional groups, connect packages to functional layers, resolve package sources, and add or update catalog content. |
 | [Add an RPM Repository](adding_additional_repositories.md) | Map a catalog RPM source to a repository by OS version, architecture, and `reponame`. |
 | [Update Local Repositories after Catalog Changes](../../Operations/repo_manager/updating_local_repositories.md) | Validate and synchronize changed catalog content, then regenerate `repo_status.yml`. |
 | [Resynchronize Local RPM Repositories](../../Operations/repo_manager/local_repository_resync.md) | Force all or selected catalog-required RPM repositories to check their upstream remotes. |

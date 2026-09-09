@@ -185,20 +185,7 @@ Vault.
 
 ## Verification
 
-### 1. Verify Pulp and synchronized content
-
-Verify the service and inspect each Pulp content family used by the catalog:
-
-```bash title="Run on: OIM host"
-systemctl status pulp.service
-pulp status
-pulp rpm distribution list --limit 1000
-pulp container distribution list --limit 1000
-pulp file distribution list --limit 1000
-pulp python distribution list --limit 1000
-```
-
-### 2. Verify the output contract for image building
+### 1. Verify the output contract for image building
 
 Repo Manager publishes the synchronized repository information for Image Build
 Manager and cluster provisioning workflows at:
@@ -265,10 +252,23 @@ the affected version as `failed`, and leaves the corresponding repository maps
 without consumable URLs. Correct the synchronization failure and rerun the
 `download,status` tags before building the image.
 
+### 2. Verify Pulp and synchronized content
+
+Verify the service and inspect each Pulp content family used by the catalog:
+
+```bash title="Run on: OIM host"
+systemctl status pulp.service
+pulp status
+pulp rpm distribution list --limit 1000
+pulp container distribution list --limit 1000
+pulp file distribution list --limit 1000
+pulp python distribution list --limit 1000
+```
+
 ## Next steps
 
 - [Build Cluster Images](../image_build_manager/build_images.md).
-- [Add packages to the catalog](adding_additional_packages.md).
+- [Configure and add packages to the catalog](adding_additional_packages.md).
 - [Configure a new RPM repository](adding_additional_repositories.md).
 - [Update synchronized content after catalog changes](../../Operations/repo_manager/updating_local_repositories.md).
 
