@@ -184,8 +184,6 @@ uses an existing custom ISO.
 
 - [Build Cluster Images](../image_build_manager/build_images.md) -- Use the
   installed node where required by the image-building workflow.
-- [Prepare an aarch64 Node](prepare_aarch64_node.md) -- Apply the installer to
-  an aarch64 target.
 
 ## Troubleshooting
 

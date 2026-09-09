@@ -176,6 +176,5 @@ The installation playbook also supports the direct stage tags `credentials`,
 
 - [Utils overview](../../HowTo/utils/index.md)
 - [Install an OS unattended](../../HowTo/utils/install_os_unattended.md)
-- [Prepare an aarch64 node](../../HowTo/utils/prepare_aarch64_node.md)
 - [Collect cluster logs](../../Operations/collect_cluster_logs.md)
 - [Use the Slurm configuration roles](../../Operations/slurm_configuration_roles.md)

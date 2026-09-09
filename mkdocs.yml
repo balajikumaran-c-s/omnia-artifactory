@@ -241,7 +241,6 @@ nav:
     - utils:
       - HowTo/utils/index.md
       - Install OS Unattended: HowTo/utils/install_os_unattended.md
-      - Prepare aarch64 Node: HowTo/utils/prepare_aarch64_node.md
   
   - Reference:
     - Reference/index.md
