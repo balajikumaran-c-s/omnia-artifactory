@@ -1,700 +1,503 @@
-# Path C: Full Deployment (Slurm + K8s + Telemetry)
+# Path C: Full Deployment
 
-Deploy a production-grade cluster with Slurm job scheduling, a highly
-available Kubernetes service cluster, and telemetry. This is the canonical
-Omnia deployment that exercises every major subsystem.
+## Overview
 
-**What you will build:**
+Use this deployment path to provision Slurm and service Kubernetes clusters
+and deploy Omnia Telemetry.
 
-| Role | Functional Group | Count | Purpose |
-| --- | --- | --- | --- |
-| OIM (management) | -- | 1 | Runs `omnia_core`; orchestrates the deployment. |
-| K8s control plane | `service_kube_control_plane_x86_64` | 3 | HA Kubernetes control plane (`kube-apiserver`, `etcd`, `kube-scheduler`, `kube-controller-manager`). |
-| K8s worker node | `service_kube_node_x86_64` | 1 | Runs the telemetry stack: iDRAC collector, LDMS aggregator, Kafka, VictoriaMetrics. |
-| Slurm control node | `slurm_control_node_x86_64` | 1 | Runs `slurmctld` (Slurm controller), `slurmdbd` (accounting), and MariaDB. |
-| Slurm compute node(s) | `slurm_node_x86_64` / `slurm_node_aarch64` | 1+ | Run `slurmd`; execute jobs submitted to the cluster. |
-| Login / compiler node | `login_compiler_node_x86_64` / `login_compiler_node_aarch64` | 1 | User-facing SSH gateway with compiler toolchains for job submission and building applications. |
+The workflow prepares the Omnia Infrastructure Manager (OIM), synchronizes
+catalog content with Repository Manager, and builds the required node images
+with Image Build Manager. After you provide a reviewed PXE mapping,
+Orchestrator provisions the Slurm and Kubernetes functional groups in the same
+run and generates the combined inventory required by Telemetry. The final
+stages deploy the enabled telemetry components and verify both clusters and
+the Telemetry deployment.
 
-**Estimated time:** ~4 hours.
+## Full deployment workflow
 
-!!! note
+<div class="of-wrap">
+<div class="of-root">
+  <div class="of-hdr">
+    <div class="of-h2">Required module sequence and output handoffs</div>
+  </div>
+  <div class="of-flow">
+    <div class="of-pill">Start on the OIM</div>
+    <div class="of-c"></div>
+    <div class="of-s">
+      <div class="t">Configure and set up the OIM</div>
+      <div class="d"><code>omnia.env</code> &rarr; <code>omnia.sh --setup-venv</code></div>
+      <div class="of-more"><a href="../HowTo/main/setup_oim.html">Learn more: OIM setup &gt;&gt;</a></div>
+    </div>
+    <div class="of-c"></div>
+    <div class="of-s">
+      <div class="t">Synchronize catalog content</div>
+      <div class="d">Make catalog repositories available for image builds</div>
+      <div class="of-more"><a href="../HowTo/repo_manager/configure_repos.html">Learn more: Repository Manager &gt;&gt;</a></div>
+    </div>
+    <div class="of-c"></div>
+    <div class="of-s">
+      <div class="t">Build all cluster-node images</div>
+      <div class="d">Create images for the selected cluster functional groups</div>
+      <div class="of-more"><a href="../HowTo/image_build_manager/build_images.html">Learn more: Build OS images &gt;&gt;</a></div>
+    </div>
+    <div class="of-c"></div>
+    <div class="of-s">
+      <div class="t">Provide the PXE mapping</div>
+      <div class="d">OME Discovery or a manual CSV</div>
+      <div class="of-more"><a href="../HowTo/discovery/create_mapping_file.html">Learn more: Create the PXE mapping &gt;&gt;</a></div>
+    </div>
+    <div class="of-c"></div>
+    <div class="of-s">
+      <div class="t">Provision Slurm and service Kubernetes</div>
+      <div class="d">Provision both clusters and generate their combined inventory</div>
+      <div class="of-more"><a href="../HowTo/orchestrator/provision_nodes.html">Learn more: Provision nodes &gt;&gt;</a></div>
+    </div>
+    <div class="of-c"></div>
+    <div class="of-s">
+      <div class="t">Configure and deploy Telemetry</div>
+      <div class="d">Kubernetes sinks and enabled sources, including optional LDMS</div>
+      <div class="of-more"><a href="../HowTo/Telemetry/deploy_telemetry.html">Learn more: Deploy Telemetry &gt;&gt;</a></div>
+    </div>
+    <div class="of-c"></div>
+    <div class="of-s">
+      <div class="t">Verify both clusters and Telemetry</div>
+      <div class="d">Check Slurm, Kubernetes, and Telemetry health</div>
+      <div class="of-more">Learn more: <a href="../HowTo/orchestrator/deploy_slurm.html#verification">Slurm &gt;&gt;</a> &middot; <a href="../HowTo/orchestrator/deploy_kubernetes.html#verification">Kubernetes &gt;&gt;</a> &middot; <a href="../HowTo/Telemetry/deploy_telemetry.html#verification">Telemetry &gt;&gt;</a></div>
+    </div>
+    <div class="of-c"></div>
+    <div class="of-pill">Full Omnia platform ready</div>
+  </div>
+</div>
+</div>
 
-    Complete the [Prerequisites Checklist](prerequisites_checklist.md)
-    before proceeding.
+## Prerequisites
 
-## Step 1 -- Deploy the omnia_core Container
+- Use an Omnia source checkout on the OIM.
+- For the Telemetry module, use Python 3.12 or later, Ansible 2.20 or later,
+  and RHEL or Rocky Linux 10.x on the OIM.
+- Set `SYSTEM_ADMIN_NIC_IPV4` in `src/main/omnia.env` to an IPv4 address
+  assigned to an OIM interface. Review the project name, shared data path,
+  hostname, domain, Omnia version, and catalog path in the same file.
+- Select a catalog whose functional layers include Slurm and service
+  Kubernetes. For an offline Telemetry deployment, ensure its package-manifest
+  artifacts are available through the Pulp repository configured in
+  `telemetry_packages.yml`.
+- Prepare the admin-network values required by Orchestrator. The deployment
+  needs Slurm controller and compute groups plus service Kubernetes
+  control-plane and worker groups.
+- Prepare the shared storage referenced by both cluster configurations.
+  Telemetry requires the Kubernetes shared mount; LDMS also requires a shared
+  path on the Slurm nodes.
+- Prepare the credentials and source-specific inputs for each enabled
+  Telemetry source. Supported source configuration is provided for iDRAC,
+  LDMS, PowerScale, UFM, VAST, OME, and SFM.
+- For OME discovery, have the OME address and credentials available. For
+  automated PXE boot, the mapping must contain the applicable BMC information
+  and Orchestrator must be able to collect the BMC credentials.
 
-Clone the Omnia artifacts repository, build the `omnia_core` container
-image, and deploy the container on the OIM. The container packages the
-complete Omnia codebase and Ansible engine.
+## Procedure
 
-For details, see
-[Deploy Omnia Core](../HowTo/Setup/deploy_omnia_core.md){target="_blank"}.
+### 1. Configure and set up the OIM
 
-1. **Clone the Omnia Containers repository and build the container image**:
-
-    ```bash title="Run on: OIM host"
-    git clone https://github.com/dell/omnia-containers.git -b omnia-container-v2.2.0.0-rc1
-    cd omnia-containers
-    ./build_images.sh core omnia_branch=v2.2.0.0-rc1 core_tag=2.2
-    ```
-
-2. **Download the `omnia.sh` script**:
-
-    ```bash title="Run on: OIM host"
-    wget https://raw.githubusercontent.com/dell/omnia/refs/tags/v2.2.0.0-rc1/omnia.sh
-    chmod +x omnia.sh
-    ```
-
-3. **Install the omnia_core container**:
-
-    ```bash title="Run on: OIM host"
-    ./omnia.sh --install
-    ```
-
-!!! caution
-    The password must not contain special characters such as
-    `, |, &, ;, \`, <>, *, ?, !, $, (), {}, []`.
-
-**Verification**
-
-1. **Verify the `omnia_core` container is running**:
-
-    ```bash title="Run on: OIM host"
-    podman ps --filter name=omnia_core --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
-    ```
-
-    Expected output:
-
-    ```text title="Expected output"
-    NAMES        IMAGE                       STATUS       PORTS
-    omnia_core   localhost/omnia_core:2.2     Up 1 day     2222/tcp
-    ```
-
-2. **Access the omnia_core container**:
-
-    ```bash title="Run on: OIM host"
-    ssh omnia_core
-    ```
-
-    You will be automatically logged in to the `omnia_core` container.
-
-!!! warning
-    - Do not delete any key pairs generated by Omnia from `/root/.ssh`
-      -- this causes `omnia_core.service` execution failure.
-    - Do not manually delete files from the Omnia shared directory. Use
-      `./omnia.sh --uninstall` to safely remove.
-
-## Step 2 -- Create the Mapping File
-
-Omnia supports two methods for creating the PXE mapping file:
-
-- **Manual** -- Collect PXE NIC information and fill in the
-  `pxe_mapping_file.csv` manually.
-- **OME-based discovery (recommended)** -- Use OpenManage Enterprise (OME)
-  to discover cluster nodes and auto-generate the mapping file using
-  `discovery.yml`.
-
-**Option A: Fill the PXE mapping file manually**
-
-Create a `pxe_mapping_file.csv` in
-`/opt/omnia/input/project_default/` and set the `pxe_mapping_file_path`
-variable in `provision_config.yml` to point to it.
-
-```csv title="/opt/omnia/input/project_default/pxe_mapping_file.csv"
-FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP
-service_kube_control_plane_x86_64,kube,SVCTAG01,,kube-cp01,24:6E:96:BB:01:01,10.5.0.201,,10.3.0.201
-service_kube_control_plane_x86_64,kube,SVCTAG02,,kube-cp02,24:6E:96:BB:01:02,10.5.0.202,,10.3.0.202
-service_kube_control_plane_x86_64,kube,SVCTAG03,,kube-cp03,24:6E:96:BB:01:03,10.5.0.203,,10.3.0.203
-service_kube_node_x86_64,kube,SVCTAG04,,kube-wk01,24:6E:96:BB:02:01,10.5.0.204,,10.3.0.204
-slurm_control_node_x86_64,slurm,SVCTAG05,,head01,24:6E:96:BB:03:01,10.5.0.205,,10.3.0.205
-slurm_node_x86_64,slurm,SVCTAG06,SVCTAG05,compute01,24:6E:96:BB:04:01,10.5.0.206,,10.3.0.206
-slurm_node_x86_64,slurm,SVCTAG07,SVCTAG05,compute02,24:6E:96:BB:04:02,10.5.0.207,,10.3.0.207
-login_compiler_node_x86_64,slurm,SVCTAG08,,login-compiler01,24:6E:96:BB:05:01,10.5.0.208,,10.3.0.208
-```
-
-!!! warning
-    Replace all placeholder values (`SVCTAG*`, MAC addresses, IPs) with
-    your actual hardware data.
-
-!!! note
-    - All header fields are case-sensitive.
-    - `PARENT_SERVICE_TAG` maps Slurm nodes to their parent service
-      kube node for iDRAC telemetry grouping.
-    - The `ADMIN_MAC` and `BMC_MAC` addresses should refer to the PXE
-      NIC and BMC NIC on the target nodes respectively.
-    - Target servers should be configured to boot in PXE mode with the
-      appropriate NIC as the first boot device.
-    - Hostnames should not contain the domain name of the nodes.
-
-!!! note
-    The `arch` field accepts `x86_64` or `aarch64`. If your cluster
-    includes aarch64 nodes, add a separate entry for each software
-    component with `"arch": ["aarch64"]`.
-
-For detailed information on PXE mapping file format and parameters, see
-[PXE Mapping File](../Reference/SampleFiles/pxe_mapping_file.md){target="_blank"}.
-
-**Option B: Create PXE file using OME**
-
-Use the `discovery.yml` playbook to auto-generate the mapping file from
-an OME inventory. For detailed instructions including OME prerequisites,
-static group setup, and iDRAC hostname conventions, see
-[Discover Nodes Using OME](../HowTo/Setup/discover_nodes.md){target="_blank"}.
-
-```bash title="Run on: omnia_core container"
-cd /omnia/discovery
-ansible-playbook discovery.yml -e "discovery_mechanism=ome"
-```
-
-The playbook generates a `bmc_pxe_mapping_file_<timestamp>.csv` in
-`/opt/omnia/input/project_default/`. Verify and edit the file as needed.
-
-!!! warning
-
-    For a full deployment, ensure at least **3 rows** use the
-    `service_kube_control_plane` functional group and at least **1 row**
-    uses `service_kube_node`. HA requires a minimum of 3 control-plane
-    nodes.
-
-## Step 3 -- Provide Inputs
-
-Configure the input files that define your cluster's network, provisioning,
-telemetry, and storage settings. For a full deployment, update the following
-input files in `/opt/omnia/input/project_default/`. Click each file name to
-view the full parameter reference.
-
-| Input File | Purpose |
-| --- | --- |
-| [`network_spec.yml`](../Reference/Configuration/network_spec.md){target="_blank"} | Network CIDRs, interfaces, and IP ranges |
-| [`provision_config.yml`](../Reference/Configuration/provision_config.md){target="_blank"} | OS provisioning and PXE settings |
-| [`high_availability_config.yml`](../Reference/Configuration/high_availability_config.md){target="_blank"} | Kubernetes HA virtual IP configuration |
-| [`telemetry_config.yml`](../Reference/Configuration/telemetry_config.md){target="_blank"} | Telemetry sources, bridges, and sinks |
-| [`telemetry_storage_config.yml`](../Reference/Configuration/telemetry_config.md#telemetry-storage-configuration-parameters){target="_blank"} | Telemetry storage resources and retention |
-| [`software_config.json`](../Reference/Configuration/software_config.md){target="_blank"} | Software stack (K8s, Slurm, telemetry components) |
-| [`local_repo_config.yml`](../Reference/Configuration/local_repo_config.md){target="_blank"} | Repository mirror settings |
-| [`storage_config.yml`](../Reference/Configuration/storage_config.md){target="_blank"} | NFS storage mount configuration |
-| [`omnia_config.yml`](../Reference/Configuration/omnia_config.md){target="_blank"} | Slurm and service cluster K8s settings |
-| [`security_config.yml`](../Reference/Configuration/security_config.md){target="_blank"} | OpenLDAP authentication settings |
-| [`discovery_config.yml`](../Reference/Configuration/discovery_config.md){target="_blank"} | BMC discovery and OME integration |
-| [`build_stream_config.yml`](../Reference/Configuration/build_stream_config.md){target="_blank"} | BuildStreaM CI/CD pipeline settings (optional) |
-| [`additional_cloud_init.yml`](../Reference/Configuration/additional_cloud_init.md){target="_blank"} | Custom cloud-init scripts (optional) |
-
-For the full procedure and parameter reference, see
-[Configure Inputs](../HowTo/Setup/configure_inputs.md){target="_blank"}.
-For detailed Slurm-specific input configuration, see
-[Set Up Slurm](../HowTo/Slurm/setup_slurm.md){target="_blank"}.
-
-!!! tip
-    If you need to build custom Slurm RPMs from source or host them on
-    a local server, complete those steps first:
-
-    - [Build Slurm RPM Repository](../HowTo/Slurm/build_slurm_repo.md)
-    - [Host Slurm RPM Repository](../HowTo/Slurm/host_slurm_repo.md)
-
-!!! caution "InfiniBand deployments"
-    If any Slurm nodes have an InfiniBand interface and `ib_network` is
-    defined in `network_spec.yml`:
-
-    - The Slurm user repository must **not** include `ucx`, `ucx-devel`,
-      `openmpi`, or `openmpi-devel` packages.
-    - Slurm must be compiled **without** UCX and OpenMPI support.
-    - DOCA-OFED provides its own UCX and OpenMPI stack, configured
-      automatically during provisioning.
-
-    For InfiniBand network configuration details, see
-    [Configure InfiniBand](../HowTo/Networking/configure_infiniband.md).
-
-## Step 4 -- Prepare the OIM
-
-Deploys the OIM infrastructure: OpenCHAMI provisioning stack, Pulp
-local repository, container registry, MinIO S3 storage, OpenLDAP
-authentication, and step-ca certificate authority.
-
-For details, see
-[Prepare OIM](../HowTo/Setup/prepare_oim.md){target="_blank"}.
-
-```bash title="Run on: omnia_core container"
-cd /omnia/prepare_oim
-ansible-playbook prepare_oim.yml
-```
-
-**Verification -- OIM Infrastructure**
-
-After `prepare_oim.yml` completes, verify the OIM services on the
-**OIM host** (not inside the container):
-
-1. **Check `omnia.target` status**:
+1. Edit the environment configuration from the Omnia source tree:
 
     ```bash title="Run on: OIM host"
-    systemctl is-active omnia.target
+    cd src/main
+    vi omnia.env
     ```
 
-    Expected output: `active`
-
-2. **Verify all service dependencies**:
+2. Create the shared virtual environment, install module dependencies, stage
+   the module input templates, and copy the catalog samples:
 
     ```bash title="Run on: OIM host"
-    systemctl list-dependencies omnia.target
+    ./omnia.sh --setup-venv
     ```
 
-    Expected output:
+    This command runs each selected module's `domain-init.sh`. Do not run the
+    individual initialization scripts again unless a module was skipped or
+    setup used `--deps-only`.
 
-    ```text title="Expected output"
-    omnia.target
-    ● ├─minio.service
-    ● ├─omnia_auth.service
-    ● ├─omnia_core.service
-    ● ├─pulp.service
-    ● ├─registry.service
-    ● ├─network-online.target
-    ● │ └─NetworkManager-wait-online.service
-    ● └─openchami.target
-    ●   ├─acme-deploy.service
-    ●   ├─acme-register.service
-    ●   ├─bss-init.service
-    ●   ├─bss.service
-    ●   ├─cloud-init-server.service
-    ●   ├─coresmd-coredhcp.service
-    ●   ├─coresmd-coredns.service
-    ●   ├─haproxy.service
-    ●   ├─hydra-gen-jwks.service
-    ●   ├─hydra-migrate.service
-    ●   ├─hydra.service
-    ●   ├─opaal-idp.service
-    ●   ├─opaal.service
-    ●   ├─openchami-cert-trust.service
-    ●   ├─postgres.service
-    ●   ├─smd-init.service
-    ●   ├─smd.service
-    ●   └─step-ca.service
-    ```
+For all environment and setup options, see
+[Configure the environment](../HowTo/main/configure_environment.md) and
+[Set up the OIM](../HowTo/main/setup_oim.md).
 
-3. **Verify all containers are running**:
+### 2. Configure and run Repository Manager
+
+1. Review these staged inputs:
+
+    - `<OMNIA_DATA_PATH>/repo_manager/input/<OMNIA_PROJECT_NAME>/repo_manager_config.yml`
+    - `<OMNIA_DATA_PATH>/repo_manager/input/<OMNIA_PROJECT_NAME>/repo_manager_endpoint_config.yml`
+    - The catalog JSON identified by `CATALOG_FILE_PATH`
+
+    Ensure the selected catalog includes the Slurm and service Kubernetes
+    functional layers and that every selected package source resolves through
+    the configured RPM repository, container registry, or artifact URL.
+
+2. Run the complete standard Repo Manager flow from `src/main`:
 
     ```bash title="Run on: OIM host"
-    podman ps --format "table {{.Names}}\t{{.Status}}"
+    ./omnia.sh --run repo_manager
     ```
 
-    Expected output:
+    The flow validates the environment and inputs, collects or reuses
+    credentials, deploys Pulp, synchronizes the selected content, and writes:
 
-    ```text title="Expected output"
-    NAMES               STATUS
-    bss                 Up 1 day
-    cloud-init-server   Up 1 day
-    coresmd-coredhcp    Up 1 day
-    coresmd-coredns     Up 1 day
-    haproxy             Up 1 day
-    hydra               Up 1 day
-    minio-server        Up 1 day
-    omnia_auth          Up 1 day
-    omnia_core          Up 1 day
-    opaal               Up 1 day
-    opaal-idp           Up 1 day
-    postgres            Up 1 day
-    pulp                Up 1 day
-    registry            Up 1 day
-    smd                 Up 1 day
-    step-ca             Up 1 day
+    ```text
+    <OMNIA_DATA_PATH>/repo_manager/output/<OMNIA_PROJECT_NAME>/repo_status.yml
     ```
 
-!!! note
+    Do not continue until `overall_status` is `success`.
 
-    - The `minio-server` container will **not** be present if you configured
-      PowerScale as the S3 endpoint (`s3_configurations.provider: "powerscale"`)
-      in `storage_config.yml`. In that case, Omnia uses the external
-      PowerScale S3 service instead of deploying a local MinIO container.
-    - The `omnia_auth` container will **not** be present if `openldap` is
-      not included in `software_config.json`.
+For the configuration and credential procedure, see
+[Create Local Repositories](../HowTo/repo_manager/configure_repos.md).
 
-For detailed OIM verification procedures, see
-[Verify OIM Services](../HowTo/Setup/verify_oim_services.md){target="_blank"}.
+### 3. Configure and run Image Build Manager
 
-## Step 5 -- Create Local Repositories
+1. Review the staged `image_build_config.yml` under:
 
-Downloads all required RPM packages, container images, and tarballs
-into Pulp based on `software_config.json` for air-gapped provisioning.
-
-For details, see
-[Create Local Repos](../HowTo/Setup/create_local_repos.md){target="_blank"}.
-
-```bash title="Run on: omnia_core container"
-cd /omnia/local_repo
-ansible-playbook local_repo.yml
-```
-
-!!! note
-
-    Expect **45--90 minutes** depending on network speed. Total download
-    size is typically **20--40 GB**.
-
-**Verification -- Local Repository Status**
-
-After `local_repo.yml` completes, verify that all software components
-were downloaded successfully by checking the `software.csv` status file.
-The components listed in this file correspond directly to the software
-entries configured in `software_config.json`.
-
-1. **Verify x86_64 package status**:
-
-    ```bash title="Run on: omnia_core container"
-    cat /opt/omnia/log/local_repo/rhel/10.0/x86_64/software.csv
+    ```text
+    <OMNIA_DATA_PATH>/image_build_manager/input/<OMNIA_PROJECT_NAME>/
     ```
 
-    Expected output:
+    Its `repo_manager_output_path` must identify the successful
+    `repo_status.yml`. With `functional_groups_source: "catalog"`, the Image
+    Build Manager resolves image package sets from `CATALOG_FILE_PATH`. With
+    `functional_groups_source: "config"`, also configure `package_groups.yml`
+    in the same project input directory.
 
-    ```text title="Expected output"
-    name,status
-    default_packages,success
-    admin_debug_packages,success
-    openldap,success
-    service_k8s,success
-    slurm_custom,success
-    csi_driver_powerscale,success
-    ldms,success
-    ```
-
-2. **Verify aarch64 package status** (if aarch64 is included in
-   `software_config.json`):
-
-    ```bash title="Run on: omnia_core container"
-    cat /opt/omnia/log/local_repo/rhel/10.0/aarch64/software.csv
-    ```
-
-    Expected output:
-
-    ```text title="Expected output"
-    name,status
-    default_packages,success
-    openldap,success
-    slurm_custom,success
-    ```
-
-!!! note
-
-    The `software.csv` output reflects the software components configured
-    in `software_config.json`. Each component with `"arch": ["x86_64"]`
-    appears in the x86_64 status file, and each component with
-    `"arch": ["aarch64"]` appears in the aarch64 status file. Components
-    such as `service_k8s` and `csi_driver_powerscale` are typically
-    x86_64-only. All entries must show `success` status before proceeding.
-
-## Step 6 -- Build Node Images
-
-Builds diskless OS images for each functional group in the PXE mapping
-file and uploads them to MinIO (S3) for PXE boot delivery.
-
-For details, see
-[Build Cluster Images](../HowTo/Setup/build_cluster_images.md){target="_blank"}.
-
-**Build x86_64 Images**
-
-```bash title="Run on: omnia_core container"
-cd /omnia/build_image_x86_64
-ansible-playbook build_image_x86_64.yml
-```
-
-**Build aarch64 Images**
-
-If your PXE mapping file contains aarch64 functional groups, you must
-first prepare an aarch64 build node. See
-[Prepare aarch64 Node](../HowTo/Setup/prepare_aarch64_node.md){target="_blank"}
-for the complete procedure (manual RHEL 10 installation, inventory file
-creation, etc.).
-
-```bash title="Run on: omnia_core container"
-cd /omnia/build_image_aarch64
-ansible-playbook build_image_aarch64.yml -i inventory
-```
-
-**Verification -- Boot Images in S3**
-
-After the build playbooks complete, verify the images are uploaded to
-MinIO (S3). Each functional group produces **3 image artifacts**:
-`rootfs` (full OS root filesystem), `vmlinuz` (Linux kernel), and
-`initramfs` (initial RAM filesystem for PXE boot).
-
-1. **List all boot images in S3**:
+2. Run the complete standard image-build flow:
 
     ```bash title="Run on: OIM host"
-    s3cmd ls s3://boot-images/
+    cd src/main
+    ./omnia.sh --run image_build_manager
     ```
 
-    Expected output (one directory per functional group plus `efi-images`):
+    The flow validates the configuration, collects or reuses the applicable
+    S3 and aarch64 credentials, prepares MinIO when selected, deploys the local
+    registry, builds the selected functional-group images, and writes:
 
-    ```text title="Expected output"
-                        DIR  s3://boot-images/efi-images/
-                        DIR  s3://boot-images/login_compiler_node_x86_64/
-                        DIR  s3://boot-images/service_kube_control_plane_first_x86_64/
-                        DIR  s3://boot-images/service_kube_control_plane_x86_64/
-                        DIR  s3://boot-images/service_kube_node_x86_64/
-                        DIR  s3://boot-images/slurm_control_node_x86_64/
-                        DIR  s3://boot-images/slurm_node_x86_64/
-                        DIR  s3://boot-images/slurm_node_aarch64/
+    ```text
+    <OMNIA_DATA_PATH>/image_build_manager/output/<OMNIA_PROJECT_NAME>/build_status.yml
     ```
 
-2. **Verify individual image artifacts for a specific functional group**:
+    Confirm that `overall_status` is `success` and that every Slurm and service
+    Kubernetes functional group used in the PXE mapping has a corresponding
+    image.
+
+For configuration, build modes, and direct playbook alternatives, see
+[Build Images](../HowTo/image_build_manager/build_images.md).
+
+### 4. Provide the PXE mapping
+
+Choose one method. Orchestrator consumes the reviewed file as
+`<OMNIA_DATA_PATH>/orchestrator/input/<OMNIA_PROJECT_NAME>/pxe_mapping_file.csv`.
+
+=== "Discover nodes through OME"
+
+    1. Configure `discovery_config.yml` and `network_spec.yml` under
+       `<OMNIA_DATA_PATH>/discovery/input/<OMNIA_PROJECT_NAME>/`. Set
+       `enable_bmc_discovery: true` and provide `ome_ip`.
+
+    2. Run Discovery:
+
+        ```bash title="Run on: OIM host"
+        cd src/main
+        ./omnia.sh --run discovery
+        ```
+
+    3. Review the timestamped mapping and discovery report under
+       `<OMNIA_DATA_PATH>/discovery/output/<OMNIA_PROJECT_NAME>/`. Then copy the
+       latest mapping to the Orchestrator input directory. With the standard
+       environment defaults, run:
+
+        ```bash title="Run on: OIM host"
+        cp /opt/omnia/discovery/output/project_default/bmc_pxe_mapping_file.csv \
+          /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv
+        ```
+
+    Discovery intentionally leaves this handoff to the operator so that node
+    hostnames, functional groups, and group assignments can be reviewed before
+    provisioning.
+
+=== "Create the mapping manually"
+
+    Edit the staged Orchestrator mapping directly:
 
     ```bash title="Run on: OIM host"
-    s3cmd ls -Hr s3://boot-images/slurm_control_node_x86_64/
-    s3cmd ls -Hr s3://boot-images/efi-images/slurm_control_node_x86_64/
+    vi /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv
     ```
 
-    Expected output:
+    Preserve the source-defined header:
 
-    ```text title="Expected output"
-    2026-06-26 11:42  1449M  s3://boot-images/slurm_control_node_x86_64/rhel-slurm_control_node_x86_64_omnia_2.2.0.0/rhel10.0-rhel-slurm_control_node_x86_64_omnia_2.2.0.0-10.0
-    2026-06-26 11:42    78M  s3://boot-images/efi-images/slurm_control_node_x86_64/rhel-slurm_control_node_x86_64_omnia_2.2.0.0/initramfs-6.12.0-55.82.1.el10_0.x86_64.img
-    2026-06-26 11:42    15M  s3://boot-images/efi-images/slurm_control_node_x86_64/rhel-slurm_control_node_x86_64_omnia_2.2.0.0/vmlinuz-6.12.0-55.82.1.el10_0.x86_64
+    ```text
+    FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
     ```
 
-!!! note
-
-    The directories listed in `s3://boot-images/` correspond to the
-    functional groups defined in your PXE mapping file. Each functional
-    group will have exactly **3 image artifacts** (`rootfs`, `vmlinuz`,
-    `initramfs`). The `efi-images/` directory contains the `initramfs`
-    and `vmlinuz` boot files used during PXE network boot, while the root
-    filesystem is stored directly under each functional group directory.
-    If any artifacts are missing, re-run the corresponding build playbook.
-
-## Step 7 -- Provision Nodes
-
-The `provision.yml` playbook provisions the cluster nodes. It configures
-boot scripts, cloud-init, and prepares nodes for K8s and Slurm deployment.
-
-```bash title="Run on: omnia_core container"
-cd /omnia/provision
-ansible-playbook provision.yml
-```
-
-**Verification -- nodes.yaml**
-
-After `provision.yml` completes, verify that all nodes from your PXE
-mapping file are present in the generated `nodes.yaml` file. Every
-node defined in `pxe_mapping_file.csv` should have a corresponding
-entry with its hostname, functional group, MAC address, and IP address.
-
-```bash title="Run on: omnia_core container"
-cat /opt/omnia/openchami/workdir/nodes/nodes.yaml
-```
-
-Expected output (one entry per node in the PXE mapping file):
+    Assign nodes to functional groups beginning with:
+
+    - `slurm_control_node` for the Slurm controller.
+    - `slurm_node` for Slurm compute nodes.
+    - `service_kube_control_plane` for Kubernetes control-plane nodes.
+    - `service_kube_node` for Kubernetes worker nodes.
+
+    Login and login/compiler groups are optional. The LDMS precheck requires at
+    least one populated Slurm controller group and one populated Slurm compute
+    group when `telemetry_sources.ldms.metrics_enabled: true`.
+
+For the complete mapping schema and OME procedure, see
+[Discover Nodes](../HowTo/discovery/discover_nodes.md) and
+[Create a Mapping File](../HowTo/discovery/create_mapping_file.md).
+
+### 5. Configure and run Orchestrator
+
+1. Review the staged files under
+   `<OMNIA_DATA_PATH>/orchestrator/input/<OMNIA_PROJECT_NAME>/`:
+
+    | Input | Full-deployment requirement |
+    |---|---|
+    | `orchestrator_config.yml` | Confirm the mapping, Repo Manager, Image Build Manager, catalog, and PXE-boot settings. |
+    | `network_spec.yml` | Configure the OIM interface, admin subnet, DHCP range, router, and any required additional or InfiniBand networks. |
+    | `omnia_config.yml` | Configure `slurm_cluster` and select exactly one `service_k8s_cluster` entry with `deployment: true`. Configure their storage references and the Kubernetes network settings. |
+    | `high_availability_config.yml` | Provide a `service_k8s_cluster_ha` entry whose `cluster_name` matches the selected Kubernetes cluster. |
+    | `storage_config.yml` | Define every mount named by the Slurm and Kubernetes cluster entries. The applicable storage must be reachable from the OIM where configured. |
+    | `pxe_mapping_file.csv` | Assign nodes to the Slurm and service Kubernetes functional groups and ensure corresponding images exist in `build_status.yml`. |
+    | `security_config.yml` | Configure this file when the selected catalog enables OpenLDAP. |
+
+    Orchestrator derives Slurm and Kubernetes support and cluster OS metadata
+    from the catalog. It does not require `software_config.json`.
+
+2. Run the complete standard Orchestrator flow:
+
+    ```bash title="Run on: OIM host"
+    cd src/main
+    ./omnia.sh --run orchestrator
+    ```
+
+    The untagged flow performs prechecks, collects or reuses credentials,
+    prepares OpenCHAMI and catalog-selected services, provisions both cluster
+    types, validates provisioning, and performs iDRAC PXE boot when
+    `enable_pxe_boot: true`. Do not run a second PXE-boot command after this
+    flow unless you intentionally need to repeat that operation.
+
+3. Confirm that Orchestrator generated the inventory Telemetry consumes:
+
+    ```text
+    <OMNIA_DATA_PATH>/orchestrator/output/<OMNIA_PROJECT_NAME>/orchestrator_inventory.yaml
+    ```
+
+    The file must contain `kube_vip_group`, populated functional groups
+    beginning with `service_kube_control_plane` and `service_kube_node`, and,
+    for LDMS, populated groups beginning with `slurm_control_node` and
+    `slurm_node`.
+
+For detailed cluster configuration, see
+[Configure Slurm](../HowTo/orchestrator/configure_slurm.md),
+[Deploy Service Kubernetes](../HowTo/orchestrator/deploy_kubernetes.md),
+[Configure Kubernetes HA](../HowTo/orchestrator/configure_kubernetes_ha.md),
+[Configure Storage](../HowTo/orchestrator/configure_storage.md), and
+[Provision Nodes](../HowTo/orchestrator/provision_nodes.md).
+
+### 6. Configure and run Telemetry
+
+1. Review all three staged files under
+   `<OMNIA_DATA_PATH>/telemetry/input/<OMNIA_PROJECT_NAME>/`:
+
+    | Input | Full-deployment requirement |
+    |---|---|
+    | `telemetry_config.yml` | Set `cluster_inventory` to Orchestrator's generated inventory. Enable only available sources and configure their source-specific values. |
+    | `telemetry_storage_config.yml` | Size replicas, CPU, memory, and persistent storage for the selected sinks, sources, and bridges. |
+    | `telemetry_packages.yml` | Select `online` or `offline`, configure the repository URL when offline, and align both cluster mount paths with Orchestrator storage. |
+
+2. In `telemetry_config.yml`, use the generated Orchestrator inventory. With
+   the standard environment defaults, set:
+
+    ```yaml title="telemetry_config.yml"
+    cluster_inventory: "/opt/omnia/orchestrator/output/project_default/orchestrator_inventory.yaml"
+    ```
+
+    Adjust the path when `OMNIA_DATA_PATH` or `OMNIA_PROJECT_NAME` differs.
+
+3. To collect Slurm-node metrics through LDMS and route them from Kafka to
+   VictoriaMetrics, keep the source and bridge enabled:
+
+    ```yaml title="telemetry_config.yml — edit the existing keys"
+    telemetry_sources:
+      ldms:
+        metrics_enabled: true
+        collection_targets:
+          - "kafka"
+
+    telemetry_bridges:
+      vector_ldms:
+        metrics_enabled: true
+    ```
+
+    Do not replace the full source file with this excerpt. Retain every key.
+    The Vector-LDMS bridge may be disabled when LDMS data should remain only in
+    Kafka. Enable other Telemetry sources only after completing their required
+    configuration. When OME metrics or logs are disabled, disable the
+    corresponding `vector_ome` fields as well.
 
-```yaml title="Expected output"
-nodes:
-- name: scnode
-  xname: x1000c0s0b0n0
-  description: JS8MN34
-  nid: 1
-  group: slurm_control_node_x86_64
-  bmc_mac: 6c:3c:8c:85:be:04
-  bmc_ip: 10.3.0.XXX
-  interfaces:
-  - mac_addr: 04:32:01:DD:9D:F0
-    ip_addrs:
-    - name: management
-      ip_addr: 10.5.0.XXX
-- name: snode1
-  xname: x1000c0s0b1n0
-  description: 1T8MN34
-  nid: 2
-  group: slurm_node_x86_64
-  ...
-- name: kcp1
-  xname: x1000c0s0b5n0
-  description: H94M8F3
-  nid: 6
-  group: service_kube_control_plane_first_x86_64
-  bmc_mac: b0:7b:25:d8:4a:f4
-  bmc_ip: 10.3.0.XXX
-  interfaces:
-  - mac_addr: BC:97:E1:F0:94:F0
-    ip_addrs:
-    - name: management
-      ip_addr: 10.5.0.XXX
-...
-```
+4. Complete the values required by each enabled source. In particular, when
+   iDRAC is enabled, set `idrac_telemetry_configurations.bmc_group_data_path`
+   to the `bmc_group_data.csv` produced by Orchestrator. With the standard
+   defaults, the path is:
 
-!!! note
+    ```text
+    /opt/omnia/orchestrator/output/project_default/bmc_group_data.csv
+    ```
 
-    Post execution of `provision.yml`, IPs and hostnames cannot be
-    re-assigned by changing the mapping file.
+    The Telemetry credential role creates encrypted
+    `telemetry_credentials.yml` and prompts only for empty credentials needed
+    by the enabled sources.
 
-!!! caution
+5. In `telemetry_packages.yml`:
 
-    - Do not run `ssh-keygen` post execution of `provision.yml` to avoid
-      breaking the password-less SSH channel on the OIM.
-    - Do not delete the Omnia shared path or the NFS directory.
+    - Set `k8s_cluster_mount` to the shared mount path available on the service
+      Kubernetes nodes.
+    - Set `slurm_cluster_mount` to the shared mount path available on the Slurm
+      nodes when LDMS is enabled.
+    - For the default offline mode, set `repo_url` to the Pulp content base
+      containing the packages named in the Telemetry package manifest. For
+      online mode, leave `repo_url` empty.
 
-For troubleshooting boot issues, IP route conflicts, and cloud-init failures, see [Provisioning Issues](../Troubleshooting/provisioning.md).
-
-## Step 8 -- PXE Boot Nodes
-
-After `provision.yml` completes, PXE boot all cluster nodes (K8s and Slurm).
-
-**Option 1: Manual PXE Boot**
-
-Configure each node to boot from the network via iDRAC or BIOS settings.
-
-**Option 2: Automated PXE Boot**
-
-Sets PXE boot order on all nodes via iDRAC Redfish and reboots them.
-
-```bash title="Run on: omnia_core container"
-cd /omnia/utils
-ansible-playbook set_pxe_boot.yml
-```
-
-!!! warning
-
-    This playbook will restart your servers and power them on if they
-    are off. Any unsaved data will be lost.
-
-**Verification -- Cloud-Init Provisioning Status**
-
-After the nodes PXE boot, verify that cloud-init has completed on all
-nodes. SSH from `omnia_core` into each node using its hostname from the
-PXE mapping file (`HOSTNAME` column):
-
-```bash title="Run on: omnia_core container (example for 2 nodes)"
-ssh scnode 'cloud-init status'
-ssh kcp1 'cloud-init status'
-```
-
-Expected output on each node:
-
-```text title="Expected output"
-status: done
-```
-
-!!! note
-
-    Check **every node** in your cluster. Open your PXE mapping file 
-    and run
-    `ssh <HOSTNAME> 'cloud-init status'` for each entry. All nodes must
-    report `status: done` before proceeding.
-
-**Verification -- Kubernetes Service Cluster**
-
-SSH into any `service_kube_control_plane` node and verify all nodes
-are `Ready`:
-
-```bash title="Run on: omnia_core container (example)"
-ssh kcp1 'kubectl get nodes'
-```
-
-Expected output:
-
-```text title="Expected output"
-NAME   STATUS   ROLES           AGE   VERSION
-kcp1   Ready    control-plane   1d    v1.35.1
-kcp2   Ready    control-plane   1d    v1.35.1
-kcp3   Ready    control-plane   1d    v1.35.1
-kn     Ready    <none>          1d    v1.35.1
-```
-
-**Verification -- Slurm Cluster**
-
-SSH into the `slurm_control_node` and verify all compute nodes are
-`idle`:
-
-```bash title="Run on: omnia_core container (example)"
-ssh scnode 'sinfo'
-```
-
-Expected output:
-
-```text title="Expected output"
-PARTITION  AVAIL  TIMELIMIT  NODES  STATE  NODELIST
-normal*    up     infinite   2      idle   snode[1-2]
-```
-
-For detailed cluster verification procedures, see
-[Verify Cluster](../HowTo/Setup/verify_cluster.md){target="_blank"}.
-
-## Step 9 -- Deploy iDRAC Telemetry (Optional)
-
-
-The `telemetry.yml` playbook initiates the iDRAC telemetry service on the service cluster. For prerequisites, configuration details, and collecting telemetry from external nodes, see [Configure iDRAC Telemetry](../HowTo/Telemetry/configure_idrac.md).
-
-!!! note
-
-    This step is required **only** when `idrac: metrics_enabled` is set to `true` in `telemetry_config.yml`. It is not required for other telemetry types.
-
-```shell title="Run on omnia_core container"
-cd /omnia/telemetry
-ansible-playbook telemetry.yml
-```
-
-!!! important
-
-    If you want to enable additional telemetry components after the
-    first successful deployment (by updating `telemetry_config.yml`),
-    and Kubernetes is already up and running, execute the `telemetry.sh`
-    script on kube-control-plane at path
-    `<K8s_NFS_mount_point>/telemetry/telemetry.sh`.
-
-
-
-## Step 10 -- Verify the Telemetry Pipeline
-
-
-After deploying telemetry, verify that all telemetry pods and services are operational. Refer to the topics in the following table for instructions on verifying each telemetry service.
-
-| Telemetry Service | Description | Topic |
-| --- | --- | --- |
-| iDRAC | Verify collection and ingestion of hardware telemetry metrics. | [iDRAC Telemetry -- Verification](../HowTo/Telemetry/configure_idrac.md#verification) |
-| LDMS | Verify collection and routing of node-level telemetry metrics. | [LDMS Telemetry -- Verification](../HowTo/Telemetry/configure_ldms.md#verification) |
-| PowerScale | Verify collection and ingestion of storage metrics and logs. | [PowerScale Telemetry -- Verification](../HowTo/Telemetry/configure_powerscale.md#verification) |
-| UFM | Verify collection and ingestion of fabric metrics and logs. | [UFM Telemetry -- Verification](../HowTo/Telemetry/configure_ufm.md#verification) |
-| VAST | Verify collection and ingestion of storage metrics and logs. | [VAST Telemetry -- Verification](../HowTo/Telemetry/configure_vast.md#verification) |
-| OpenManage Enterprise (OME) | Verify collection and routing of OME metrics and logs. | [OME Telemetry -- Verification](../HowTo/Telemetry/telemetry_from_ome.md#verification) |
-
-## What's Next?
-
-
-Your cluster is fully operational with Slurm scheduling, Kubernetes
-service cluster, and telemetry monitoring. Common next steps:
-
-**Configure GPU support**
-   If your compute nodes have NVIDIA GPUs, follow
-   [Slurm with GPU](../HowTo/Slurm/slurm_with_gpu.md) to enable GPU
-   scheduling and GRES configuration.
-
-**Customize Slurm configuration**
-   Tune partitions, scheduling policies, and accounting settings using
-   [Configure Slurm](../HowTo/Slurm/configure_slurm.md).
-
-**Enable additional telemetry sources**
-   Configure iDRAC, DCGM, PowerScale, UFM, VAST, or OME telemetry
-   collection. See [Telemetry Setup](../HowTo/Telemetry/setup_telemetry.md)
-   for an overview of all supported sources.
-
-**Deploy PowerScale CSI driver**
-   Enable persistent storage for Kubernetes workloads using
-   [Deploy PowerScale CSI](../HowTo/Kubernetes/deploy_powerscale_csi.md).
-
-**Run HPC benchmarks**
-   Validate cluster performance with HPL, OSU Micro-Benchmarks, and
-   other tools using [Run HPC Benchmarks](../HowTo/Slurm/run_hpc_benchmarks.md).
-
-**Scale the cluster**
-   Add or remove compute nodes with
-   [Add / Remove Nodes](../Operations/add_remove_nodes.md).
-
-**Back up Slurm configuration**
-   Create timestamped backups and rollback points using
-   [Config Backup](../HowTo/Slurm/slurm_config_backup.md).
-
-**Enable BuildStreaM for GitOps**
-   Automate image building and deployment via CI/CD pipelines using
-   [BuildStreaM Deployment](buildstream_deployment.md).
-
-!!! info
-
-    - [Set Up Slurm](../HowTo/Slurm/setup_slurm.md) -- Detailed Slurm setup guide
-    - [Telemetry Setup](../HowTo/Telemetry/setup_telemetry.md) -- Telemetry sources and configuration
-    - [Prerequisites Checklist](prerequisites_checklist.md) -- Master checklist
-    - [Slurm Troubleshooting](../Troubleshooting/slurm.md) -- Troubleshoot Slurm issues
-    - [Telemetry Troubleshooting](../Troubleshooting/telemetry.md) -- Troubleshoot telemetry issues
+6. Run the Telemetry environment precheck:
+
+    ```bash title="Run on: OIM host"
+    cd src/main
+    ./omnia.sh --run telemetry --tags precheck
+    ```
+
+    The precheck validates access to the Kubernetes VIP, control-plane and
+    worker readiness, non-Telemetry pod health, and applicable source
+    prerequisites. When LDMS is enabled, it also requires Slurm controller and
+    compute groups and checks `slurmctld` and `slurmd` on those nodes.
+
+7. Run the complete standard Telemetry flow:
+
+    ```bash title="Run on: OIM host"
+    ./omnia.sh --run telemetry
+    ```
+
+    The untagged flow validates the three runtime input files, deploys the
+    sinks required by the selected collection targets, deploys each enabled
+    source and bridge, checks pod state, and writes:
+
+    ```text
+    <OMNIA_DATA_PATH>/telemetry/output/<OMNIA_PROJECT_NAME>/telemetry_status.yml
+    ```
+
+For source-specific configuration and verification guides, see the
+[Telemetry landing page](../HowTo/Telemetry/index.md).
+
+## Verification
+
+1. Confirm that all four module contracts report success:
+
+    ```bash title="Run on: OIM host"
+    grep '^overall_status:' /opt/omnia/repo_manager/output/project_default/repo_status.yml
+    grep '^overall_status:' /opt/omnia/image_build_manager/output/project_default/build_status.yml
+    grep '^overall_status:' /opt/omnia/orchestrator/output/project_default/orchestrator_status.yml
+    grep '^overall_status:' /opt/omnia/telemetry/output/project_default/telemetry_status.yml
+    ```
+
+    If you changed `OMNIA_DATA_PATH` or `OMNIA_PROJECT_NAME`, use the configured
+    paths instead of the standard defaults shown above.
+
+2. Review the combined provisioning summary and inventory:
+
+    ```bash title="Run on: OIM host"
+    cat /opt/omnia/orchestrator/output/project_default/provisioning_report.yml
+    cat /opt/omnia/orchestrator/output/project_default/orchestrator_inventory.yaml
+    ```
+
+3. On the Slurm controller, verify the services and node state:
+
+    ```bash title="Run on: Slurm controller"
+    systemctl is-active slurmctld
+    systemctl is-active slurmdbd
+    sinfo
+    ```
+
+4. On each Slurm compute node, verify the node daemon:
+
+    ```bash title="Run on: Slurm compute node"
+    systemctl is-active slurmd
+    ```
+
+5. On the first Kubernetes control-plane node, confirm node and workload state:
+
+    ```bash title="Run on: first Kubernetes control-plane node"
+    kubectl get nodes -o wide
+    kubectl get pods --all-namespaces -o wide
+    ```
+
+    All mapped Kubernetes nodes should appear. Workloads should reach
+    `Running` or `Completed`.
+
+6. On the Kubernetes VIP, inspect the Telemetry namespace:
+
+    ```bash title="Run on: Kubernetes VIP"
+    kubectl get pods -n telemetry
+    ```
+
+    In `telemetry_status.yml`, confirm `overall_status: success` and verify
+    that every requested sink, source, and bridge is `deployed`. Components
+    disabled in `telemetry_config.yml` are reported as `skipped`. When LDMS is
+    enabled, also review `deploy_unreachable_nodes.ldms`.
+
+7. Verify the enabled data paths with the source-specific guides on the
+   [Telemetry landing page](../HowTo/Telemetry/index.md). For LDMS, use
+   [Verify LDMS](../HowTo/Telemetry/verify_ldms.md) and
+   [Verify Vector-LDMS](../HowTo/Telemetry/verify_vector_ldms.md) when its
+   bridge is enabled.
+
+## Next steps
+
+- [Configure Slurm](../HowTo/orchestrator/configure_slurm.md) to supply or
+  merge custom Slurm configuration files.
+- [Configure Slurm with GPUs](../HowTo/orchestrator/slurm_with_gpu.md) when the
+  selected catalog and compute nodes include NVIDIA GPU support.
+- [Set up NVIDIA HPC SDK](../HowTo/orchestrator/setup_nvhpc_sdk.md) when the
+  catalog includes the required SDK content.
+- Use the source-specific guides on the
+  [Telemetry landing page](../HowTo/Telemetry/index.md) to configure and verify
+  additional available data sources.
+- [Deploy the PowerScale CSI driver](../HowTo/orchestrator/deploy_powerscale_csi.md)
+  when it is selected by the catalog and its input files have been prepared.
+- Use [Add Nodes](../Operations/add_nodes.md) and
+  [Remove Slurm Nodes](../Operations/remove_slurm_nodes.md) for supported
+  node lifecycle changes.
+- Use [Build Stream Deployment](buildstream_deployment.md) when the separate
+  Build Stream module is required.
+
+## Troubleshooting
+
+- If a later module reports a missing upstream contract, verify that the
+  preceding status file exists and has `overall_status: success`.
+- If Slurm or Kubernetes configuration is skipped, verify that the catalog
+  contains the corresponding functional layers and that the mapping includes
+  the required functional-group prefixes.
+- If image validation fails, compare every mapping functional group with
+  `functional_group_images` in `build_status.yml`.
+- If physical nodes do not PXE boot, confirm `enable_pxe_boot: true`, review
+  `failed_nodes.json`, and inspect `orchestrator_status.yml` in the
+  Orchestrator project output directory.
+- If Telemetry cannot resolve the Kubernetes VIP, verify that
+  `cluster_inventory` names the generated `orchestrator_inventory.yaml` and
+  that the file contains `all.children.kube_vip_group.hosts`.
+- If the LDMS precheck fails, verify that the inventory contains populated
+  `slurm_control_node` and `slurm_node` groups, that the nodes are reachable,
+  and that `slurmctld` and `slurmd` are active where required.
+- If Telemetry input validation fails, correct all reported schema and
+  cross-field errors across the three Telemetry input files. Source and bridge
+  enablement must agree.
+- If a Telemetry pod is in an error state, run
+  `kubectl logs -n telemetry <pod-name>` on the Kubernetes VIP and correct the
+  reported image, secret, storage, or source configuration problem.
+- Review module logs under `/var/log/omnia/<domain>/` and project logs under
+  `<OMNIA_DATA_PATH>/<domain>/log/`.
+- See [Slurm troubleshooting](../Troubleshooting/orchestrator/slurm.md),
+  [Kubernetes troubleshooting](../Troubleshooting/orchestrator/kubernetes.md),
+  and [Telemetry deployment troubleshooting](../HowTo/Telemetry/deploy_telemetry.md#troubleshooting)
+  for component-specific investigations.

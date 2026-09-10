@@ -46,7 +46,7 @@ Rollback processes components in reverse order of the upgrade:
     - Kubernetes and Telemetry are handled as a single combined rollback
       component (`k8s-telemetry`). The etcd snapshot restore reverts the K8s
       cluster to its pre-upgrade state, which also restores all telemetry pods
-      (VictoriaMetrics, Kafka, etc.) to their 2.1 versions. Telemetry pod
+      (VictoriaMetrics, Kafka, etc.) to their 2.2 versions. Telemetry pod
       health verification is performed as part of the K8s rollback (Stage 8d).
       There is no separate telemetry rollback step.
     - There is no separate `local_repo`, `build_image`, or `provision`
@@ -92,11 +92,11 @@ After the rollback playbook completes, exit the core container and perform the c
 
 !!! important
 
-    **Use the Omnia 2.2.0.0 `omnia.sh` script for rollback operations.**
-    The `omnia.sh` script from Omnia 2.1.0.0 does not support correct rollback
-    operations. You must download and use the Omnia 2.2.0.0 version of
+    **Use the Omnia 2.3.0.0 `omnia.sh` script for rollback operations.**
+    The `omnia.sh` script from Omnia 2.2.0.0 does not support correct rollback
+    operations. You must download and use the Omnia 2.3.0.0 version of
     `omnia.sh` to perform rollbacks. Do not attempt to run
-    `./omnia.sh --rollback` using the 2.1.0.0 script.
+    `./omnia.sh --rollback` using the 2.2.0.0 script.
 
 1. Exit the `omnia_core` container:
 
@@ -104,10 +104,10 @@ After the rollback playbook completes, exit the core container and perform the c
     exit
     ```
 
-2. Download the Omnia 2.2.0.0 `omnia.sh` script from the Omnia repository:
+2. Download the Omnia 2.3.0.0 `omnia.sh` script from the Omnia repository:
 
     ```bash title="Run on: OIM host"
-    wget https://raw.githubusercontent.com/dell/omnia/refs/tags/v2.2.0.0/omnia.sh
+    wget https://raw.githubusercontent.com/dell/omnia/refs/tags/v2.3.0.0/omnia.sh
     ```
 
 3. Set executable permissions:
@@ -206,14 +206,14 @@ rollback status is determined.
 The BuildStreaM rollback path is automatically determined from metadata stored
 during the upgrade:
 
-**Restore Path (BuildStreaM was enabled in 2.1)**
+**Restore Path (BuildStreaM was enabled in 2.2)**
 
 1. Validates backup files (quadlets, database dump) exist in the backup
    directory.
-2. Runs Alembic database migration downgrade (from 2.2 schema back to 2.1
-   schema) while the 2.2 container is still running.
+2. Runs Alembic database migration downgrade (from 2.3 schema back to 2.2
+   schema) while the 2.3 container is still running.
 3. Stops BuildStreaM and PostgreSQL services.
-4. Restores 2.1 quadlets, configuration files, and source directories from
+4. Restores 2.2 quadlets, configuration files, and source directories from
    backup.
 5. Restarts services in dependency order (PostgreSQL first, then BuildStreaM).
 6. Reverts the GitLab upgrade commit via API and restores GitLab configuration
@@ -224,7 +224,7 @@ during the upgrade:
 !!! note
 
     If the Alembic database migration downgrade appears to hang, see
-    [BuildStreaM rollback hangs during Alembic database migration](../Troubleshooting/upgrade_rollback.md#buildstream-rollback-alembic-hang)
+    [BuildStreaM rollback hangs during Alembic database migration](../Troubleshooting/upgrade_rollback.md)
     in the Upgrade and Rollback Troubleshooting guide.
 
 **Uninstall Path (BuildStreaM was newly enabled during upgrade)**
@@ -284,8 +284,8 @@ Rollback stages:
     version.
 14. **Clean up stale CSI VolumeAttachments** — Removes orphaned
     PowerScale/Isilon VolumeAttachments.
-15. **Verify telemetry rollback** — Validates that all 2.1 telemetry pods
-    (VictoriaMetrics, Kafka, iDRAC, LDMS, etc.) are healthy and that 2.2-only
+15. **Verify telemetry rollback** — Validates that all 2.2 telemetry pods
+    (VictoriaMetrics, Kafka, iDRAC, LDMS, etc.) are healthy and that 2.3-only
     components (`vector-ldms`, `vector-ome`, `victoria-logs`,
     `victoria-metrics-operator`) have been removed by the etcd restore.
 16. **Restore BSS boot params and cloud-init** — Restores pre-upgrade
@@ -300,7 +300,7 @@ Rollback stages:
 ## Slurm Rollback
 
 The Slurm rollback workflow restores the Slurm cluster configuration to the
-previously backed-up Omnia 2.1 state. During rollback, Omnia restores the
+previously backed-up Omnia 2.2 state. During rollback, Omnia restores the
 cloud-init and Bare System Setup (BSS) configurations from the upgrade backup
 and applies the restored configuration by rebooting all Slurm and login nodes.
 
@@ -314,7 +314,7 @@ cluster after recovery.
     - All Slurm control, compute, and login nodes are rebooted simultaneously
       during rollback. Ensure that no critical workloads or user sessions are
       active before starting the rollback process.
-    - Existing Omnia 2.1 NFS mount configurations are preserved during
+    - Existing Omnia 2.2 NFS mount configurations are preserved during
       rollback.
     - VAST mounts added after the upgrade are not restored during rollback.
       Any new mounts configured after the upgrade must be recreated manually
@@ -330,8 +330,8 @@ During rollback, Omnia performs the following operations:
    deployment configuration that existed before the upgrade.
 2. Reads the backed-up PXE mapping file to determine the Slurm and login
    nodes that must participate in the rollback process.
-3. Restores cloud-init configurations from the Omnia 2.1 backup.
-4. Restores BSS configurations from the Omnia 2.1 backup.
+3. Restores cloud-init configurations from the Omnia 2.2 backup.
+4. Restores BSS configurations from the Omnia 2.2 backup.
 5. Applies the restored configuration to the following functional groups:
     - `slurm_control_node`
     - `slurm_node`
@@ -472,3 +472,22 @@ After the rollback completes, verify the following:
     - [Upgrade Omnia](upgrade_omnia.md) — Upgrade procedure.
     - [Upgrade and Rollback Troubleshooting](../Troubleshooting/upgrade_rollback.md) —
       Troubleshoot upgrade and rollback issues.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

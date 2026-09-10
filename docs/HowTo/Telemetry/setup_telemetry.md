@@ -1,85 +1,250 @@
-# Setup Telemetry
+# Build Telemetry Container Images
 
 ## Overview
 
-Omnia deploys a telemetry pipeline to collect, aggregate, and store hardware, OS-level, and storage telemetry data from across the cluster using VictoriaMetrics, VictoriaLogs, and Kafka.
+Omnia provides `src/telemetry/containers/build_images.sh` as the entry point for
+building the telemetry container images maintained in the Telemetry source
+tree. The script can build all four images or a selected comma-separated set:
 
-For a summary of all supported telemetry sources, bridges and their sinks, see [Supported Telemetry Sources, Bridges and Sinks](../../Reference/Configuration/telemetry_config.md#supported-telemetry-sources-bridges-and-sinks).
+This image-build utility is independent of Telemetry domain initialization.
+It does not create project inputs, run `omnia.sh --setup-venv`, or deploy the
+Telemetry stack.
 
-!!! note
+| Build selector | Image produced | Default tag | Build source |
+|----------------|----------------|-------------|--------------|
+| `kafkapump` | `kafkapump` | `1.3` | Dell iDRAC Telemetry Reference Tools |
+| `victoriapump` | `victoriapump` | `1.3` | Dell iDRAC Telemetry Reference Tools |
+| `telemetry-receiver` | `idrac_telemetry_receiver` | `1.3` | Dell iDRAC Telemetry Reference Tools |
+| `ldms` | `ldms` | `1.1` | The LDMS Containerfile in the Telemetry source tree |
 
-    To enable any telemetry and log collections (iDRAC, LDMS, PowerScale, DCGM, UFM, VAST), ensure that the `service_k8s` entry is present in the `software_config.json` file and the corresponding telemetry source fields are set to `true` in the `telemetry_config.yml` file.
+The three iDRAC images use a shared checkout of
+`https://github.com/dell/iDRAC-Telemetry-Reference-Tools.git` at commit
+`cfa9102a900a76afe9de578d080e98f685625814`. The script creates this checkout
+as `src/telemetry/containers/.idrac-telemetry-tools` when it is not already
+present.
 
-### Telemetry Architecture
+The LDMS image uses a multi-stage build based on Ubuntu 26.04. It builds
+`libserdes` and OVIS LDMS `v4.5.2`, installs LDMS under `/opt/ovis-ldms`, and
+copies the prepared runner filesystem into the final image.
 
-
-The following diagram illustrates the telemetry services deployed by Omnia and the data flow between the components:
-
-![Omnia Telemetry Architecture](../../assets/images/telemetry_arch_s.svg)
-
-### Telemetry Components
-
-**OIM (Omnia Infrastructure Manager)** -- Central management node that deploys and configures all telemetry services across the cluster.
-
-**Service Kubernetes Cluster** -- Hosts telemetry collection and storage services:
-
-- **iDRAC Collector** -- Collects hardware telemetry via Redfish API
-- **LDMS Aggregator / Store** -- Receives and stores aggregated LDMS data
-- **Kafka Broker** -- Streams telemetry data via Strimzi operator
-- **VMAgent** -- Forwards metrics to VictoriaMetrics
-- **VictoriaMetrics Cluster** -- Time-series database (vminsert, vmstorage, vmselect)
-- **VictoriaLogs Cluster** -- Distributed log storage (vlinsert, vlstorage, vlselect)
-- **VLAgent** -- Platform-managed log collection agent that receives logs from external sources
-- **Vector-LDMS / Vector-OME** -- Kafka consumers that route data to Victoria stack via dedicated vmagent-vector and vlagent-vector instances
-- **karavi-metrics-powerscale** -- Collects PowerScale metrics via CSM Observability
-- **otel-collector** -- Forwards metrics to VictoriaMetrics and VictoriaLogs
-
-**Slurm Cluster** -- Each Slurm compute node runs:
-
-- **LDMS Sampler** -- Collects OS metrics (CPU, memory, network, and I/O)
-- **iDRAC** -- Provides hardware health data (temperature, power, and fans)
-
-For detailed data flow diagrams, see the respective configuration pages below.
+The builder loads images into the local Podman image store by default. It can
+instead use Docker Buildx to load images locally or push them to a registry.
 
 ## Prerequisites
 
-- The [Configure Inputs](../Setup/configure_inputs.md) procedure is complete.
-- The `service_k8s` entry is present in `software_config.json`.
-- The desired telemetry sources are enabled in `telemetry_config.yml`.
+- Run the procedure from an Omnia source checkout that contains
+  `src/telemetry/containers/build_images.sh` and the
+  `src/telemetry/containers/ldms` build context.
+- Install one of the build tools accepted by the script:
+
+    - Podman for the default local build.
+    - Docker with Buildx for a Docker local build or registry push.
+
+- Make `git` available when building any iDRAC image. The script uses it to
+  clone and check out the pinned iDRAC Telemetry Reference Tools revision.
+- Provide access to the sources used by the selected build. The iDRAC builds
+  clone from GitHub. The LDMS Containerfile pulls `ubuntu:26.04`, installs
+  Ubuntu and Python packages, and clones the `libserdes` and OVIS repositories
+  from GitHub.
+- For a registry build, use Docker and select a registry location to which the
+  Docker build can push. The script rejects `build_action=push` with Podman.
+
+### Input contract
+
+The command syntax is:
+
+```text
+./build_images.sh [container] [parameters]
+```
+
+The first argument is the container selector. If it is omitted, the script
+uses `all`.
+
+| Selector | Result |
+|----------|--------|
+| `all` | Build `kafkapump`, `victoriapump`, `telemetry-receiver`, and `ldms`, in that order. |
+| `kafkapump` | Build only the Kafka pump image. |
+| `victoriapump` | Build only the VictoriaMetrics pump image. |
+| `telemetry-receiver` | Build only the iDRAC telemetry receiver image. |
+| `ldms` | Build only the LDMS image. |
+| Comma-separated selectors | Build each selected image; for example, `kafkapump,ldms`. |
+
+Parameters follow the selector and use `key=value` syntax:
+
+| Parameter | Accepted value | Default | Effect |
+|-----------|----------------|---------|--------|
+| `build_tool` | `podman` or `docker` | `podman` | Selects the container build tool. |
+| `build_action` | `load` or `push` | `load` | Loads the image into the local image store or pushes it. `push` requires Docker. |
+| `registry` | Registry and optional namespace | `docker.io/dellhpcomniaaisolution` | Prefix used for images pushed with Docker. |
+| `kafkapump_tag` | Image tag | `1.3` | Sets the Kafka pump tag. |
+| `victoriapump_tag` | Image tag | `1.3` | Sets the VictoriaMetrics pump tag. |
+| `telemetry_receiver_tag` | Image tag | `1.3` | Sets the iDRAC telemetry receiver tag. |
+| `ldms_tag` | Image tag | `1.1` | Sets the LDMS tag. |
+
+Docker builds target `linux/amd64`. With `build_action=load`, Docker uses
+`docker buildx build --no-cache --load`. With `build_action=push`, it uses
+`docker buildx build --no-cache --provenance=true --sbom=true --push`.
 
 ## Procedure
 
-1. Configure one or more telemetry sources using the guides listed in **Next Steps**.
-2. Deploy the cluster using the end-to-end playbook sequence described in [Deploy the Telemetry Stack](deploy_telemetry.md).
+1. Change to the telemetry container directory:
+
+    ```bash title="Run on: image build host"
+    cd src/telemetry/containers
+    ```
+
+2. Choose one of the following build commands.
+
+    To build all four images with Podman and load them locally, run:
+
+    ```bash title="Run on: image build host"
+    ./build_images.sh
+    ```
+
+    To build one image or a comma-separated set, provide the selector first:
+
+    ```bash title="Run on: image build host"
+    ./build_images.sh ldms
+    ./build_images.sh kafkapump,ldms
+    ```
+
+    To build all four images with Docker and load them locally, run:
+
+    ```bash title="Run on: image build host"
+    ./build_images.sh all build_tool=docker
+    ```
+
+    To build all four images and push them to the default registry, run:
+
+    ```bash title="Run on: image build host"
+    ./build_images.sh all build_tool=docker build_action=push
+    ```
+
+    To push to another registry location, set `registry`:
+
+    ```bash title="Run on: image build host"
+    ./build_images.sh all build_tool=docker build_action=push \
+      registry=registry.example.com/omnia
+    ```
+
+3. When required, override the tag for each selected image. For example:
+
+    ```bash title="Run on: image build host"
+    ./build_images.sh kafkapump kafkapump_tag=1.4
+    ./build_images.sh ldms ldms_tag=1.2
+    ```
+
+    To override several tags in an `all` build, pass each parameter in the
+    same command:
+
+    ```bash title="Run on: image build host"
+    ./build_images.sh all build_tool=docker \
+      kafkapump_tag=1.4 \
+      victoriapump_tag=1.4 \
+      telemetry_receiver_tag=1.4 \
+      ldms_tag=1.2
+    ```
 
 ## Verification
 
-After deployment, verify that telemetry pods are running:
+1. **Output contract:** Verify the build result and image destination.
 
-```bash title="Run on: service_kube_control_plane node"
-kubectl get pods -n telemetry -o wide
-```
+    A successful default `all` build exits successfully and ends with a build
+    summary containing these image names:
 
-All pods should show `Running` status. Use the source-specific verification pages for detailed checks.
+    ```text
+    Successfully built: kafkapump victoriapump idrac_telemetry_receiver ldms
+    All telemetry containers built successfully.
+    ```
 
-## Next Steps
+    The image destination depends on the selected build mode:
 
+    | Build mode | Expected images with default values |
+    |------------|-------------------------------------|
+    | Podman or Docker with `build_action=load` | `kafkapump:1.3`, `victoriapump:1.3`, `idrac_telemetry_receiver:1.3`, and `ldms:1.1` in the selected local image store |
+    | Docker with `build_action=push` | `docker.io/dellhpcomniaaisolution/kafkapump:1.3`, `docker.io/dellhpcomniaaisolution/victoriapump:1.3`, `docker.io/dellhpcomniaaisolution/idrac_telemetry_receiver:1.3`, and `docker.io/dellhpcomniaaisolution/ldms:1.1` in the registry |
 
-Configure one or more telemetry sources, then deploy the cluster to bring up the
-telemetry stack. For the end-to-end playbook sequence, see
-[Deploy the Telemetry Stack](deploy_telemetry.md).
+    A custom `registry` replaces the default registry prefix, and a custom tag
+    replaces the corresponding default tag. The push flow also publishes
+    provenance and an SBOM through Docker Buildx.
 
-- [Configure iDRAC Telemetry](configure_idrac.md)
-- [Configure LDMS Telemetry](configure_ldms.md)
-- [Configure PowerScale Telemetry](configure_powerscale.md)
-- [Configure UFM Telemetry](configure_ufm.md)
-- [Configure VAST Telemetry](configure_vast.md)
-- [Configure OpenManage Enterprise Telemetry (OME)](telemetry_from_ome.md)
-- [Configure SFM Telemetry](configure_sfm.md)
-- [External Kafka](configure_external_kafka.md)
-- [External VictoriaMetrics](configure_external_victoria.md)
+    The image builder does not write a YAML status file. The Telemetry module's
+    `telemetry_status.yml` output is written by the deployment workflow, not by
+    `build_images.sh`.
 
+2. For a local Podman build, inspect the images that were selected:
+
+    ```bash title="Run on: image build host"
+    podman image inspect \
+      kafkapump:1.3 \
+      victoriapump:1.3 \
+      idrac_telemetry_receiver:1.3 \
+      ldms:1.1
+    ```
+
+    For a local Docker build, use the same image names with Docker:
+
+    ```bash title="Run on: image build host"
+    docker image inspect \
+      kafkapump:1.3 \
+      victoriapump:1.3 \
+      idrac_telemetry_receiver:1.3 \
+      ldms:1.1
+    ```
+
+    When only a subset was built or tags were overridden, inspect only those
+    images and use their configured tags.
+
+3. When an iDRAC image was built, verify the revision in the shared source
+   checkout:
+
+    ```bash title="Run on: image build host"
+    git -C .idrac-telemetry-tools rev-parse HEAD
+    ```
+
+    The expected revision is:
+
+    ```text
+    cfa9102a900a76afe9de578d080e98f685625814
+    ```
+
+## Next steps
+
+- Record the registry and tags used for the build. The Telemetry input manifest
+  represents the three iDRAC images with
+  `images.idrac.telemetry_receiver`, `images.idrac.kafka_pump`, and
+  `images.idrac.victoria_pump` in `telemetry_packages.yml`.
+- Be aware of the current LDMS naming difference in the source. The builder
+  produces `ldms:<tag>`, while `telemetry_packages.yml` identifies the LDMS
+  sampler as `ubuntu-ldms:1.1` and the LDMS chart values request
+  `docker.io/dellhpcomniaaisolution/ubuntu-ldms:1.1`. The source does not
+  automatically retag or substitute the newly built `ldms` image. Ensure that
+  the published image name and the LDMS deployment reference are aligned before
+  deploying LDMS.
+- Configure the required Telemetry inputs, then run the validation and
+  deployment workflow described in [Deploy the Telemetry Stack](deploy_telemetry.md).
 
 ## Troubleshooting
 
-No troubleshooting information is currently available for this procedure.
+- **`build_action=push requires build_tool=docker`**: Rerun the build with
+  `build_tool=docker`, or use the default `build_action=load` with Podman.
+- **`Invalid build_tool` or `Invalid build_action`**: Use `podman` or `docker`
+  for `build_tool`, and `load` or `push` for `build_action`.
+- **`Unknown container`**: Use `all`, `kafkapump`, `victoriapump`,
+  `telemetry-receiver`, or `ldms`. Separate multiple selectors with commas and
+  do not include spaces.
+- **`Unknown parameter`**: Use only `build_tool`, `build_action`, `registry`,
+  `kafkapump_tag`, `victoriapump_tag`, `telemetry_receiver_tag`, or `ldms_tag`
+  in `key=value` form after the selector.
+- **Help is treated as a container name**: `--help` is parsed as a parameter,
+  not as the first positional selector. Run `./build_images.sh all --help` to
+  display the script's help.
+- **The iDRAC checkout is not refreshed**: If
+  `.idrac-telemetry-tools` already exists, the script reports that it is already
+  cloned and reuses it without fetching or checking out the pinned revision.
+  Use the revision verification command above to confirm the checkout before
+  relying on a reproducible build.
+- **An image build stops while downloading content**: Confirm access to the
+  applicable source listed in Prerequisites. The script and LDMS Containerfile
+  obtain Git repositories, base images, Ubuntu packages, and Python packages
+  during the build.

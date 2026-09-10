@@ -14,6 +14,22 @@
                 <tr class="row-even">
                     <td>
                         <div class="omnia-cell">
+                            <div class="ansibleOptionAnchor" id="parameter-cluster_inventory"></div>
+                            <p class="omnia-title" id="module-parameter-cluster-inventory">
+                                <strong>cluster_inventory</strong>
+                            </p>
+                            <p class="omnia-type-line"><span class="omnia-type">string</span> / <span class="omnia-required">required</span></p>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="omnia-cell">
+                            <p>Path to the existing Ansible YAML inventory containing the Kubernetes VIP and cluster node groups.</p>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="row-even">
+                    <td>
+                        <div class="omnia-cell">
                             <div class="ansibleOptionAnchor" id="parameter-telemetry_sources"></div>
                             <p class="omnia-title" id="module-parameter-telemetry-sources">
                                 <strong>telemetry_sources</strong>
@@ -71,8 +87,7 @@
                             <div class="admonition note">
                                 <p class="admonition-title">Note</p>
                                 <ul>
-                                    <li>If iDRAC telemetry is enabled, <code class="docutils literal notranslate"><span class="pre">mysqldb_user</span></code>, <code class="docutils literal notranslate"><span class="pre">mysqldb_password</span></code>, and <code class="docutils literal notranslate"><span class="pre">mysqldb_root_password</span></code> parameters in the <code class="docutils literal notranslate"><span class="pre">omnia_config_credentials.yml</span></code> file become mandatory.</li>
-                                    <li>If you want to deploy only Slurm clusters (<code class="docutils literal notranslate"><span class="pre">slurm_custom</span></code>), set <code class="docutils literal notranslate"><span class="pre">metrics_enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</li>
+                                    <li>If iDRAC telemetry is enabled, the required database credentials are collected in the encrypted <code class="docutils literal notranslate"><span class="pre">telemetry_credentials.yml</span></code> file.</li>
                                 </ul>
                             </div>
                         </div>
@@ -1573,7 +1588,7 @@
                         <div class="omnia-cell">
                             <p>Authentication mode for UFM Prometheus endpoint</p>
                             <p><b>Accepted values:</b> <code class="docutils literal notranslate"><span class="pre">basic</span></code>, <code class="docutils literal notranslate"><span class="pre">none</span></code></p>
-                            <p><b>basic:</b> Use ufm_username/ufm_password from omnia_config_credentials.yml</p>
+                            <p><b>basic:</b> Use ufm_username/ufm_password from telemetry_credentials.yml</p>
                             <p><b>none:</b> No authentication (UFM endpoint is open)</p>
                             <p><b>Default value:</b> <code class="docutils literal notranslate"><span class="pre">basic</span></code></p>
                         </div>
@@ -1753,7 +1768,7 @@
                         <div class="omnia-cell">
                             <p>Authentication mode for VAST Prometheus endpoint</p>
                             <p><b>Accepted values:</b> <code class="docutils literal notranslate"><span class="pre">basic</span></code>, <code class="docutils literal notranslate"><span class="pre">none</span></code></p>
-                            <p><b>basic:</b> Use vast_username/vast_password from omnia_config_credentials.yml</p>
+                            <p><b>basic:</b> Use vast_username/vast_password from telemetry_credentials.yml</p>
                             <p><b>none:</b> No authentication (VAST endpoint is open)</p>
                             <p><b>Default value:</b> <code class="docutils literal notranslate"><span class="pre">basic</span></code></p>
                         </div>
@@ -1761,4 +1776,3 @@
                 </tr>
     </tbody>
 </table>
-

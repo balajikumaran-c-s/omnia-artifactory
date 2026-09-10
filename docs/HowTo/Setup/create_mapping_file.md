@@ -30,7 +30,7 @@ Omnia supports two methods for discovering target nodes and creating PXE mapping
 
 ### Create PXE file manually
 
-Manually collect PXE NIC information for each node and define it in `pxe_mapping_file.csv`. Provide the file path to the `pxe_mapping_file_path` variable in `/opt/omnia/input/project_default/provision_config.yml`.
+Manually collect PXE NIC information for each node and define it in `pxe_mapping_file.csv`. Provide the file path to the `pxe_mapping_file_path` variable in `/opt/omnia/orchestrator/input/project_default/orchestrator_config.yml`.
 
 Each node entry requires the following fields: `FUNCTIONAL_GROUP_NAME`, `GROUP_NAME`, `SERVICE_TAG`, `PARENT_SERVICE_TAG`, `HOSTNAME`, `ADMIN_MAC`, `ADMIN_IP`, `BMC_MAC`, `BMC_IP`, `IB_NIC_NAME`, and `IB_IP`.
 
@@ -77,8 +77,8 @@ os_aarch64,grp7,ABEF78,,nid006,99:aa:bb:cc:dd:ee,172.16.107.61,9a:ab:bc:cd:de:ef
 
 !!! note "Hostname format"
 
-    - When `dns_enabled` is `false` in `provision_config.yml`, `HOSTNAME` values can be customized (e.g., `slurm-control-node1`).
-    - When `dns_enabled` is `true` (the default for fresh installations), `HOSTNAME` values must follow the `nidxxx` format (e.g., `nid001`, `nid002`).
+    - When `dns_enabled` is `false` in `orchestrator_config.yml` (the source default), `HOSTNAME` values can be customized (e.g., `slurm-control-node1`).
+    - When `dns_enabled` is `true`, `HOSTNAME` values must follow the `nidxxx` format (e.g., `nid001`, `nid002`).
 
 !!! warning
 
@@ -161,4 +161,4 @@ Confirm that each node entry has a valid `FUNCTIONAL_GROUP_NAME`, `GROUP_NAME`, 
 !!! info "Related References"
 
     - [Discover Nodes](discover_nodes.md) -- Run the discovery playbook.
-    - [Provision Config](../../Reference/Configuration/provision_config.md) -- Configure `pxe_mapping_file_path` and other provisioning parameters.
+    - [Orchestrator Config](../../Reference/Configuration/orchestrator_config.md) -- Configure `pxe_mapping_file_path` and other provisioning parameters.

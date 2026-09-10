@@ -10,7 +10,7 @@ the cloud-init final stage.
 --8<-- "html/additional_cloud_init.html"
 
 ## Usage example
-```yaml title="File: /opt/omnia/input/additional_cloud_init.yml"
+```yaml title="File: /opt/omnia/orchestrator/input/project_default/additional_cloud_init.yml"
 ---
 # Common cloud-init applied to ALL nodes
 common:
@@ -51,5 +51,22 @@ groups:
 
     - This file is optional and can be used to add custom cloud-init configuration to the platform.
     - Refer official cloud-init documentation for [`write_files`](https://docs.cloud-init.io/en/latest/reference/modules.html#write-files) and [`runcmd`](https://docs.cloud-init.io/en/latest/reference/modules.html#runcmd) for more details.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

@@ -72,14 +72,14 @@ Run the `provision.yml` playbook to discover, configure, and provision bare-meta
     - Provisions all target servers.
     - Configures the boot script based on functional groups.
     - Configures cloud-init based on functional groups.
-    - Applies additional cloud-init configurations (if `additional_cloud_init_config_file` is set in `provision_config.yml`).
+    - Applies additional cloud-init configurations (if `additional_cloud_init_config_file` is set in `orchestrator_config.yml`).
     - Deploys iDRAC telemetry service on the service cluster.
     - Deploys LDMS on the service cluster.
 
 4. **PXE boot the nodes** using one of the following methods:
 
     - **Manual PXE boot**: Power on target servers and select network boot from the BIOS boot menu.
-    - **Automated PXE boot**: Use the `set_pxe_boot.yml` playbook. For detailed steps, see [Configure PXE Boot](configure_pxe_boot.md).
+    - **Automated PXE boot**: Use the Orchestrator PXE workflow. For detailed steps, see [Configure PXE Boot](../orchestrator/configure_pxe_boot.md).
 
 5. **Monitor provisioning progress**:
 
@@ -132,7 +132,7 @@ Run the `provision.yml` playbook to discover, configure, and provision bare-meta
 
 ## Next Steps
 
-- [Configure PXE Boot](configure_pxe_boot.md) -- Automate PXE boot for provisioned nodes
+- [Configure PXE Boot](../orchestrator/configure_pxe_boot.md) -- Automate PXE boot for provisioned nodes
 - [Verify Cluster](verify_cluster.md) -- Verify the cluster is operational
 - [Set Up Telemetry](../Telemetry/setup_telemetry.md) -- Start telemetry collection
 

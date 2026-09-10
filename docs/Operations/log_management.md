@@ -127,47 +127,31 @@ On Slurm cluster nodes, logs are stored in standard Slurm log directories:
 
 ## Cluster log collection
 
-Omnia provides a log collection playbook for gathering cluster logs from Kubernetes and Slurm nodes for debugging and support.
-
-```bash title="Run on: omnia_core container"
-ssh omnia_core
-cd /omnia/log_collector
-ansible-playbook collect.yml
-```
-
-### Collection modes
-
-- **Full mode** (default): Collects all logs from target nodes.
-
-    ```bash title="Run on: omnia_core container"
-    ansible-playbook collect.yml
-    ```
-
-- **Curated support mode**: Excludes temporary and stale log files.
-
-    ```bash title="Run on: omnia_core container"
-    ansible-playbook collect.yml --tags curated_support
-    ```
-
-### Output artifacts
-
-| Artifact | Description |
-| --- | --- |
-| Workspace | `/opt/omnia/collector_logs` |
-| Bundle | `omnia_logs_<YYYYMMDD-HHMMSS>.tar.gz` |
-| Metadata | `metadata.json` (included in bundle) |
-| Checksum | `.sha256` file for integrity verification |
-
-!!! note
-
-    - PXE mapping file must exist at `/opt/omnia/input/project_default/`.
-    - Nodes must be reachable from the OIM.
-
-!!! warning
-
-    Logs are stored in `/var`. Ensure sufficient space is allocated to the `/var` partition.
+Use the current Utils `collect` workflow to gather the source-defined
+Kubernetes and Slurm log paths and create a timestamped archive with
+`metadata.json`. See [Collect Cluster Logs](collect_cluster_logs.md) for the
+supported input file, command, output location, verification, and cleanup
+procedure.
 
 !!! info
 
     - [General Troubleshooting](../Troubleshooting/general.md) -- Uses logs as a primary diagnostic tool.
     - [Best Practices Checklist](best_practices_checklist.md) -- Storage and maintenance best practices.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

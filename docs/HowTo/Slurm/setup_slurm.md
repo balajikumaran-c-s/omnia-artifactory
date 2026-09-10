@@ -79,7 +79,7 @@ VAST storage is used for:
 | Primary NFS | `nfs_storage_name` | Slurm config, munge keys, shared state | Yes |
 | VAST storage | `vast_storage_name` | HPC tools, CUDA toolkit, benchmarks | No (falls back to NFS) |
 
-For detailed mount configuration including NFS options, VAST RDMA profiles, and functional group targeting, see [Configure Mounts](../Storage/configure_mounts.md).
+For detailed mount configuration including NFS options, VAST RDMA profiles, and functional group targeting, see [Configure Mounts](../orchestrator/configure_storage.md).
 
 
 ### InfiniBand Requirements
@@ -95,7 +95,7 @@ defined in `network_spec.yml`:
 
 !!! tip
     For InfiniBand network configuration details, see
-    [Configure InfiniBand](../Networking/configure_infiniband.md).
+    [Configure InfiniBand](../orchestrator/configure_infiniband.md).
 
 ## Procedure
 
@@ -113,7 +113,7 @@ Omnia supports two methods for creating the PXE mapping file:
 
 Create a `pxe_mapping_file.csv` in
 `/opt/omnia/input/project_default/` and set the `pxe_mapping_file_path`
-variable in `provision_config.yml` to point to it.
+variable in `orchestrator_config.yml` to point to it.
 
 ```text title="File: /opt/omnia/input/project_default/pxe_mapping_file.csv"
 FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
@@ -167,7 +167,7 @@ For Slurm deployment, update the following input files in
 | Input File | Purpose |
 | --- | --- |
 | [`network_spec.yml`](../../Reference/Configuration/network_spec.md) | Network CIDRs, interfaces, and IP ranges |
-| [`provision_config.yml`](../../Reference/Configuration/provision_config.md) | OS provisioning and PXE settings |
+| [`orchestrator_config.yml`](../../Reference/Configuration/orchestrator_config.md) | OS provisioning and PXE settings |
 | [`software_config.json`](../../Reference/Configuration/software_config.md) | Software stack selections |
 | [`omnia_config.yml`](../../Reference/Configuration/omnia_config.md) | Slurm cluster configuration |
 | [`storage_config.yml`](../../Reference/Configuration/storage_config.md) | NFS storage mount configuration |
@@ -318,7 +318,7 @@ telemetry_sources:
     For Slurm-only deployments, disable all telemetry metrics in
     `telemetry_config.yml` except DCGM, which can be enabled if GPU
     telemetry is required.
-    For more information related to DCGM, see [DCGM](slurm_with_gpu.md#dcgm).
+    For more information related to DCGM, see [DCGM](../orchestrator/slurm_with_gpu.md#dcgm).
     
 ### Step 3: Configure Slurm
 
@@ -342,7 +342,7 @@ Omnia applies a default Slurm configuration optimized for HPC clusters:
 
 For detailed information on custom Slurm configuration, merge control,
 node discovery modes, and configuration validation, see
-[Configure Slurm](configure_slurm.md).
+[Configure Slurm](../orchestrator/configure_slurm.md).
 
 ### Step 4 -- Prepare the OIM
 
@@ -670,7 +670,7 @@ Configure each node to boot from the PXE enabled NIC, whose mac address is liste
 **Option 2: Automated PXE Boot**
 This option boots all nodes via PXE through the iDRAC Redfish API.
 After reboot, the nodes boot from the network, retrieve their OS image from S3, and run `cloud-init` to complete provisioning.
-For more information, see the [PXE Boot playbook](../Setup/configure_pxe_boot.md).
+For more information, see the [PXE Boot playbook](../orchestrator/configure_pxe_boot.md).
 
 
 ```bash title="Run on: omnia_core container"
@@ -783,11 +783,11 @@ status: done
 
 ## Next Steps
 
-- [Slurm with GPU](slurm_with_gpu.md) -- Configure GPU support for Slurm nodes
-- [NVIDIA HPC SDK Setup](setup_nvhpc_sdk.md) -- Install NVIDIA HPC SDK on compiler and compute nodes
+- [Slurm with GPU](../orchestrator/slurm_with_gpu.md) -- Configure GPU support for Slurm nodes
+- [NVIDIA HPC SDK Setup](../orchestrator/setup_nvhpc_sdk.md) -- Install NVIDIA HPC SDK on compiler and compute nodes
 - [Add Slurm Nodes](add_slurm_nodes.md) -- Add more compute nodes to the cluster
 - [Config Backup](slurm_config_backup.md) -- Back up Slurm configuration
-- [Run HPC Benchmarks](run_hpc_benchmarks.md) -- Validate cluster performance
+- [Run HPC Benchmarks](../orchestrator/run_hpc_benchmarks.md) -- Validate cluster performance
 
 ## Troubleshooting
 

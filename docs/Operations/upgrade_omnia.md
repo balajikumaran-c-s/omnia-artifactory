@@ -1,6 +1,6 @@
 # Upgrade Omnia
 
-Omnia supports in-place upgrades from version 2.1.0.0 to 2.2.0.0. The upgrade
+Omnia supports in-place upgrades from version 2.2.0.0 to 2.3.0.0. The upgrade
 process is a three-phase workflow: core container upgrade, prepare, and execute.
 Each component is upgraded in a defined order with lock-based safety and manifest
 tracking for idempotent reruns.
@@ -16,11 +16,11 @@ tracking for idempotent reruns.
 
 | Source Version | Target Version |
 | --- | --- |
-| Omnia 2.1.0.0 | Omnia 2.2.0.0 |
+| Omnia 2.2.0.0 | Omnia 2.3.0.0 |
 
 !!! note
 
-    Direct upgrades across multiple major versions (e.g., 2.0 to 2.2) are not
+    Direct upgrades across multiple major versions (e.g., 2.1 to 2.3) are not
     supported. Upgrade one version at a time.
 
 !!! warning
@@ -29,28 +29,28 @@ tracking for idempotent reruns.
 
 ## Upgrade Considerations
 
-Omnia 2.2.0.0 introduces significant platform enhancements, including architectural improvements and updated networking capabilities. During the upgrade from Omnia 2.1.0.0, existing configurations are preserved wherever possible while enabling the latest platform capabilities. The following table summarizes the expected upgrade behavior and key considerations.
+Omnia 2.3.0.0 introduces significant platform enhancements, including architectural improvements and updated networking capabilities. During the upgrade from Omnia 2.2.0.0, existing configurations are preserved wherever possible while enabling the latest platform capabilities. The following table summarizes the expected upgrade behavior and key considerations.
 
 !!! tip
 
-    If your deployment requires all Omnia 2.2 features and deployment options immediately after installation, including capabilities that are not available as part of the upgrade process, consider performing a fresh installation of Omnia 2.2.
+    If your deployment requires all Omnia 2.3 features and deployment options immediately after installation, including capabilities that are not available as part of the upgrade process, consider performing a fresh installation of Omnia 2.3.
 
 | **Functionality** | **Upgrade Behavior and Considerations** |
 |----------|------------------------------------------|
-| **Discovery** | During the upgrade, node IP addresses must be populated in the PXE mapping file by using the correlation logic. After the cluster upgrade completes successfully, node addition and deletion operations continue to work with the upgraded configuration. OME-based discovery is supported only for new Omnia 2.2 cluster deployments. OME-based discovery is not supported during upgrades from Omnia 2.1 to Omnia 2.2. |
+| **Discovery** | During the upgrade, node IP addresses must be populated in the PXE mapping file by using the correlation logic. After the cluster upgrade completes successfully, node addition and deletion operations continue to work with the upgraded configuration. OME-based discovery is supported only for new Omnia 2.3 cluster deployments. OME-based discovery is not supported during upgrades from Omnia 2.2 to Omnia 2.3. |
 | **Flat Network to Multi-Network Migration** | Existing flat network configurations are preserved during the upgrade. Clusters using a single PXE network and the switch gateway as the default route continue to operate with the existing network configuration after the upgrade. The upgrade process does not convert or migrate flat network configurations to multi-network configurations. |
 | **Default Route Configuration** | For existing flat network clusters, the Omnia PXE network remains the default route after the upgrade. The upgrade process does not switch the default route to the switch gateway. |
 | **InfiniBand (IB) Network** | For Slurm clusters, the existing InfiniBand (IB) network configuration and IB IP address assignments are preserved during the upgrade. The PXE mapping file is updated to support the IB configuration. After the upgrade, node addition and deletion operations continue to use the IP assignments defined in the PXE mapping file. |
-| **Centralized DNS** | For upgrades from Omnia 2.1 to 2.2, `dns_enabled` must be set to `false`. `dns_enabled: true` is supported only for fresh Omnia 2.2 installations. For Slurm clusters, DNS server IP addresses can be updated on all nodes when DNS changes are managed through the prepare-oim process. For Kubernetes clusters, live upgrades continue to use the /etc/hosts file-based name resolution approach. Centralized DNS is not supported for Kubernetes live upgrades. |
+| **Centralized DNS** | For upgrades from Omnia 2.2 to 2.3, `dns_enabled` must be set to `false`. `dns_enabled: true` is supported only for fresh Omnia 2.3 installations. For Slurm clusters, DNS server IP addresses can be updated on all nodes when DNS changes are managed through the prepare-oim process. For Kubernetes clusters, live upgrades continue to use the /etc/hosts file-based name resolution approach. Centralized DNS is not supported for Kubernetes live upgrades. |
 | **Storage Provisioner** | Existing storage provisioner configurations are preserved during the upgrade. For Kubernetes service clusters, the upgrade process does not automatically migrate the storage provisioner from NFS to CSI PowerScale. |
-| **VAST Mounts** | VAST mount support is introduced in Omnia 2.2 for Slurm clusters. Additional mounts for supported storage backends can be configured through storage_config.yml for both upgraded and fresh Omnia 2.2 deployments when the appropriate profiles are configured. Existing storage mount configurations and backend assignments are preserved during upgrade. The upgrade process does not automatically migrate existing mounts to VAST or to any other storage backend because of storage compatibility considerations. |
+| **VAST Mounts** | VAST mount support is introduced in Omnia 2.3 for Slurm clusters. Additional mounts for supported storage backends can be configured through storage_config.yml for both upgraded and fresh Omnia 2.3 deployments when the appropriate profiles are configured. Existing storage mount configurations and backend assignments are preserved during upgrade. The upgrade process does not automatically migrate existing mounts to VAST or to any other storage backend because of storage compatibility considerations. |
 | **ETCD Data** | For Kubernetes controlplane, existing etcd storage configurations are preserved during the upgrade. The upgrade process does not migrate etcd data from NFS to local disk. |
 | **Node Management** | The cluster configuration remains unchanged during the upgrade. Slurm node addition and deletion operations are not supported while the upgrade is in progress. After the upgrade completes successfully, Slurm node addition and deletion operations continue to work with the upgraded configuration. |
 | **Telemetry** | PowerScale, VAST, VictoriaLogs, and UFM telemetry components are deployed by default during the upgrade and can be controlled through telemetry_config.yml. Temporary telemetry downtime is expected during the upgrade. |
 | **GPU Support** | GPU support is available for Slurm compute nodes with GPUs. DCGM can be enabled on these nodes. Slurm login nodes include the CUDA toolkit, while GPU-enabled Slurm compute nodes include the CUDA driver, CUDA toolkit, and DCGM. |
-| **HPC Tools** | HPC tools are supported on Slurm login and compiler nodes. For upgraded clusters, download the tools supported in Omnia 2.2 and organize using the recommended directory structure to ensure proper separation of tool packages. |
+| **HPC Tools** | HPC tools are supported on Slurm login and compiler nodes. For upgraded clusters, download the tools supported in Omnia 2.3 and organize using the recommended directory structure to ensure proper separation of tool packages. |
 | **Rollback** | After a successful upgrade, the upgraded environment is considered the recommended operating state. Rollback is disabled by default. If post-upgrade validation identifies issues, rollback can be forced by setting -e force_rollback=true. For more information, see the [Rollback Omnia](rollback_omnia.md) section. |
-| **Supported Upgrade Path** | Omnia supports upgrades only from the immediately preceding release. Omnia 2.2 supports direct upgrades from Omnia 2.1 only. Direct upgrades across multiple major versions, such as Omnia 2.0 to Omnia 2.2, are not supported. |
+| **Supported Upgrade Path** | Omnia supports upgrades only from the immediately preceding release. Omnia 2.3 supports direct upgrades from Omnia 2.2 only. Direct upgrades across multiple major versions, such as Omnia 2.1 to Omnia 2.3, are not supported. |
 | **Component Upgrades** | All components are expected to upgrade successfully during the upgrade process. If a component, such as Kubernetes or Slurm, requires manual intervention, follow the documented upgrade steps for that component before continuing the upgrade workflow. Rollback is supported only for the affected component and only when the component upgrade fails because of unavoidable limitations. |
 
 ## Prerequisites
@@ -59,15 +59,15 @@ Before starting the upgrade, ensure the following prerequisites are met:
 
 1. The OIM node is running and accessible.
 2. The `omnia_core` container is running and the cluster is currently on
-   Omnia 2.1.0.0.
+   Omnia 2.3.0.0.
 3. All compute nodes are in a healthy state.
 4. No other upgrade or rollback is currently in progress.
 5. `oim_metadata.yml` at `/opt/omnia/.data/oim_metadata.yml` contains the
    correct current version information.
-6. The target Omnia 2.2.0.0 core container image (`omnia_core:2.2`) is
+6. The target Omnia 2.3.0.0 core container image (`omnia_core:2.3`) is
    available locally on the OIM host. If it is not already available, build it
    as described in
-   [Build the Omnia 2.2.0.0 Core Container Image](#build-the-omnia-2200-core-container-image).
+   [Build the Omnia 2.3.0.0 Core Container Image](#build-the-omnia-2300-core-container-image).
 7. **aarch64 clusters only**: If the PXE mapping file contains aarch64
    functional groups, an inventory file with an `[admin_aarch64]` group is
    required. This group must contain exactly one ARM admin node.
@@ -93,20 +93,20 @@ Before starting the upgrade, ensure the following prerequisites are met:
 
     If the Slurm version is not 25.05.2, apply the Slurm version pinning workaround
     before proceeding with the upgrade. For detailed instructions, see
-    [Slurm Version Pinning Workaround](https://omnia-devel.readthedocs.io/en/omnia-docs-v2.1.0.0/Operations/upgrade_omnia.html#slurm-version-pinning-workaround)
-    in the Omnia v2.1.0.0 documentation.
+    [Slurm Version Pinning Workaround](https://omnia-devel.readthedocs.io/en/omnia-docs-v2.3.0.0/Operations/upgrade_omnia.html#slurm-version-pinning-workaround)
+    in the Omnia v2.3.0.0 documentation.
 
-### Build the Omnia 2.2.0.0 Core Container Image
+### Build the Omnia 2.3.0.0 Core Container Image
 
-The upgrade swaps the running `omnia_core` container to the 2.2.0.0 image.
+The upgrade swaps the running `omnia_core` container to the 2.3.0.0 image.
 This image must be present on the OIM host before you run
 `omnia.sh --upgrade`. To build it:
 
 1. On the OIM host, clone the Omnia containers repository on the
-   `omnia-container-v2.2.0.0` branch:
+   `omnia-container-v2.3.0.0` branch:
 
     ```bash title="Run on: OIM host"
-    git clone -b omnia-container-v2.2.0.0 https://github.com/dell/omnia-containers.git
+    git clone -b omnia-container-v2.3.0.0 https://github.com/dell/omnia-containers.git
     ```
 
 2. Build the core container image using the build script provided in the
@@ -114,7 +114,7 @@ This image must be present on the OIM host before you run
 
     ```bash title="Run on: OIM host"
     cd omnia-containers
-    ./build_images.sh core core_tag=2.2 omnia_branch=v2.2.0.0
+    ./build_images.sh core core_tag=2.3 omnia_branch=v2.3.0.0
     ```
 
 3. Confirm the image is available locally before proceeding:
@@ -134,16 +134,16 @@ The upgrade begins on the OIM host outside the `omnia_core` container.
 
 !!! important
 
-    **Use the Omnia 2.2.0.0 `omnia.sh` script for upgrade operations.**
-    The `omnia.sh` script from Omnia 2.1.0.0 does not support correct upgrade
-    or rollback operations. You must download and use the Omnia 2.2.0.0 version
+    **Use the Omnia 2.3.0.0 `omnia.sh` script for upgrade operations.**
+    The `omnia.sh` script from Omnia 2.2.0.0 does not support correct upgrade
+    or rollback operations. You must download and use the Omnia 2.3.0.0 version
     of `omnia.sh` to perform upgrades and rollbacks. Do not attempt to run
-    `./omnia.sh --upgrade` or `./omnia.sh --rollback` using the 2.1.0.0 script.
+    `./omnia.sh --upgrade` or `./omnia.sh --rollback` using the 2.2.0.0 script.
 
-1. Download the Omnia 2.2.0.0 `omnia.sh` script from the Omnia repository:
+1. Download the Omnia 2.3.0.0 `omnia.sh` script from the Omnia repository:
 
     ```bash title="Run on: OIM host"
-    wget https://raw.githubusercontent.com/dell/omnia/refs/tags/v2.2.0.0/omnia.sh
+    wget https://raw.githubusercontent.com/dell/omnia/refs/tags/v2.3.0.0/omnia.sh
     ```
 
 2. Set executable permissions:
@@ -178,7 +178,7 @@ The upgrade begins on the OIM host outside the `omnia_core` container.
         - OpenCHAMI quadlet files (`/etc/containers/systemd/`)
         - OpenCHAMI configuration files (`/etc/openchami/`)
         - Cloud-init data (groups, defaults, hostname mappings)
-    - Swaps or restarts the `omnia_core` container to the 2.2 image
+    - Swaps or restarts the `omnia_core` container to the 2.3 image
     - Creates upgrade guard lock at
       `/opt/omnia/.data/upgrade_in_progress.lock`
     - Seeds new input defaults
@@ -238,7 +238,7 @@ and presents a summary for user review.
 3. Review the output summary. The playbook identifies:
 
     - **Automatically migrated files** — copied as-is (e.g.,
-      `provision_config.yml`, `omnia_config.yml`).
+      `orchestrator_config.yml`, `omnia_config.yml`).
     - **Files requiring review** — new parameters added in the target version
       (e.g., `network_spec.yml`, `telemetry_config.yml`).
 
@@ -249,7 +249,7 @@ and presents a summary for user review.
 
     **Do not re-run `prepare_upgrade.yml` after making input changes.**
     Re-running `prepare_upgrade.yml` after you have modified input files will
-    overwrite your changes and revert to the original 2.1 inputs. Only run
+    overwrite your changes and revert to the original 2.2 inputs. Only run
     `prepare_upgrade.yml` once at the beginning of the upgrade process. After
     reviewing and updating the migrated inputs, proceed directly to the execute
     phase.
@@ -309,9 +309,9 @@ which is treated as a successful terminal state when the overall upgrade status
 is determined.
 
 The upgrade playbook determines the BuildStreaM path based on the state in
-2.1:
+2.2:
 
-**PATH A: BuildStreaM was ENABLED in 2.1 (upgrade path)**
+**PATH A: BuildStreaM was ENABLED in 2.2 (upgrade path)**
 
 - Upgrade BuildStreaM container image (quadlet update)
 - PostgreSQL data migration (pg_dump → restore to new schema)
@@ -320,7 +320,7 @@ The upgrade playbook determines the BuildStreaM path based on the state in
   examples) by adding a new upgrade commit
 - Validate BuildStreaM container + GitLab healthy
 
-**PATH B: BuildStreaM was DISABLED in 2.1, ENABLED in 2.2 (fresh install)**
+**PATH B: BuildStreaM was DISABLED in 2.2, ENABLED in 2.3 (fresh install)**
 
 - NFS share cleanup: remove stale K8s and Slurm NFS share data
 - Fresh install: PostgreSQL container (new instance)
@@ -477,7 +477,7 @@ In this example, the upgrade status file would be located at:
     (after Kubernetes and before Slurm) and handles all validation and status
     tracking automatically.
 
-The telemetry upgrade process upgrades telemetry components to their 2.2
+The telemetry upgrade process upgrades telemetry components to their 2.3
 versions while ensuring minimal disruption to metric collection and monitoring
 services.
 
@@ -527,7 +527,7 @@ release.
       are active before starting the upgrade.
     - Do not modify Slurm node definitions or host mappings in the PXE mapping
       file while the upgrade is in progress.
-    - Existing NFS mount configurations from Omnia 2.1 are preserved during
+    - Existing NFS mount configurations from Omnia 2.2 are preserved during
       the upgrade. Do not add, remove, or modify NFS mount points until the
       upgrade has completed successfully.
     - **Compatibility Warning**: The Slurm upgrade may encounter issues if your
@@ -539,8 +539,8 @@ release.
       Slurm 25.05.2 version. If your cluster is not on version 25.05.2, apply the
       Slurm version pinning workaround before starting the upgrade. For detailed
       instructions, see
-      [Slurm Version Pinning Workaround](https://omnia-devel.readthedocs.io/en/omnia-docs-v2.1.0.0/Operations/upgrade_omnia.html#slurm-version-pinning-workaround)
-      in the Omnia v2.1.0.0 documentation.
+      [Slurm Version Pinning Workaround](https://omnia-devel.readthedocs.io/en/omnia-docs-v2.2.0.0/Operations/upgrade_omnia.html#slurm-version-pinning-workaround)
+      in the Omnia v2.2.0.0 documentation.
 
 **Slurm Upgrade Workflow**
 
@@ -680,3 +680,21 @@ After the upgrade completes, verify the following:
     - [Rollback Omnia](rollback_omnia.md) — Revert an upgrade if needed.
     - [Upgrade and Rollback Troubleshooting](../Troubleshooting/upgrade_rollback.md) —
       Troubleshoot upgrade and rollback issues.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

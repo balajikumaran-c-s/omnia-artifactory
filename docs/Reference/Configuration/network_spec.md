@@ -1,22 +1,30 @@
-
+﻿
 # network_spec.yml
 
-This file defines all network segments used by the Omnia cluster: admin, ib, and additional networks. Each network is described as an entry in the
-`Networks` list.
+This file defines the admin network, the optional InfiniBand network, and any
+additional DHCP subnets. Orchestrator and Discovery stage independent copies
+of this file in their respective project input directories.
+
+## Location
+
+```text
+$OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/network_spec.yml
+$OMNIA_DATA_PATH/discovery/input/$OMNIA_PROJECT_NAME/network_spec.yml
+```
+
+The default paths are under `/opt/omnia`. Configure the Discovery copy for
+node discovery and the Orchestrator copy for provisioning.
 
 ## Top-level structure
 
 `network_spec.yml` contains a single top-level key, `Networks`, which is a
 YAML list of network definitions.
 
-```yaml title="File: /opt/omnia/input/project_default/network_spec.yml"
+```yaml title="File: /opt/omnia/orchestrator/input/project_default/network_spec.yml"
 Networks:
   - admin_network:
-      ...
-  - ib_network:
-      ...
-  - additional_subnets:
-      ...
+      additional_subnets: []
+  - ib_network: {}
 ```
 ## Admin Network Configuration Parameters
 --8<-- "html/network_spec-admin_network.html"
@@ -30,12 +38,12 @@ Networks:
 
 ## Usage example
 
-```yaml title="File: /opt/omnia/input/project_default/network_spec.yml"
+```yaml title="File: /opt/omnia/orchestrator/input/project_default/network_spec.yml"
 ---
 Networks:
   - admin_network:
       oim_nic_name: "eno1"
-      subnet: "172.16.0.0"
+      subnet: "172.16.107.0"
       netmask_bits: "24"
       primary_oim_admin_ip: "172.16.107.254"
       primary_oim_bmc_ip: ""
@@ -43,22 +51,20 @@ Networks:
       dynamic_range: "172.16.107.201-172.16.107.250"
       dns: []
       ntp_servers: []
-      additional_subnets: []
+      additional_subnets:
+        - subnet: "10.40.1.0"
+          netmask_bits: "24"
+          router: "10.40.1.1"
+          dynamic_range: "10.40.1.100-10.40.1.200"
+        - subnet: "10.40.3.0"
+          netmask_bits: "24"
+          router: "10.40.3.1"
+          dynamic_range: "10.40.3.100-10.40.3.200"
 
   - ib_network:
       subnet: "192.168.0.0"
       netmask_bits: "24"
       dns: []
-
-  - additional_subnets:
-      - subnet: "10.40.1.0"
-        netmask_bits: "24"
-        router: "10.40.1.1"
-        dynamic_range: "10.40.1.100-10.40.1.200"
-      - subnet: "10.40.3.0"
-        netmask_bits: "24"
-        router: "10.40.3.1"
-        dynamic_range: "10.40.3.100-10.40.3.200"
 ```
 
 
@@ -68,8 +74,6 @@ Networks:
     - In connected deployments, set `router` to the external rack gateway (such as a SONiC switch) which provides connectivity beyond the rack network.
     - In air-gapped deployments, set `router` to the OIM's IP address if the OIM is acting as the rack gateway. If a dedicated router or gateway is available, specify its IP address instead.
     - Default value: `172.16.107.254`
-    - In LOM topology, `admin_network` and `bmc_network` may share the
-      same `oim_nic_name` with different `vlan_id` values.
     - The `dynamic_range` must not overlap with any static IPs assigned
       in the PXE mapping file.
 
@@ -78,3 +82,18 @@ Networks:
     - [Network Topologies](../SupportMatrix/network_topologies.md) -- How topologies
       affect NIC and VLAN assignments.
     - [Nics](../SupportMatrix/nics.md) -- Supported NIC models.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

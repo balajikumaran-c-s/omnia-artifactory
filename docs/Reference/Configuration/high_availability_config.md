@@ -9,15 +9,13 @@ virtual IP address and load-balanced API servers.
 
 ## Prerequisites
 
-- Minimum **3 control plane nodes** for a quorum-based HA deployment.
-- The `ha_virtual_ip` must be a free IP on the admin network subnet --
+- Add the matching service Kubernetes cluster to `omnia_config.yml`.
+- The `virtual_ip_address` must be a free IP on the admin network subnet --
   it must not be assigned to any physical server or DHCP range.
-- All control plane nodes must have L2 connectivity on the admin network for
-  ARP-based virtual IP failover.
 
 ## Usage example
 
-```yaml title="File: /opt/omnia/input/project_default/high_availability_config.yml"
+```yaml title="File: /opt/omnia/orchestrator/input/project_default/high_availability_config.yml"
 ---
 service_k8s_cluster_ha:
   - cluster_name: service_cluster
@@ -27,6 +25,22 @@ service_k8s_cluster_ha:
 !!! info
 
     - [Omnia Config](omnia_config.md) -- Kubernetes deployment settings.
-    - [Minimum Nodes](../ClusterRequirements/minimum_nodes.md) -- Minimum node counts for HA deployments.
+    - [Minimum Nodes](../../Reference/../Reference/ClusterRequirements/minimum_nodes.md) -- Minimum node counts for HA deployments.
     - [Ports](../../SecurityConfigurationGuide/network_security.md#kubernetes-port-requirements) -- Kubernetes ports including
       the API server.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

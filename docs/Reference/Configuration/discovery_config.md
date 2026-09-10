@@ -1,25 +1,41 @@
-
 # discovery_config.yml
 
-This file configures node discovery settings, including BMC discovery via
-Dell OpenManage Enterprise (OME).
+The Discovery configuration enables OME discovery and identifies the OME
+appliance.
 
-## Parameter Reference
+## Location
 
---8<-- "html/discovery_config.html"
+```text
+$OMNIA_DATA_PATH/discovery/input/$OMNIA_PROJECT_NAME/discovery_config.yml
+```
+
+The default location is
+`/opt/omnia/discovery/input/project_default/discovery_config.yml`.
+
+## Configuration parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `enable_bmc_discovery` | boolean | Yes | Set to `true` to execute node discovery through OME. |
+| `ome_ip` | IPv4 string | Yes | OME IPv4 address. When discovery is enabled, it must be valid and must not be a loopback address. |
+
+OME credentials are not stored in this file. The credential workflow creates
+the encrypted `discovery_credentials.yml` and its Vault key in the same
+project directory.
+
+The Magellan section in the source template is reserved for future
+configuration. The current executable Discovery flow uses OME.
 
 ## Usage example
 
-### BMC Discovery
-```yaml title="File: /opt/omnia/input/discovery_config.yml"
----
-enable_bmc_discovery: false
-
-# IP address of the Dell OpenManage Enterprise (OME) instance
-ome_ip: ""
+```yaml title="File: /opt/omnia/discovery/input/project_default/discovery_config.yml"
+enable_bmc_discovery: true
+ome_ip: "192.168.1.100"
 ```
 
-!!! note
+## Related configuration
 
-    - When `enable_bmc_discovery` is set to `true`, OME credentials (`ome_username`, `ome_password`) are managed separately via `get_config_credentials`.
-    - The `ome_ip` field is required only when BMC discovery is enabled.
+- [Network specification](network_spec.md)
+- [Discovery contract](../domain_contracts/discovery_contract.md)
+- [Discover nodes using OME](../../HowTo/discovery/discover_nodes.md)
+

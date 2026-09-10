@@ -1,4 +1,4 @@
-
+﻿
 # security_config.yml
 
 This file configures centralized authentication services for the
@@ -10,7 +10,7 @@ cluster.
 
 ## Usage example
 
-```yaml title="File: /opt/omnia/input/project_default/security_config.yml"
+```yaml title="File: /opt/omnia/orchestrator/input/project_default/security_config.yml"
 ---
 ldap_connection_type: "TLS"
 ```
@@ -19,3 +19,21 @@ ldap_connection_type: "TLS"
 
     - [Deployment LDAP Server](../../HowTo/Authentication/deploy_external_ldap.md) -- Centralized authentication for your Omnia cluster.
     - [Ports](../../SecurityConfigurationGuide/network_security.md#openldap-port-requirements) -- Ports required by LDAP.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

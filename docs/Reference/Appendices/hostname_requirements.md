@@ -10,7 +10,7 @@ This page documents the hostname constraints that Omnia enforces on all cluster 
 | --- | --- |
 | **RFC 952 / RFC 1123 compliant** | - Start with a letter (`a`--`z`).<br>- Contain only letters, digits (`0`--`9`), and hyphens (`-`).<br>- Be 1--63 characters long. |
 | **Lowercase only** | Uppercase letters are rejected by `input_validator.yml`. |
-| **No domain suffix** | Use `slurm-ctrl-01`, not `slurm-ctrl-01.hpc.example.com`. Domain is appended from `domain_name` in `provision_config.yml`. |
+| **No domain suffix** | Use `slurm-ctrl-01`, not `slurm-ctrl-01.hpc.example.com`. The OIM domain is configured through `SYSTEM_DOMAIN_NAME` in `omnia.env`. |
 | **No underscores** | Use hyphens instead: `slurm-node-01`, not `slurm_node_01`. |
 | **Unique** | Every hostname in the PXE mapping file must be unique. |
 | **No reserved names** | Avoid `localhost`, `gateway`, `dns`, or system service names. | 
@@ -44,4 +44,20 @@ Use zero-padded numbers (`01`, `02`) to enable Slurm node ranges (e.g., `slurm-g
 !!! info
 
     - [Pxe Mapping File](../SampleFiles/pxe_mapping_file.md) -- PXE mapping CSV where hostnames are assigned.
-    - [Provision Config](../Configuration/provision_config.md) -- `domain_name` parameter that provides the DNS suffix.
+    - [Main Environment](../Configuration/omnia_env.md) -- `SYSTEM_DOMAIN_NAME` provides the OIM domain name.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

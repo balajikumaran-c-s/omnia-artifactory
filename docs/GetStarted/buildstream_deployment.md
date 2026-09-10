@@ -1,407 +1,412 @@
-# Path D: BuildStreaM Automated Deployment
+# Path D: Build Stream Automated Deployment
 
-Omnia BuildStreaM provides a comprehensive automation solution for managing infrastructure build workflows. It uses a catalog-driven approach where you define your build requirements in a structured catalog file, and BuildStreaM executes automated pipelines to create and deploy images according to your specifications.
+## Overview
 
-BuildStreaM supports three pipeline types that can be executed through GitLab:
+Use this deployment path to automate image building and node provisioning with
+Build Stream and its managed GitLab pipelines.
 
-- **Build Pipeline**: Creates diskless images based on catalog specifications. This pipeline is automatically triggered when the catalog is committed, but can also be executed manually.
-- **Deploy Pipeline**: Deploys built images to target cluster nodes. This pipeline is automatically triggered when the PXE mapping file is updated, but can also be executed manually.
-- **Clean Pipeline**: Removes old Image Groups based on retention policy. This pipeline can be executed only manually.
+The workflow prepares the Omnia Infrastructure Manager (OIM) and the base
+module services before deploying Build Stream. A change to the catalog starts
+the build pipeline, which synchronizes repository content and builds the
+selected images. A change to the PXE mapping starts the deploy pipeline, which
+deploys the selected image, restarts the target nodes, and validates the
+deployment. Deploying Build Stream prepares the automation environment; image
+building and node provisioning occur when you run the corresponding pipeline.
 
-!!! note
+## Build Stream workflow
 
-    Complete the [Prerequisites Checklist](prerequisites_checklist.md) before proceeding.
+<div class="of-wrap">
+<div class="of-root">
+  <div class="of-hdr">
+    <div class="of-h2">Source-defined Build Stream and pipeline flow</div>
+  </div>
+  <div class="of-flow">
+    <div class="of-pill">Start on the OIM</div>
+    <div class="of-c"></div>
+    <div class="of-s">
+      <div class="t">Configure and set up the OIM</div>
+      <div class="d"><code>omnia.env</code> &rarr; <code>omnia.sh --setup-venv</code></div>
+      <div class="of-more"><a href="../HowTo/main/setup_oim.html">Learn more: OIM setup &gt;&gt;</a></div>
+    </div>
+    <div class="of-c"></div>
+    <div class="of-s">
+      <div class="t">Prepare the base module services</div>
+      <div class="d">Pulp, MinIO, registry, and required credentials</div>
+      <div class="of-more"><a href="../HowTo/build_stream/deploy_gitlab.html#prerequisites">Learn more: Base prerequisites &gt;&gt;</a></div>
+    </div>
+    <div class="of-c"></div>
+    <div class="of-s">
+      <div class="t">Configure and deploy Build Stream</div>
+      <div class="d">PostgreSQL, BSM, watcher, GitLab, project, and runner</div>
+      <div class="of-more"><a href="../HowTo/build_stream/deploy_gitlab.html">Learn more: Deploy Build Stream &gt;&gt;</a></div>
+    </div>
+    <div class="of-c"></div>
+    <div class="of-s">
+      <div class="t">Commit the catalog</div>
+      <div class="d">Build pipeline &rarr; Repo Manager &rarr; Image Build Manager</div>
+      <div class="of-more"><a href="../HowTo/build_stream/execute_build_pipeline.html">Learn more: Build pipeline &gt;&gt;</a></div>
+    </div>
+    <div class="of-c"></div>
+    <div class="of-s">
+      <div class="t">Commit the PXE mapping CSV</div>
+      <div class="d">Deploy pipeline &rarr; select, deploy, restart, and validate</div>
+      <div class="of-more"><a href="../HowTo/build_stream/execute_deploy_pipeline.html">Learn more: Deploy pipeline &gt;&gt;</a></div>
+    </div>
+    <div class="of-c"></div>
+    <div class="of-s">
+      <div class="t">Verify GitLab and BSM results</div>
+      <div class="d">Pipeline state, module contracts, and job logs</div>
+      <div class="of-more"><a href="../HowTo/build_stream/deploy_gitlab.html#verification">Learn more: Verify Build Stream &gt;&gt;</a></div>
+    </div>
+    <div class="of-c"></div>
+    <div class="of-pill">Automated image lifecycle ready</div>
+  </div>
+</div>
+</div>
 
-## Step 1 -- Deploy the omnia_core Container
+## Prerequisites
 
-Clone the Omnia Containers repository, build the container images, and
-install the `omnia_core` Podman container on the OIM. The container packages the complete Omnia codebase and Ansible engine.
+- Use an Omnia source checkout on the OIM. Build Stream requires RHEL or Rocky
+  Linux 10.x, Python 3.12 or later, Ansible Core 2.20 or later, and Podman 5.0
+  or later.
+- Set `SYSTEM_ADMIN_NIC_IPV4` in `src/main/omnia.env` to an IPv4 address
+  assigned to an OIM interface. Keep `OMNIA_PROJECT_NAME=project_default` for
+  this workflow because the current Build Stream setup role fixes its project
+  input and output directories to that name.
+- Prepare the Repository Manager and Image Build Manager base services. The
+  Build Stream precheck specifically requires running `pulp`, `minio-server`,
+  and `registry` containers and the two modules' credential files.
+- Provide a GitLab host reachable from the OIM through SSH and HTTPS. Provide
+  its root SSH password during Build Stream credential collection.
+- Disable SELinux on the GitLab host and reboot it before deployment. The
+  source prerequisite check stops when SELinux is enabled.
+- Ensure the GitLab host meets the minimum CPU, memory, and free-storage values
+  configured in `build_stream_config.yml`. The supplied defaults are 2 CPU
+  cores, 4 GB of memory, and 20 GB free on `/`.
+- Ensure the configured BSM and GitLab HTTPS ports are available. The GitLab
+  host must be able to reach `build_stream_host_ip`.
+- Provide working package repositories on the OIM and GitLab host. GitLab
+  deployment also requires access to the configured GitLab package source and
+  the registries used for the runner, helper, and default CI images.
+- Avoid overlapping pipelines that operate on the same catalog, image, mapping,
+  or deployment state. The generated GitLab configuration permits concurrent
+  pipelines.
 
-```bash title="Run on: OIM host"
-# Clone and build
-git clone https://github.com/dell/omnia-containers.git -b omnia-container-v2.2.0.0-rc1
-cd omnia-containers
-./build_images.sh core omnia_branch=v2.2.0.0-rc1 core_tag=2.2
-```
+## Procedure
 
-For details, see
-[Deploy Omnia Core](../HowTo/Setup/deploy_omnia_core.md){target="_blank"}.
+### 1. Configure and set up the OIM
 
-1. **Clone the Omnia Containers repository and build the container image**:
-
-    ```bash title="Run on: OIM host"
-    git clone https://github.com/dell/omnia-containers.git -b omnia-container-v2.2.0.0-rc1
-    cd omnia-containers
-    ./build_images.sh core omnia_branch=v2.2.0.0-rc1 core_tag=2.2
-    ```
-
-2. **Download the `omnia.sh` script**:
-
-    ```bash title="Run on: OIM host"
-    wget https://raw.githubusercontent.com/dell/omnia/refs/tags/v2.2.0.0-rc1/omnia.sh
-    chmod +x omnia.sh
-    ```
-
-3. **Install the omnia_core container**:
-
-    ```bash title="Run on: OIM host"
-    ./omnia.sh --install
-    ```
-
-!!! caution
-    The password must not contain special characters such as
-    `, |, &, ;, \`, <>, *, ?, !, $, (), {}, []`.
-
-**Verification**
-
-1. **Verify the `omnia_core` container is running**:
-
-    ```bash title="Run on: OIM host"
-    podman ps --filter name=omnia_core --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
-    ```
-
-    Expected output:
-
-    ```text title="Expected output"
-    NAMES        IMAGE                       STATUS       PORTS
-    omnia_core   localhost/omnia_core:2.2     Up 1 day     2222/tcp
-    ```
-
-2. **Access the omnia_core container**:
-
-    ```bash title="Run on: OIM host"
-    ssh omnia_core
-    ```
-
-    You will be automatically logged in to the `omnia_core` container.
-
-!!! warning
-    - Do not delete any key pairs generated by Omnia from `/root/.ssh`
-      -- this causes `omnia_core.service` execution failure.
-    - Do not manually delete files from the Omnia shared directory. Use
-      `./omnia.sh --uninstall` to safely remove.
-
-## Step 2 -- Create the Mapping File
-
-Omnia supports two methods for creating the PXE mapping file:
-
-- **Manual** -- Collect PXE NIC information and fill in the
-  `pxe_mapping_file.csv` manually.
-- **OME-based discovery (recommended)** -- Use OpenManage Enterprise (OME)
-  to discover cluster nodes and auto-generate the mapping file using
-  `discovery.yml`.
-
-**Option A: Fill the PXE mapping file manually**
-
-Create a `pxe_mapping_file.csv` in
-`/opt/omnia/input/project_default/` and set the `pxe_mapping_file_path`
-variable in `provision_config.yml` to point to it.
-
-```csv title="pxe_mapping_file.csv (x86_64)"
-FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
-slurm_control_node_x86_64,grp0,ABCD12,,slurm-control-node1,a1:b2:c3:d4:e5:f6,172.16.107.52,a2:b3:c4:d5:e6:f7,172.17.107.52,InfiniBand.Slot.7-1,192.168.0.100
-slurm_node_x86_64,grp1,ABCD34,ABFL82,slurm-node1,b1:c2:d3:e4:f5:a6,172.16.107.43,b2:c3:d4:e5:f6:a7,172.17.107.43,InfiniBand.Slot.7-1,192.168.0.101
-slurm_node_x86_64,grp1,ABFG34,ABKD88,slurm-node2,c1:d2:e3:f4:a5:b6,172.16.107.44,c2:d3:e4:f5:a6:b7,172.17.107.44,InfiniBand.Slot.7-1,192.168.0.102
-login_compiler_node_x86_64,grp8,ABCD78,,login-compiler-node1,d1:e2:f3:a4:b5:c6,172.16.107.41,d2:e3:f4:a5:b6:c7,172.17.107.41,InfiniBand.Slot.7-1,192.168.0.103
-login_compiler_node_x86_64,grp8,ABFG78,,login-compiler-node2,e1:f2:a3:b4:c5:d6,172.16.107.42,e2:f3:a4:b5:c6:d7,172.17.107.42,InfiniBand.Slot.7-1,192.168.0.104
-service_kube_control_plane_x86_64,grp3,ABFG79,,service-kube-control-plane1,f1:a2:b3:c4:d5:e6,172.16.107.53,f2:a3:b4:c5:d6:e7,172.17.107.53,InfiniBand.Slot.7-1,192.168.0.105
-service_kube_control_plane_x86_64,grp4,ABFH78,,service-kube-control-plane2,11:22:33:44:55:66,172.16.107.54,12:23:34:45:56:67,172.17.107.54,InfiniBand.Slot.7-1,192.168.0.106
-service_kube_control_plane_x86_64,grp4,ABFH80,,service-kube-control-plane3,aa:bb:cc:dd:ee:01,172.16.107.55,ab:bc:cd:de:ef:12,172.17.107.55,InfiniBand.Slot.7-1,192.168.0.107
-service_kube_node_x86_64,grp5,ABFL82,,service-kube-node1,33:44:55:66:77:88,172.16.107.56,34:45:56:67:78:89,172.17.107.56,InfiniBand.Slot.7-1,192.168.0.108
-service_kube_node_x86_64,grp5,ABKD88,,service-kube-node2,55:66:77:88:99:aa,172.16.107.57,56:67:78:89:aa:bb,172.17.107.57,InfiniBand.Slot.7-1,192.168.0.109
-os_x86_64,grp6,ABEF56,,os-node1,77:88:99:aa:bb:cc,172.16.107.60,78:89:aa:bb:cc:dd,172.17.107.60,,
-```
-
-For x86_64 and aarch64 mixed clusters:
-
-```text title="File: pxe_mapping_file.csv (x86_64 and aarch64)"
-FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
-slurm_control_node_x86_64,grp0,ABCD12,,slurm-control-node1,a1:b2:c3:d4:e5:f6,172.16.107.52,a2:b3:c4:d5:e6:f7,172.17.107.52,InfiniBand.Slot.7-1,192.168.0.100
-slurm_node_aarch64,grp1,ABCD34,ABFL82,slurm-node1,b1:c2:d3:e4:f5:a6,172.16.107.43,b2:c3:d4:e5:f6:a7,172.17.107.43,InfiniBand.Slot.7-2,192.168.0.101
-slurm_node_aarch64,grp2,ABFG34,ABKD88,slurm-node2,c1:d2:e3:f4:a5:b6,172.16.107.44,c2:d3:e4:f5:a6:b7,172.17.107.44,NIC.InfiniBand.1-3,192.168.0.102
-login_compiler_node_aarch64,grp8,ABCD78,,login-compiler-node1,d1:e2:f3:a4:b5:c6,172.16.107.41,d2:e3:f4:a5:b6:c7,172.17.107.41,InfiniBand.PCIe.Slot.8-1,192.168.0.103
-login_node_aarch64,grp9,ABFG78,,login-node1,e1:f2:a3:b4:c5:d6,172.16.107.42,e2:f3:a4:b5:c6:d7,172.17.107.42,NIC.InfiniBand.1-1,192.168.0.104
-service_kube_control_plane_x86_64,grp3,ABFG79,,service-kube-control-plane1,f1:a2:b3:c4:d5:e6,172.16.107.53,f2:a3:b4:c5:d6:e7,172.17.107.53,,
-service_kube_control_plane_x86_64,grp4,ABFH78,,service-kube-control-plane2,11:22:33:44:55:66,172.16.107.54,12:23:34:45:56:67,172.17.107.54,,
-service_kube_control_plane_x86_64,grp4,ABFH80,,service-kube-control-plane3,aa:bb:cc:dd:ee:01,172.16.107.55,ab:bc:cd:de:ef:12,172.17.107.55,,
-service_kube_node_x86_64,grp5,ABFL82,,service-kube-node1,33:44:55:66:77:88,172.16.107.56,34:45:56:67:78:89,172.17.107.56,,
-service_kube_node_x86_64,grp5,ABKD88,,service-kube-node2,55:66:77:88:99:aa,172.16.107.57,56:67:78:89:aa:bb,172.17.107.57,,
-os_x86_64,grp6,ABEF56,,os-node1,77:88:99:aa:bb:cc,172.16.107.60,78:89:aa:bb:cc:dd,172.17.107.60,,
-os_aarch64,grp7,ABEF78,,os-node2,99:aa:bb:cc:dd:ee,172.16.107.61,9a:ab:bc:cd:de:ef,172.17.107.61,,
-```
-
-!!! warning
-    Replace all placeholder values (`SVCTAG*`, MAC addresses, IPs) with
-    your actual hardware data.
-
-!!! note
-    - All header fields are case-sensitive.
-    - The `ADMIN_MAC` and `BMC_MAC` addresses should refer to the PXE
-      NIC and BMC NIC on the target nodes respectively.
-    - Target servers should be configured to boot in PXE mode with the
-      appropriate NIC as the first boot device.
-    - Hostnames should not contain the domain name of the nodes.
-
-For detailed information on PXE mapping file format and parameters, see
-[PXE Mapping File](../Reference/SampleFiles/pxe_mapping_file.md).
-
-**Option B: Create PXE file using OME**
-
-Use the `discovery.yml` playbook to auto-generate the mapping file from
-an OME inventory. For detailed instructions including OME prerequisites,
-static group setup, and iDRAC hostname conventions, see
-[Discover Nodes Using OME](../HowTo/Setup/discover_nodes.md){target="_blank"}.
-
-```bash title="Run on: omnia_core container"
-cd /omnia/discovery
-ansible-playbook discovery.yml -e "discovery_mechanism=ome"
-```
-
-The playbook generates a `bmc_pxe_mapping_file_<timestamp>.csv` in
-`/opt/omnia/input/project_default/`. Verify and edit the file as needed.
-
-## Step 3 -- Provide Inputs
-
-Configure the input files that define your cluster's network, provisioning,
-telemetry, and storage settings. For a BuildStreaM deployment, update the
-following input files in `/opt/omnia/input/project_default/`. Click each file
-name to view the full parameter reference.
-
-| Input File | Purpose |
-| --- | --- |
-| [`build_stream_config.yml`](../Reference/Configuration/build_stream_config.md) | BuildStreaM pipeline configuration |
-| [`gitlab_config.yml`](../Reference/Configuration/gitlab_config.md) | GitLab configuration |
-| [`network_spec.yml`](../Reference/Configuration/network_spec.md) | Network CIDRs, interfaces, and IP ranges |
-| [`provision_config.yml`](../Reference/Configuration/provision_config.md) | OS provisioning and PXE settings |
-| [`high_availability_config.yml`](../Reference/Configuration/high_availability_config.md) | Kubernetes HA virtual IP configuration |
-| [`omnia_config.yml`](../Reference/Configuration/omnia_config.md) | Omnia cluster settings |
-| [`local_repo_config.yml`](../Reference/Configuration/local_repo_config.md) | Repository mirror settings |
-| [`storage_config.yml`](../Reference/Configuration/storage_config.md) | NFS storage mount configuration |
-| [`security_config.yml`](../Reference/Configuration/security_config.md) | Authentication settings |
-| [`telemetry_config.yml`](../Reference/Configuration/telemetry_config.md) | Telemetry sources, bridges, and sinks |
-| [`user_registry_credential.yml`](../Reference/Configuration/user_registry_credential.md) | User registry credentials |
-
-For the full procedure and parameter reference, see
-[Configure Inputs](../HowTo/Setup/configure_inputs.md){target="_blank"}.
-
-## Step 4 -- Prepare the OIM
-
-Deploys the OIM infrastructure: OpenCHAMI provisioning stack, Pulp
-local repository, container registry, MinIO S3 storage, OpenLDAP
-authentication, and step-ca certificate authority.
-
-For details, see
-[Prepare OIM](../HowTo/Setup/prepare_oim.md){target="_blank"}.
-
-```bash title="Run on: omnia_core container"
-cd /omnia/prepare_oim
-ansible-playbook prepare_oim.yml
-```
-
-**Verification -- OIM Infrastructure**
-
-After `prepare_oim.yml` completes, verify the OIM services on the
-**OIM host** (not inside the container):
-
-1. **Check `omnia.target` status**:
+1. Edit the environment configuration from the Omnia source tree:
 
     ```bash title="Run on: OIM host"
-    systemctl is-active omnia.target
+    cd src/main
+    vi omnia.env
     ```
 
-    Expected output: `active`
-
-2. **Verify all service dependencies**:
+2. Create the shared virtual environment, install module dependencies, and
+   stage the module input files and Build Stream application:
 
     ```bash title="Run on: OIM host"
-    systemctl list-dependencies omnia.target
+    ./omnia.sh --setup-venv
     ```
 
-    Expected output:
+    This command runs the selected modules' `domain-init.sh` scripts. With the
+    standard environment, Build Stream stages its configuration at:
 
-    ```text title="Expected output"
-    omnia.target
-    ● ├─minio.service
-    ● ├─omnia_auth.service
-    ● ├─omnia_build_stream.service
-    ● ├─omnia_core.service
-    ● ├─omnia_postgres.service
-    ● ├─playbook_watcher.service
-    ● ├─pulp.service
-    ● ├─registry.service
-    ● ├─network-online.target
-    ● │ └─NetworkManager-wait-online.service
-    ● └─openchami.target
-    ●   ├─acme-deploy.service
-    ●   ├─acme-register.service
-    ●   ├─bss-init.service
-    ●   ├─bss.service
-    ●   ├─cloud-init-server.service
-    ●   ├─coresmd-coredhcp.service
-    ●   ├─coresmd-coredns.service
-    ●   ├─haproxy.service
-    ●   ├─hydra-gen-jwks.service
-    ●   ├─hydra-migrate.service
-    ●   ├─hydra.service
-    ●   ├─opaal-idp.service
-    ●   ├─opaal.service
-    ●   ├─openchami-cert-trust.service
-    ●   ├─postgres.service
-    ●   ├─smd-init.service
-    ●   ├─smd.service
-    ●   ├─step-ca.service
-    ●   └─network-online.target
-    ●     └─NetworkManager-wait-online.service
+    ```text
+    /opt/omnia/build_stream/input/project_default/build_stream_config.yml
     ```
 
-3. **Verify all containers are running**:
+For all environment and setup options, see
+[Configure the environment](../HowTo/main/configure_environment.md) and
+[Set up the OIM](../HowTo/main/setup_oim.md).
+
+### 2. Configure and prepare the base modules
+
+Build Stream does not consume an upstream status file during its own
+preparation, but its precheck and generated pipelines depend on the base
+module services and inputs.
+
+1. Review the staged project inputs that the GitLab deployment copies into the
+   managed repository:
+
+    | Deployment module | Inputs used by the managed pipelines |
+    |---|---|
+    | Repository Manager | `repo_manager_config.yml`, `repo_manager_endpoint_config.yml` |
+    | Image Build Manager | `image_build_config.yml`, `package_groups.yml` |
+    | Orchestrator | `omnia_config.yml`, `orchestrator_config.yml`, `network_spec.yml`, `security_config.yml`, `storage_config.yml`, `high_availability_config.yml`, `additional_cloud_init.yml`, `pxe_mapping_file.csv`, `set_pxe_boot_config.yml` |
+
+    Repository and image-build inputs must be ready before the first build
+    pipeline. Orchestrator inputs and the mapping must be ready before the
+    deploy pipeline.
+
+2. Prepare the base services and credentials in the order implemented by
+   `omnia.sh`:
 
     ```bash title="Run on: OIM host"
-    podman ps --format "table {{.Names}}\t{{.Status}}"
+    cd src/main
+    ./omnia.sh --prepare-base
     ```
 
-    Expected output:
+    The Build Stream precheck expects `pulp`, `minio-server`, and `registry` to
+    be running. It also checks for:
 
-    ```text title="Expected output"
-    NAMES               STATUS
-    omnia_auth          Up 5 days
-    minio-server        Up 4 days
-    registry            Up 4 days
-    pulp                Up 4 days
-    postgres            Up 4 days
-    step-ca             Up 4 days
-    hydra               Up 4 days
-    opaal-idp           Up 4 days
-    smd                 Up 4 days
-    opaal               Up 4 days
-    bss                 Up 4 days
-    cloud-init-server   Up 4 days
-    haproxy             Up 4 days
-    coresmd-coredhcp    Up 4 days
-    coresmd-coredns     Up 4 days
-    omnia_core          Up 4 hours
-    omnia_build_stream  Up 4 hours
-    omnia_postgres      Up 4 hours
+    ```text
+    <OMNIA_DATA_PATH>/repo_manager/input/<OMNIA_PROJECT_NAME>/repo_manager_config_credentials.yml
+    <OMNIA_DATA_PATH>/image_build_manager/input/<OMNIA_PROJECT_NAME>/image_build_credentials.yml
     ```
 
-!!! note
+### 3. Configure Build Stream
 
-    - The `minio-server` container will **not** be present if you configured
-      PowerScale as the S3 endpoint (`s3_configurations.provider: "powerscale"`)
-      in `storage_config.yml`. In that case, Omnia uses the external
-      PowerScale S3 service instead of deploying a local MinIO container.
-    - The `omnia_auth` container will **not** be present if `openldap` is
-      not included in `software_config.json`.
+1. Edit the staged consolidated configuration:
 
-For detailed OIM verification procedures, see
-[Verify OIM Services](../HowTo/Setup/verify_oim_services.md){target="_blank"}.
+    ```bash title="Run on: OIM host"
+    vi /opt/omnia/build_stream/input/project_default/build_stream_config.yml
+    ```
 
-## Step 5 -- Deploy GitLab
+2. Set `enable_build_stream: true` and provide `build_stream_host_ip` and
+   `gitlab_host`. Review the following values in the same file:
 
-Deploy GitLab as the CI/CD automation engine for BuildStreaM pipelines.
+    | Setting | Purpose |
+    |---|---|
+    | `build_stream_port` | HTTPS port for the BSM API; supplied default is `8010`. |
+    | `gitlab_project_name` | Managed project name; supplied default is `omnia-catalog`. |
+    | `gitlab_project_visibility` | `private`, `internal`, or `public`. |
+    | `gitlab_default_branch` | Branch used for repository and API operations. |
+    | `gitlab_https_port` | HTTPS port exposed by GitLab; supplied default is `443`. |
+    | `gitlab_min_storage_gb` | Minimum free space checked on the GitLab host. |
+    | `gitlab_min_memory_gb` | Minimum memory checked on the GitLab host. |
+    | `gitlab_min_cpu_cores` | Minimum CPU count checked on the GitLab host. |
+    | `gitlab_puma_workers` | GitLab Puma worker count. |
+    | `gitlab_sidekiq_concurrency` | GitLab Sidekiq concurrency. |
 
-```bash title="Run on: omnia_core container"
-# Update GitLab configuration
-vi /opt/omnia/input/project_default/gitlab_config.yml
+    Do not create a separate `gitlab_config.yml` and do not add unsupported
+    keys; the source schema rejects unknown fields.
 
-# Deploy GitLab
-cd /omnia/gitlab
-ansible-playbook gitlab.yml
-```
+For the complete input and credential contract, see
+[Deploy GitLab and Build Stream](../HowTo/build_stream/deploy_gitlab.md) and the
+[Build Stream contract](../Reference/domain_contracts/build_stream_contract.md).
 
-When prompted, enter and note the GitLab password.
+### 4. Validate and deploy Build Stream
 
-After installation, verify access at `https://<gitlab_host>:<gitlab_https_port>/root/<gitlab_project_name>`.
+1. Run the opt-in base-service precheck:
 
-Verify the runner status: **Settings** → **CI/CD** → **Runners** → green status indicator.
+    ```bash title="Run on: OIM host"
+    cd src/main
+    ./omnia.sh --run build_stream --tags precheck
+    ```
 
-For detailed GitLab deployment procedures, see [Deploy GitLab](../HowTo/BuildStreaM/deploy_gitlab.md).
+2. Run the complete untagged Build Stream flow:
 
-## Step 6 -- Execute Build Pipeline
+    ```bash title="Run on: OIM host"
+    ./omnia.sh --run build_stream
+    ```
 
-Update the catalog and trigger the build pipeline to create diskless images.
+    The flow validates `build_stream_config.yml`, collects or reuses the
+    encrypted Build Stream credentials, prepares PostgreSQL, the BSM API, and
+    the playbook watcher on the OIM, and then deploys and configures GitLab.
+    The GitLab phase creates the managed project and trigger, sets the BSM
+    project variables, pushes the pipeline and available module input files,
+    and deploys an online project runner.
 
-1. Go to `https://<gitlab_host>:<gitlab_https_port>/root/<gitlab_project_name>`.
+    Credential collection requests the GitLab root and SSH passwords, BSM
+    authentication username and password, and PostgreSQL username and password.
+    These values are written to an Ansible Vault-protected file beside the
+    Build Stream configuration.
 
-2. Navigate to **Code** → **Repository** and edit `catalog_rhel.json` with your build requirements.
+3. Confirm that preparation wrote:
 
-3. Commit the changes to automatically trigger the build pipeline.
+    ```text
+    /opt/omnia/build_stream/output/project_default/build_stream_status.yml
+    ```
 
-4. Monitor the pipeline in **Build** → **Pipelines**. The build pipeline has four stages: **parse-catalog** → **generate-input-files** → **create-local-repository** → **build-image**.
+    The current writer records `overall_status: prepared`. GitLab deployment
+    does not change that field to `running`.
 
-5. Verify all stages show green checkmarks.
+### 5. Review the managed GitLab project
 
-For manual pipeline execution, advanced catalog configuration, and troubleshooting, see [Execute Build Pipeline](../HowTo/BuildStreaM/execute_build_pipeline.md).
+1. Open the URL reported as `gitlab_url` in `build_stream_status.yml` and sign
+   in as `root`. The project path uses the configured project name:
 
-## Step 7 -- Execute Deploy Pipeline
+    ```text
+    https://<gitlab_host>:<gitlab_https_port>/root/<gitlab_project_name>
+    ```
 
-Deploy the built images to cluster nodes.
+2. Confirm that the project contains `catalog_rhel.json`, `omnia.env`, the
+   `input/` directory, and these pipeline definitions:
 
-1. Go to the GitLab project URL.
+    ```text
+    .gitlab-ci.yml
+    .gitlab-ci-build.yml
+    .gitlab-ci-deploy.yml
+    .gitlab-ci-deploy-child-template.yml
+    .gitlab-ci-cleanup.yml
+    .gitlab-ci-cleanup-child-template.yml
+    ```
 
-2. Update the `pxe_mapping_file.csv` in the `input/` folder and commit the changes to trigger the deploy pipeline.
+3. Under **Settings** > **CI/CD** > **Runners**, confirm that the
+   **Omnia Hosted Runner** is online.
 
-3. In the deploy pipeline, select the image from the `select_image` stage and click **Play**.
+### 6. Run the build pipeline
 
-4. Click **Play** on the `deploy` stage.
+1. Review the root `catalog_rhel.json` against the catalog schema in:
 
-5. Monitor the pipeline. The deploy pipeline has three later stages: **deploy** → **restart** → **validate**.
+    ```text
+    src/build_stream/app/core/catalog/resources/CatalogSchema.json
+    ```
 
-6. Verify all stages complete successfully.
+    When creating a new catalog revision, use a unique catalog `identifier`.
+    Configure the repository and image-build files under `input/` for the
+    catalog content and functional groups being built.
 
-For manual pipeline execution, handling partial failures, and adding new nodes, see [Execute Deploy Pipeline](../HowTo/BuildStreaM/execute_deploy_pipeline.md).
+2. Commit a change to `catalog_rhel.json`. The parent pipeline automatically
+   selects the build pipeline. Alternatively, start a web pipeline and choose
+   its manual build action, or invoke it with `PIPELINE_TYPE=build`.
 
-## Step 8 -- Deploy iDRAC Telemetry (Optional)
+3. Monitor the source-defined build stages:
 
-The `telemetry.yml` playbook initiates the iDRAC telemetry service on the service cluster. For prerequisites, configuration details, and collecting telemetry from external nodes, see [Configure iDRAC Telemetry](../HowTo/Telemetry/configure_idrac.md).
+    ```text
+    initialization
+      -> parse-catalog
+      -> configure-local-repository
+      -> build-images
+      -> summary
+    ```
 
-!!! note
+    The pipeline uses BSM jobs to invoke Repository Manager and Image Build
+    Manager. Do not start the deploy pipeline until the build pipeline and its
+    module status contracts are successful.
 
-    This step is required **only** when `idrac: metrics_enabled` is set to `true` in `telemetry_config.yml`. It is not required for other telemetry types.
+For detailed operation and retry guidance, see
+[Execute the Build Pipeline](../HowTo/build_stream/execute_build_pipeline.md).
 
-```shell title="Run on omnia_core container"
-cd /omnia/telemetry
-ansible-playbook telemetry.yml
-```
+### 7. Run the deploy pipeline
 
-!!! important
+1. Edit `input/orchestrator/pxe_mapping_file.csv` in the managed project. Keep
+   the source-defined header and assign only functional groups that have built
+   images:
 
-    If you want to enable additional telemetry components after the
-    first successful deployment (by updating `telemetry_config.yml`),
-    and Kubernetes is already up and running, execute the `telemetry.sh`
-    script on kube-control-plane at path
-    `<K8s_NFS_mount_point>/telemetry/telemetry.sh`.
+    ```text
+    FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
+    ```
 
-## Step 9 -- Verify the Telemetry Pipeline
+2. Commit the mapping change. The parent pipeline automatically selects the
+   deploy pipeline. Alternatively, start a web pipeline and choose its manual
+   deploy action, or invoke it with `PIPELINE_TYPE=deploy`.
 
-After deploying telemetry, verify that all telemetry pods and services are operational. Refer to the topics in the following table for instructions on verifying each telemetry service.
+3. The deploy parent lists the available image groups and generates a child
+   pipeline. Select the intended image group, then start its manual deploy
+   action. Monitor the child stages:
 
-| Telemetry Service | Description | Topic |
-| --- | --- | --- |
-| iDRAC | Verify collection and ingestion of hardware telemetry metrics. | [iDRAC Telemetry -- Verification](../HowTo/Telemetry/configure_idrac.md#verification) |
-| LDMS | Verify collection and routing of node-level telemetry metrics. | [LDMS Telemetry -- Verification](../HowTo/Telemetry/configure_ldms.md#verification) |
-| PowerScale | Verify collection and ingestion of storage metrics and logs. | [PowerScale Telemetry -- Verification](../HowTo/Telemetry/configure_powerscale.md#verification) |
-| UFM | Verify collection and ingestion of fabric metrics and logs. | [UFM Telemetry -- Verification](../HowTo/Telemetry/configure_ufm.md#verification) |
-| VAST | Verify collection and ingestion of storage metrics and logs. | [VAST Telemetry -- Verification](../HowTo/Telemetry/configure_vast.md#verification) |
-| OpenManage Enterprise (OME) | Verify collection and routing of OME metrics and logs. | [OME Telemetry -- Verification](../HowTo/Telemetry/telemetry_from_ome.md#verification) |
+    ```text
+    select_image
+      -> deploy
+      -> restart
+      -> validate
+      -> summary
+    ```
 
-## Known Limitations
+    The restart stage performs the PXE restart workflow. Do not run a separate
+    PXE utility step for this Build Stream deployment.
 
-BuildStreaM has the following known limitations in the current release:
+For the complete procedure, see
+[Execute the Deploy Pipeline](../HowTo/build_stream/execute_deploy_pipeline.md).
 
-### Pipeline Retry Behavior
+## Verification
 
-When a build pipeline fails partially (e.g., one architecture succeeds while another fails due to resource constraints, network issues, or configuration problems), retrying the pipeline may result in INTERNAL_ERROR for previously completed image builds. BuildStreaM currently does not skip or reuse already-successful builds during retry operations.
+1. Inspect the Build Stream output contract on the OIM:
 
-**Impact:** If you encounter INTERNAL_ERROR during pipeline retry, consider starting a fresh pipeline instead of retrying the failed one.
+    ```bash title="Run on: OIM host"
+    cat /opt/omnia/build_stream/output/project_default/build_stream_status.yml
+    ```
 
-**Prevention:** Ensure adequate system resources (including 200 GB free disk space on OIM / partition) before initial pipeline execution to minimize the risk of partial failures.
+    Confirm `overall_status: prepared` and verify that `gitlab_url` and
+    `bsm_api_url` match `build_stream_config.yml`.
 
-## What's next
+2. Verify the OIM services:
 
-- [Execute Build Pipeline](../HowTo/BuildStreaM/execute_build_pipeline.md) -- Detailed build pipeline operations
-- [Execute Deploy Pipeline](../HowTo/BuildStreaM/execute_deploy_pipeline.md) -- Detailed deploy pipeline operations
-- [Initialize Telemetry](../HowTo/BuildStreaM/initialize_telemetry.md) -- Detailed telemetry setup and verification
-- [Cleanup Operations](../HowTo/BuildStreaM/cleanup_operations.md) -- Remove old Image Groups
-- [Retry Pipelines](../HowTo/BuildStreaM/retry_pipelines.md) -- Retry failed pipeline operations
-- [BuildStreaM Troubleshooting](../Troubleshooting/buildstream.md) -- Diagnose and resolve issues
+    ```bash title="Run on: OIM host"
+    systemctl is-active omnia_postgres.service
+    systemctl is-active omnia_build_stream.service
+    systemctl is-active playbook-watcher.service
+    ```
+
+3. Verify the BSM health endpoint with its generated certificate:
+
+    ```bash title="Run on: OIM host"
+    curl --cacert /opt/omnia/build_stream_ssl/ssl/bs_cert.pem \
+      https://<build_stream_host_ip>:<build_stream_port>/health
+    ```
+
+4. Verify GitLab and its runner on the GitLab host:
+
+    ```bash title="Run on: GitLab host"
+    gitlab-ctl status
+    systemctl is-active gitlab-runner.service
+    ```
+
+5. After a build pipeline, confirm the GitLab summary and BSM job state. Also
+   inspect the module outputs generated for `project_default`:
+
+    ```bash title="Run on: OIM host"
+    grep '^overall_status:' /opt/omnia/repo_manager/output/project_default/repo_status.yml
+    grep '^overall_status:' /opt/omnia/image_build_manager/output/project_default/build_status.yml
+    ```
+
+6. After a deploy pipeline, confirm its child-pipeline summary and BSM job
+   state, then inspect Orchestrator's output:
+
+    ```bash title="Run on: OIM host"
+    grep '^overall_status:' /opt/omnia/orchestrator/output/project_default/orchestrator_status.yml
+    cat /opt/omnia/orchestrator/output/project_default/provisioning_report.yml
+    ```
+
+Build Stream does not write `pipeline_status.yml` or `catalog_manifest.yml` to
+its project output directory. GitLab and BSM job state are the authoritative
+pipeline results.
+
+## Next steps
+
+- [Update the Catalog](../Operations/build_stream/update_catalog.md) for subsequent
+  catalog revisions.
+- [Add Nodes](../Operations/build_stream/add_nodes.md) by updating the mapping and
+  running the deploy pipeline again.
+- [Retry Pipelines](../Operations/build_stream/retry_pipelines.md) after correcting
+  a failed stage.
+- [Clean Up Pipeline Resources](../Operations/build_stream/cleanup_operations.md)
+  with the manual/API-only cleanup pipeline. It is never selected by a catalog
+  or mapping file change.
+- [Initialize Telemetry](../HowTo/build_stream/initialize_telemetry.md) after a
+  service Kubernetes cluster is available.
+
+## Troubleshooting
+
+- If the Build Stream input directory is missing, keep
+  `OMNIA_PROJECT_NAME=project_default` and rerun OIM setup or the Build Stream
+  `domain-init.sh`. The current executable role does not select another project.
+- If the precheck fails, ensure `pulp`, `minio-server`, and `registry` are
+  running and the two upstream credential files exist. The source precheck
+  directs the operator to run `omnia.sh --prepare-base`.
+- If configuration validation fails, use only the keys in the staged
+  `build_stream_config.yml`, set `enable_build_stream: true`, provide both host
+  addresses, and confirm both ports are available.
+- If GitLab-host validation fails, disable SELinux, meet the configured CPU,
+  memory, and storage minimums, and verify that the GitLab host can reach the
+  BSM address.
+- If the GitLab phase reports an inactive OIM service or missing certificate,
+  verify `omnia_postgres.service`, `omnia_build_stream.service`,
+  `playbook-watcher.service`, and
+  `<OMNIA_DATA_PATH>/build_stream_ssl/ssl/bs_cert.pem`.
+- If a commit does not select the expected pipeline, use the exact paths
+  `catalog_rhel.json` for build and
+  `input/orchestrator/pxe_mapping_file.csv` for deploy. Cleanup has no
+  file-change trigger.
+- If a module stage fails, open its GitLab job log, follow the BSM job and log
+  path reported there, and inspect the corresponding module status contract.
+- If restart has partial node failures, review
+  `miscellaneous/failed_nodes.json`, correct the BMC or PXE issue, and follow
+  the deploy-pipeline retry procedure.
+- Do not cancel a running stage or start an overlapping pipeline against the
+  same resources; either action can leave shared workflow state incomplete.
+- See [Build Stream troubleshooting](../Troubleshooting/build_stream/buildstream.md)
+  for detailed investigations.

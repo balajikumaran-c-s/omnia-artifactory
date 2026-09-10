@@ -1,0 +1,204 @@
+# Configure Catalog Content and Add Packages
+
+## Overview
+
+Repository Manager uses the external catalog selected by `CATALOG_FILE_PATH`
+to determine which content must be available. The catalog is not staged by
+`domain-init.sh`. Its root `catalog` object contains catalog metadata and three
+connected collections:
+
+- `functionallayer` defines the functional roles used to build images. Each
+  functional layer lists group keys in `components`.
+- `groups` organizes related content. Each group lists package keys in
+  `components`.
+- `packages` defines the content to obtain. Each package specifies its `name`,
+  `packagetype`, and one or more `sources`; a container image also specifies a
+  `tag`.
+
+The `components` values connect these collections by name. The following
+abbreviated example shows how Repository Manager follows the catalog hierarchy
+and resolves a selected package source:
+
+```text
+catalog
+|-- name / version / identifier / description
+|-- functionallayer
+|   `-- slurm_control_node_rhel_10_0_x86_64
+|       `-- components: baseos_group_10.0
+|-- groups
+|   `-- baseos_group_10.0
+|       `-- components: systemd
+`-- packages
+    `-- systemd
+        |-- packagetype: rpm
+        `-- source: name=rhel, version=[10.0], architecture=x86_64, reponame=baseos
+```
+
+In this example, the Slurm control-node functional layer references
+`baseos_group_10.0`, which references the `systemd` RPM package that Repository
+Manager resolves for RHEL 10.0 on `x86_64`.
+
+Use the `catalog_add` operation to add or update RPM packages, RPM repository
+packages, tarballs, or container images. The operation uses upsert semantics:
+it creates missing groups, updates existing package definitions, and avoids
+duplicate component references.
+
+## Prerequisites
+
+- Create and synchronize the local repositories as described in
+  [Create Local Repositories](configure_repos.md).
+- Set the required `SYSTEM_ADMIN_NIC_IPV4` and `CATALOG_FILE_PATH` environment
+  variables.
+- Edit `repo_manager_config.yml` and `repo_manager_endpoint_config.yml` under
+  `<OMNIA_SOURCE_PATH>/src/repo_manager/input/` before staging the inputs.
+- Identify the existing catalog functional layer and group that should own the
+  package.
+- Ensure each referenced RPM repository resolves under the matching catalog
+  minor version and architecture. Without subscription access, every
+  referenced RPM repository requires an explicit non-empty URL.
+- Have credentials available for Docker Hub and private registries when
+  required. These credentials are collected into the encrypted project
+  credential file rather than stored in the catalog or normal configuration
+  files.
+
+## Procedure
+
+1. Create an INI-like additions file. This example adds two RPMs to an existing
+   group and ensures the group is part of an existing functional layer:
+
+    ~~~ini
+    [defaults]
+    arch=x86_64, os=rhel, os_version=10.0
+
+    [openldap_group | description=OpenLDAP packages]
+    openldap, rpm, openldap, baseos
+    openldap_clients, rpm, openldap-clients, baseos
+
+    [slurm_control_node_rhel_10_0_x86_64 | type=functional_layer]
+    "openldap_group"
+    ~~~
+
+    Replace `slurm_control_node_rhel_10_0_x86_64` with the exact existing
+    functional-layer name from your catalog.
+
+    Supported input-line formats for `catalog_add` are:
+
+    | Content | Format |
+    |---|---|
+    | RPM | `key, rpm, package_name, reponame` |
+    | Tarball | `key, tarball, artifact_name, https_url` |
+    | Container image | `key, image, registry/image_path, registry, tag` |
+
+    A line can end with `arch=`, `os=`, or `os_version=` overrides.
+
+2. Add the entries to the configured catalog:
+
+    ~~~bash title="Run on: OIM host"
+    cd <OMNIA_SOURCE_PATH>/src/repo_manager/playbooks
+    ansible-playbook repo_manager.yml --tags catalog_add \
+      -e "input_file=/absolute/path/to/additions.txt"
+    ~~~
+
+    By default, the command reads and writes the catalog selected by
+    `CATALOG_FILE_PATH` and validates the result. Use `catalog_input` and
+    `output_file` extra variables when the change must be reviewed in a
+    separate output file.
+
+3. Validate the selected catalog and its source mappings:
+
+    ~~~bash title="Run on: OIM host"
+    ansible-playbook repo_manager.yml --tags catalog_validate
+    ansible-playbook repo_manager.yml --tags precheck
+    ~~~
+
+4. Synchronize the changed catalog and regenerate the consumer contract:
+
+    ~~~bash title="Run on: OIM host"
+    ansible-playbook repo_manager.yml --tags "download,status"
+    ~~~
+
+For RPM packages, the catalog source resolves to the matching repository in
+`repo_manager_config.yml`:
+
+```text
+source version + architecture + reponame
+  → repositories.<version>.<architecture>.<reponame>
+```
+
+The catalog example for `systemd` resolves against this repository entry:
+
+```yaml
+repositories:
+  "10.0":
+    x86_64:
+      baseos:
+        url: ""  # Subscription-provided; otherwise an explicit URL is required.
+        policy: "partial"
+```
+
+The `systemd` source uses `version=[10.0]`, `architecture=x86_64`, and
+`reponame=baseos`, so Repository Manager resolves it to
+`repositories."10.0".x86_64.baseos`.
+
+Repository names may be defined directly under the architecture or inside its
+`user_repos` or `additional_repos` section. Repository Manager resolves those
+sections as one lookup map while preserving their runtime behavior. For the
+detailed repository procedure, see
+[Add an RPM Repository](adding_additional_repositories.md).
+
+## Verification
+
+Check that the new package is present in the catalog, then review its group
+status:
+
+~~~bash title="Run on: OIM host"
+python3 -m json.tool "$CATALOG_FILE_PATH"
+sed -n '1,240p' \
+  /opt/omnia/repo_manager/output/project_default/repo_status.yml
+~~~
+
+Per-package results are written to
+`<REPO_MANAGER_DATA_PATH>/log/<os>/<version>/<architecture>/<group>/status.csv`.
+Also review
+`<REPO_MANAGER_DATA_PATH>/log/<os>/<version>/<architecture>/groups_status.csv`
+and the corresponding Pulp repository, publication, and distribution state.
+Confirm that the added entries report `Success` and that `repo_status.yml` has
+`overall_status: success`. A required missing distribution produces a failed
+status instead of publishing an unusable URL.
+
+## Next steps
+
+- [Build Cluster Images](../image_build_manager/build_images.md).
+- [Add a repository mapping](adding_additional_repositories.md) for a new RPM
+  source.
+- [Update Local Repositories](../../Operations/repo_manager/updating_local_repositories.md)
+  after changing an existing catalog definition.
+- Run the standard `prepare,precheck,download,status` workflow to publish the
+  verified `repo_status.yml` for downstream consumers.
+
+## Troubleshooting
+
+- **The additions file fails to parse**: Use one supported positional format,
+  put package lines below a group header, and put group references below a
+  `type=functional_layer` header.
+- **The updated catalog fails validation**: Check that all group and package
+  references exist.
+- **An RPM mapping is missing**: Match the source version, architecture, and
+  `reponame` in `repo_manager_config.yml`.
+- **A private registry mapping is missing**: Match the catalog source
+  `registry` exactly to a key under `registries`, and ensure that the image
+  name starts with the configured registry host and optional port.
+- **An `rpm_repo` entry is rejected**: Its repository must retain content;
+  change the effective policy so it does not resolve to `streamed`.
+- **A source is not selected**: Provide a source for the active OS version and
+  architecture, or use a supported `noarch` source.
+- **The package is not processed**: Ensure its group is referenced by a
+  selected functional layer. Orphan groups and packages are not selected.
+- **A Repository Manager run fails**: Locate the failed OS, version,
+  architecture, and group. Review `standard.log`, `groups_status.csv`, the
+  corresponding `status.csv`, and the package-status log. Correct the
+  configuration, source, or runtime issue, then rerun `precheck`, `download`,
+  and `status`.
+- **Status does not reflect the expected result**: Do not edit mirror indexes,
+  status CSV files, or execution summaries to force success. Use the earliest
+  detailed repository or package log to identify the actionable cause.

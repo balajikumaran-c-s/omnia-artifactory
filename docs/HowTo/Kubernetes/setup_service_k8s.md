@@ -64,7 +64,7 @@ The NFS mount referenced by `nfs_storage_name` in `omnia_config.yml` is the back
 |---|---|---|---|
 | Primary NFS | `nfs_storage_name` | K8s persistent volumes, Helm charts, shared application data | Yes |
 
-For detailed mount configuration including NFS options and functional group targeting, see [Configure Mounts](../Storage/configure_mounts.md).
+For detailed mount configuration including NFS options and functional group targeting, see [Configure Mounts](../orchestrator/configure_storage.md).
 
 ## Procedure
 
@@ -98,9 +98,9 @@ group. You need at least **3 rows** with
 `service_kube_control_plane_x86_64` and **1 row** with
 `service_kube_node_x86_64`.
 
-Create a `pxe_mapping_file.csv` in `/opt/omnia/input/project_default/`
+Create a `pxe_mapping_file.csv` in `/opt/omnia/orchestrator/input/project_default/`
 and set the `pxe_mapping_file_path` variable in
-[`provision_config.yml`](../../Reference/Configuration/provision_config.md)
+[`orchestrator_config.yml`](../../Reference/Configuration/orchestrator_config.md)
 to point to it.
 
 ```csv title="/opt/omnia/input/project_default/pxe_mapping_file.csv"
@@ -179,14 +179,14 @@ network used by the K8s cluster for node communication.
 For the full parameter reference, see
 [network_spec.yml Reference](../../Reference/Configuration/network_spec.md).
 
-#### 4b. Edit provision_config.yml
+#### 4b. Edit orchestrator_config.yml
 
-Edit [`provision_config.yml`](../../Reference/Configuration/provision_config.md)
+Edit [`orchestrator_config.yml`](../../Reference/Configuration/orchestrator_config.md)
 and set `pxe_mapping_file_path` to the PXE mapping file created in
 Step 3.
 
 For the full parameter reference, see
-[provision_config.yml Reference](../../Reference/Configuration/provision_config.md).
+[orchestrator_config.yml Reference](../../Reference/Configuration/orchestrator_config.md).
 
 #### 4c. Edit omnia_config.yml
 
@@ -238,7 +238,7 @@ service_k8s_cluster_ha:
 | `virtual_ip_address` | Free IPv4 address on the admin subnet. Must not overlap with any `ADMIN_IP` in the PXE mapping file, MetalLB `pod_external_ip_range`, or the OIM admin IP |
 
 For HA architecture details and troubleshooting, see
-[Configure HA](configure_ha.md).
+[Configure HA](../orchestrator/configure_kubernetes_ha.md).
 
 #### 4e. Edit storage_config.yml
 
@@ -462,7 +462,7 @@ The NFS subdir external provisioner pod should be `Running` and a
 
 ## Next Steps
 
-- [Deploy PowerScale CSI](deploy_powerscale_csi.md) -- Deploy PowerScale
+- [Deploy PowerScale CSI](../orchestrator/deploy_powerscale_csi.md) -- Deploy PowerScale
   CSI driver for enterprise storage.
 - [Set Up Telemetry](../Telemetry/setup_telemetry.md) -- Deploy the
   telemetry pipeline on the service K8s cluster.
@@ -518,4 +518,4 @@ ssh <control_plane_hostname> 'cat /etc/kubernetes/manifests/kube-vip.yaml'
 If kube-vip is not running, check that `virtual_ip_address` in
 `high_availability_config.yml` does not conflict with any node IP or
 MetalLB range. For detailed HA troubleshooting, see
-[Configure HA](configure_ha.md).
+[Configure HA](../orchestrator/configure_kubernetes_ha.md).

@@ -1,141 +1,229 @@
-
 # Glossary
 
-This glossary defines key terms used throughout the Omnia documentation. Terms
-are listed alphabetically. Where applicable, entries link to the documentation
-page that provides a full explanation.
+This glossary defines terminology used by Omnia's modular deployment
+architecture. A deployment module's internal domain identifier, shown in code
+formatting, is also its directory name under `src/` and the value accepted by
+`omnia.sh --run`.
 
-**Apptainer**
-:   Formerly known as Singularity. A container runtime designed for HPC environments that allows users to run containers without root privileges. Supported on Slurm compute nodes in Omnia 2.1+.
+**Ansible entry playbook**
+:   The top-level playbook for a deployment module. Its source path is
+    `src/<domain>/playbooks/<domain>.yml`. The playbook selects module operations
+    through tags.
 
 **BMC**
-:   Baseboard Management Controller. A dedicated microcontroller embedded in server motherboards that provides out-of-band management capabilities (power control, hardware monitoring, remote console) independent of the host operating system. On Dell PowerEdge servers, the BMC is implemented as **iDRAC**.
+:   Baseboard Management Controller. It provides out-of-band server management
+    independently of the host operating system. Dell PowerEdge servers expose
+    this functionality through iDRAC.
 
 **BSS**
-:   Boot Script Service. A component of **OpenCHAMI** that dynamically generates per-node boot scripts based on the node's hardware profile and assigned role. BSS provides boot configuration during network provisioning.
+:   Boot Script Service, an OpenCHAMI service that returns the boot parameters
+    assigned to a registered node.
 
-**BuildStreaM**
-:   Omnia's GitLab CI-based automation pipeline for catalog-driven deployment. Administrators define a deployment catalog (YAML manifest), and BuildStreaM generates a CI/CD pipeline that executes the required Ansible playbooks in order. See [Components](components.md).
+**Build Stream**
+:   The deployment module identified as `build_stream`. It deploys PostgreSQL, the Build Stream Manager
+    API, a playbook-watcher service, GitLab integration, and a managed project
+    runner. A change to the project catalog starts the build pipeline; a change
+    to the Orchestrator PXE mapping starts the deploy pipeline. See
+    [Build Stream](../HowTo/build_stream/index.md).
 
-**Calico**
-:   A CNI (Container Network Interface) plugin for Kubernetes that provides pod-to-pod networking and network policy enforcement. Omnia deploys Calico as the default CNI in the Kubernetes cluster.
+**Build Stream Manager (BSM)**
+:   The FastAPI service that accepts authenticated pipeline requests, records
+    jobs in PostgreSQL, and writes playbook requests for the watcher.
+
+**Build status**
+:   `build_status.yml`, the Image Build Manager output contract. It records the
+    producing image engine, S3 endpoint information, and the kernel, initramfs,
+    and root-image paths for built functional groups.
+
+**Catalog**
+:   A JSON document containing functional layers, groups, packages, and
+    package sources. Repository Manager uses it to determine content to
+    synchronize; Image Build Manager can use it to resolve packages for each
+    functional-group image; Orchestrator uses its functional layers and package
+    metadata to select supported features. A catalog does not define the PXE
+    mapping, network configuration, or module invocation order.
 
 **cloud-init**
-:   A cloud instance initialization system that configures systems during first boot. Omnia uses cloud-init to automate node configuration and customization during the provisioning process.
-
-**Composable Roles**
-:   Omnia's system for assigning server functions via a declarative mapping file. A single server can hold multiple roles (e.g., Slurm control node + login node), decoupling physical hardware from logical cluster functions.
-
-**Containerd**
-:   An industry-standard container runtime with an emphasis on simplicity, robustness, and portability. Omnia uses Containerd as the container runtime for Kubernetes workloads.
+:   The first-boot configuration consumed by provisioned nodes. Orchestrator
+    renders common, functional-group, and per-node metadata for OpenCHAMI to
+    serve.
 
 **CoreDHCP**
-:   A DHCP server implementation that provides network boot and configuration services. Omnia uses CoreDHCP for PXE boot provisioning and multi-subnet DHCP configuration for rack-based deployments.
+:   The DHCP service deployed with OpenCHAMI for PXE provisioning. Its
+    configuration is generated from the Orchestrator network specification.
 
 **CoreDNS**
-:   A DNS server that is flexible and extensible, serving as the foundation for service discovery in Kubernetes. Omnia uses CoreDNS for dynamic DNS resolution and hostname management via coresmd.
+:   The DNS server used by the OpenCHAMI `coresmd` plugin. When
+    `dns_enabled: true`, provisioned nodes use the OIM admin address as their
+    nameserver and service Kubernetes CoreDNS forwards the Omnia cluster domain
+    to it. See [Cluster DNS](cluster_dns.md).
 
-**CSI drivers**
-:   Container Storage Interface drivers that enable Kubernetes to orchestrate storage from arbitrary storage systems. Omnia deploys CSI drivers for PowerScale and other storage backends.
+**coresmd**
+:   An OpenCHAMI CoreDNS plugin that reads SMD inventory and creates DNS
+    records. The supplied Corefile refreshes its SMD cache every 30 seconds and
+    generates `nid` names with three digits.
 
-**CUDA**
-:   NVIDIA's parallel computing platform and programming model. Omnia automates CUDA toolkit installation for GPU-enabled nodes to support HPC and AI workloads.
+**CRI-O**
+:   The container runtime configured by the current Orchestrator source for
+    service Kubernetes nodes. Its storage size is selected through
+    `k8s_crio_storage_size`.
 
-**DCGM**
-:   Data Center GPU Manager. NVIDIA's suite of tools for monitoring and managing GPU data center environments. Omnia deploys DCGM for GPU telemetry collection and monitoring.
+**Discovery**
+:   The deployment module identified as `discovery`. It queries OpenManage Enterprise and writes a BMC
+    discovery report and an Orchestrator-compatible PXE mapping.
 
-**DOCA-OFED**
-:   NVIDIA's data center acceleration on Arm and NVIDIA OpenFabrics Enterprise Distribution. Omnia automatically installs DOCA-OFED drivers for NVIDIA InfiniBand adapters to enable high-performance networking.
+**Domain identifier**
+:   The internal name accepted by `omnia.sh --run` and used in source paths,
+    such as `repo_manager` or `orchestrator`. This implementation term is
+    retained in CLI parameters, paths, and `domain-init.sh`; the customer-facing
+    architectural unit is a deployment module.
 
-**ETCD**
-:   A distributed, reliable key-value store for the most critical data of a distributed system. Omnia uses ETCD as the Kubernetes cluster state store, with support for local disk deployment for high availability.
+**Deployment module**
+:   A capability-based unit of deployment responsibility with its own
+    initialization script, dependencies, inputs, entry playbook, logs, and
+    outputs. Omnia has seven modules: Repository Manager, Image Build Manager,
+    Discovery, Orchestrator, Telemetry, Build Stream, and Utils. `main` is the
+    common controller, not a deployment module.
 
-**Functional Groups**
-:   Named role definitions in Omnia's **Composable Roles** system. Each functional group (e.g., `slurm_node`, `service_kube_control_plane`) determines which software and configuration is applied to a server.
+**Module contract**
+:   The documented input or output interface of a deployment module. Contracts
+    include YAML configuration and status files, JSON catalogs and job data,
+    CSV node mappings and reports, and deployed services or artifacts. See
+    [Module Contracts](../Reference/index.md#module-contracts).
+
+**Module initialization**
+:   Execution of a module's `domain-init.sh`. It installs the module's declared
+    Python and Ansible collection dependencies, creates runtime directories,
+    and stages input templates unless input staging is skipped.
+
+**Functional group**
+:   A named node role selected in the catalog and PXE mapping, such as
+    `slurm_node_x86_64` or `service_kube_control_plane_x86_64`. Image Build
+    Manager builds the corresponding images and Orchestrator applies the
+    relevant boot and cluster configuration.
 
 **iDRAC**
-:   Integrated Dell Remote Access Controller. Dell's implementation of the **BMC**, providing Redfish API access, remote console, virtual media, firmware management, and hardware telemetry for Dell PowerEdge servers. See [Telemetry Architecture](telemetry_architecture.md).
+:   Integrated Dell Remote Access Controller. Omnia uses iDRAC through Redfish
+    for supported PXE-boot, unattended installation, and hardware-management
+    operations. The Telemetry module also supports iDRAC as a hardware-metrics
+    source.
 
-**InfiniBand**
-:   A high-performance, low-latency networking technology designed for HPC clusters. Omnia supports InfiniBand networking with automatic DOCA-OFED driver installation for NVIDIA adapters.
+**Image Build Manager**
+:   The deployment module identified as `image_build_manager`. It validates Repository Manager output,
+    deploys the selected S3 and registry services, builds functional-group OS
+    images, and writes `build_status.yml`.
 
-**iSCSI**
-:   Internet Small Computer System Interface. A storage networking protocol for linking data storage facilities. Omnia uses iSCSI for PowerVault storage integration to provide persistent storage for critical cluster components.
+**Input contract**
+:   The complete set of environment variables, configuration files,
+    credentials, upstream outputs, and other artifacts that a module reads.
 
 **Kafka**
-:   Apache Kafka. A distributed event-streaming platform used as the central message broker in Omnia's telemetry pipeline. All metrics from **iDRAC** and **LDMS** flow through Kafka before reaching **VictoriaMetrics**. See [Telemetry Architecture](telemetry_architecture.md).
-
-**LDAP**
-:   Lightweight Directory Access Protocol. A protocol for accessing and maintaining distributed directory information services. Omnia integrates LDAP for centralized authentication and user management.
+:   A Telemetry sink and message bus. LDMS writes to Kafka and the Vector-LDMS
+    bridge routes that data to VictoriaMetrics. iDRAC can send to Kafka,
+    VictoriaMetrics, or both, according to its configured collection targets.
 
 **LDMS**
-:   Lightweight Distributed Metric Service. A high-performance, low-overhead metric collection framework developed by Sandia National Laboratories for HPC environments. Omnia deploys LDMS agents on compute nodes to collect in-band OS and application metrics. See [Telemetry Architecture](telemetry_architecture.md).
+:   Lightweight Distributed Metric Service. The Telemetry module configures
+    LDMS samplers on reachable Slurm nodes and deploys its aggregation and
+    bridge workloads. LDMS requires Slurm control and compute nodes.
 
-**MetalLB**
-:   A bare-metal load balancer for Kubernetes. MetalLB assigns external IP addresses to Kubernetes `LoadBalancer` services in environments without a cloud provider. Omnia deploys MetalLB automatically in the Kubernetes cluster.
+**main**
+:   The source area containing `omnia.env`, `omnia.sh`, and catalog samples.
+    It prepares the common runtime and invokes modules but is not itself a
+    deployment module.
+
+**MinIO**
+:   The default S3-compatible service deployed by Image Build Manager for boot
+    image storage when the selected provider is MinIO.
 
 **OIM**
-:   Omnia Infrastructure Manager. The dedicated management node that runs all Omnia control-plane services, including the `omnia_core` Ansible container, OpenCHAMI, Pulp, and telemetry collectors. The OIM is the single point from which the entire cluster is provisioned and managed. See [Architecture](architecture.md).
+:   Omnia Infrastructure Manager. The Linux management host from which Omnia
+    setup and module playbooks run. It stores the shared runtime and hosts
+    module-owned management services such as Pulp, MinIO, the registry,
+    OpenCHAMI, and Build Stream services when selected.
 
 **OpenCHAMI**
-:   Composable Hierarchical Automated Management Infrastructure. The provisioning engine at the core of Omnia, providing API-driven node discovery, hardware inventory, and bare-metal lifecycle management. Includes **SMD** and **BSS** as sub-services. See [Components](components.md).
+:   The bare-metal provisioning services deployed by Orchestrator. Omnia uses
+    OpenCHAMI inventory, boot-script, cloud-init metadata, DHCP, and DNS
+    services to register and provision mapped nodes.
+
+**OpenLDAP**
+:   The directory service deployed by Orchestrator when selected by the
+    catalog and configuration.
 
 **OpenManage Enterprise (OME)**
-:   Dell's infrastructure management solution that provides unified management for Dell PowerEdge servers. Omnia integrates with OME for automated BMC discovery and inventory management.
+:   The management system queried by the Discovery module for server and BMC
+    inventory. OME can also integrate with the Telemetry module.
 
-**OpenTelemetry**
-:   An observability framework for cloud-native software. Omnia uses OpenTelemetry Collector for PowerScale telemetry collection and data transformation.
+**Orchestrator**
+:   The deployment module identified as `orchestrator`. It consumes repository, image, catalog, network,
+    storage, and PXE-mapping inputs; deploys OpenCHAMI and optional OpenLDAP;
+    provisions selected Slurm and service Kubernetes groups; and can initiate
+    physical-node PXE boot.
 
-**Podman**
-:   A daemonless, rootless container engine for running OCI containers on Linux. Omnia uses Podman on the **OIM** to run all management services (`omnia_core`, OpenCHAMI, Pulp, OpenLDAP) as isolated containers without requiring Docker. See [Architecture](architecture.md).
+**Orchestrator inventory**
+:   `orchestrator_inventory.yaml`, an output generated from the provisioned
+    mapping. Telemetry consumes it to locate the service Kubernetes virtual IP
+    and, when LDMS is enabled, Slurm nodes.
 
-**PowerScale**
-:   Dell's enterprise-scale network-attached storage (NAS) platform. Omnia integrates with PowerScale for storage provisioning, telemetry collection, and CSI driver support.
+**Output contract**
+:   The status files, inventories, reports, service endpoints, runtime
+    resources, or other artifacts that a module produces for administrators or
+    downstream modules.
 
-**PowerVault**
-:   Dell's direct-attached storage (DAS) and network-attached storage (NAS) solutions. Omnia integrates with PowerVault for persistent storage using iSCSI block storage with multipath support for Slurm controller components.
-
-**PXE**
-:   Preboot Execution Environment. An industry-standard protocol that allows servers to boot an operating system image over the network rather than from local disk. Omnia uses PXE for initial node discovery and OS provisioning.
+**Playbook tag**
+:   A named module operation selected with `--tags`, such as `validate`,
+    `prepare`, `execute`, `build`, `download`, `provision`, or `collect`.
+    Supported tags and default behavior are defined by each module entry
+    playbook; they are not identical across every module.
 
 **Pulp**
-:   An open-source repository management platform. Omnia deploys Pulp as a Podman container on the **OIM** to mirror RPM repositories, container images, and Python packages locally. Essential for air-gapped deployments. See [Components](components.md).
+:   The content service deployed by Repository Manager. It stores and serves
+    the catalog-selected RPM, container, Python, and file content used by later
+    modules.
 
-**ROCm**
-:   Radeon Open Compute. AMD's open-source software platform for GPU-accelerated computing. Omnia supports ROCm installation on nodes with AMD Instinct GPUs for AI/ML and HPC workloads.
+**PXE mapping**
+:   `pxe_mapping_file.csv`, the node-to-functional-group contract consumed by
+    Orchestrator. Discovery produces `bmc_pxe_mapping_file.csv`, which an
+    administrator reviews and places at the Orchestrator input location, or the
+    administrator supplies a mapping directly.
+
+**Repository Manager**
+:   The deployment module identified as `repo_manager`. It deploys Pulp, synchronizes catalog content,
+    and writes `repo_status.yml`.
+
+**Repository status**
+:   `repo_status.yml`, the Repository Manager output contract containing the
+    overall synchronization state, local repository and content endpoints, and
+    the Pulp server certificate path required by downstream consumers.
 
 **SMD**
-:   State Manager Daemon. The inventory and state-tracking service within **OpenCHAMI**. SMD maintains a real-time record of every node's hardware configuration, power state, and component hierarchy.
+:   State Management Daemon, the OpenCHAMI inventory service used to store
+    registered components, groups, and node state.
 
-**SmartFabric Manager (SFM)**
-:   Dell's network management solution for SONiC that streamlines network management with automation, analytics, and scalability. Omnia supports SFM telemetry collection for fabric monitoring and performance analysis.
+**Telemetry bridge**
+:   A workload that transforms or routes source data to a sink. The current
+    configuration includes Vector bridges for LDMS and OME data.
 
-**Slurm**
-:   Simple Linux Utility for Resource Management. An open-source, highly scalable job scheduler and workload manager widely used in HPC clusters. Omnia deploys and configures Slurm for batch job scheduling on compute nodes. See [Architecture](architecture.md).
+**Telemetry sink**
+:   A destination for collected data. The current Telemetry module supports
+    Kafka, VictoriaMetrics, and VictoriaLogs sink configuration.
 
-**TFTP**
-:   Trivial File Transfer Protocol. A simple file transfer protocol used during PXE boot to deliver the initial bootloader binary to bare-metal nodes.
+**Telemetry source**
+:   A metrics or logs producer enabled in `telemetry_config.yml`. Current
+    source configuration covers iDRAC, LDMS, PowerScale, UFM, VAST, and OME;
+    generated external connection information also supports integrations such
+    as SFM.
 
-**Vector**
-:   A high-performance, vendor-neutral observability data pipeline. Omnia uses Vector for collecting, transforming, and routing telemetry data from LDMS and OME sources to VictoriaMetrics and VictoriaLogs.
+**Utils**
+:   The deployment module identified as `utils`. It provides operations selected with utility-specific
+    tags, including `collect` for cluster log collection and `install_os` for
+    unattended operating-system installation through iDRAC.
 
 **VictoriaLogs**
-:   A high-performance log database built for log storage and analysis. Omnia uses VictoriaLogs for centralized log collection and storage, working alongside VictoriaMetrics for complete observability.
+:   The log-storage sink deployed by Telemetry when required by enabled log
+    sources.
 
 **VictoriaMetrics**
-:   A high-performance time-series database that stores all telemetry data in Omnia's monitoring pipeline. Supports PromQL and MetricsQL for querying, and achieves high compression ratios for efficient long-term metric retention. See [Telemetry Architecture](telemetry_architecture.md).
-
-**vlagent**
-:   VictoriaLogs agent that collects logs from various sources and pushes them to VictoriaLogs. Omnia deploys vlagent for log collection from cluster components.
-
-**vminsert**
-:   VictoriaMetrics component responsible for ingesting time-series data into the VictoriaMetrics database. Omnia uses vminsert as the data ingestion endpoint for metrics storage.
-
-**vmselect**
-:   VictoriaMetrics query component that executes queries against stored metrics data. Omnia uses vmselect for querying and retrieving metrics from the VictoriaMetrics database.
-
-**vmstorage**
-:   VictoriaMetrics storage backend component that persists time-series data. Omnia uses vmstorage for durable storage of metrics data in cluster mode deployments.
-
-**vmagent**
-:   VictoriaMetrics agent that collects metrics from various sources and pushes them to VictoriaMetrics. Omnia deploys vmagent for metrics collection from cluster components.
+:   The time-series metrics sink deployed by Telemetry when required by enabled
+    metrics sources.

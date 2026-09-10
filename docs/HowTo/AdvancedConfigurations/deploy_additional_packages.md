@@ -310,4 +310,4 @@ rpm -qa | grep <package_name>
 
 
 - [Deploy Additional Repositories](deploy_additional_repos.md) -- Add extra RPM repositories for ad-hoc package installation.
-- [Apptainer](use_apptainer.md) -- Pull and run container images using Apptainer.
+- [Apptainer](../orchestrator/use_apptainer.md) -- Pull and run container images using Apptainer.

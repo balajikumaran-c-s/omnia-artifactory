@@ -10,23 +10,52 @@ Compatibility matrices covering validated hardware platforms, operating systems,
 
 ## Configuration File Reference
 
-Comprehensive documentation for all Omnia configuration parameters, including descriptions, supported values, defaults, dependencies, and usage considerations for files located under:
+Comprehensive documentation for all Omnia configuration parameters, including descriptions, supported values, defaults, dependencies, and usage considerations for files located under module-specific input directories:
 
 ```text
-/opt/omnia/input/project_default
+/opt/omnia/<domain>/input/project_default/
 ```
+
+Here, `<domain>` is the internal identifier for one of these deployment
+modules: `build_stream`, `discovery`, `repo_manager`, `image_build_manager`,
+`orchestrator`, `telemetry`, or `utils`. Main installs the shared environment
+instead of using this module input layout.
+
+## Module Contracts
+
+Input/output contracts for each Omnia deployment module document the required
+input files, parameters, and expected outputs. These contracts define the
+interfaces between modules and ensure proper data flow during deployment.
+
+- [Build Stream Contract](domain_contracts/build_stream_contract.md) - GitLab and BSM configuration, readiness status, and pipeline interfaces
+- [Discovery Contract](domain_contracts/discovery_contract.md) - BMC discovery and PXE mapping file generation
+- [Repo Manager Contract](domain_contracts/repo_manager_contract.md) - Local repository creation and package management
+- [Image Build Manager Contract](domain_contracts/image_build_manager_contract.md) - Diskless OS image building
+- [Orchestrator Contract](domain_contracts/orchestrator_contract.md) - Node provisioning and cluster setup
+- [Telemetry Contract](domain_contracts/telemetry_contract.md) - Telemetry pipeline deployment
+- [Utils Contract](domain_contracts/utils_contract.md) - Utility operations
 
 ## Sample Files
 
 Curated and annotated examples of commonly used configuration and input files. These samples can be used as implementation references and customized to meet deployment-specific requirements.
 
+- [catalog.json](SampleFiles/catalog_json.md) - Build Stream catalog for CI/CD-driven deployments
+- [pxe_boot_inventory.csv](SampleFiles/pxe_boot_inventory.md) - PXE boot inventory for node provisioning
+- [pxe_mapping_file.csv](SampleFiles/pxe_mapping_file.md) - PXE mapping file for network boot
+- [slurm.conf](SampleFiles/slurm_conf.md) - Slurm job scheduler configuration
+- [slurmdbd.conf](SampleFiles/slurmdbd_conf.md) - Slurm database daemon configuration
+- [software_config.json](SampleFiles/software_config_json.md) - Software package configuration
+
 ## Cluster Requirements
 
 Detailed infrastructure prerequisites for supported deployment scenarios, including minimum and recommended requirements for compute, memory, storage, networking, and firewall configuration.
 
-## Playbook Reference
+## Module Playbook Entry Points
 
-A consolidated reference of all Omnia playbooks, including their purpose, execution scope, target nodes, required inputs, dependencies, and expected outcomes.
+The [Module Playbook Entry Points](Playbooks/playbook_reference.md) page maps each
+module to its executable top-level playbook, supported customer operations, and
+input/output contract. It also shows the `omnia.sh` and direct
+`ansible-playbook` invocation forms.
 
 ## Telemetry Metrics Reference
 
@@ -35,3 +64,18 @@ Complete catalog of telemetry metrics collected and exposed by Omnia. Metrics ar
 ## Appendices
 
 Supplementary reference information, including naming conventions, filesystem layouts, directory structures, configuration standards, and other supporting technical specifications.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -73,7 +73,7 @@ cluster.
 | ☐ | Git installed | `dnf install git -y`. Needed to clone the Omnia repository. |
 | ☐ | 500 GB+ free disk on / | Local repos, container images, and node OS images consume significant space. Use `df -h /` to check. |
 | ☐ | Required ports open on OIM | See [Ports Used by the OIM](#ports-used-by-the-oim) below for the complete list of ports that must be available. |
-| ☐ | `omnia_core` and `omnia_auth` containers deployed | See [Deploy Omnia Core Container](../HowTo/Setup/deploy_omnia_core.md) for instructions. |
+| ☐ | `omnia_core` and `omnia_auth` containers deployed | See [Deploy Omnia Core Container](https://github.com/dell/omnia) for instructions. |
 | ☐ | All target bare-metal servers reachable from OIM | Ensure network connectivity from OIM to all cluster nodes. |
 
 ### Ports Used by the OIM
@@ -216,7 +216,7 @@ via iDRAC or BIOS Setup (F2 at POST).
 | ☐ | iDRAC firmware updated to latest version | Download from [Dell Support](https://www.dell.com/support). |
 | ☐ | Datacenter license installed (for telemetry) | The Datacenter license enables streaming telemetry via iDRAC. Enterprise license is insufficient. |
 | ☐ | iDRAC IP assigned on BMC network | Can be DHCP (Omnia will assign) or static. If static, record each iDRAC IP for the mapping file. |
-| ☐ | Default iDRAC credentials known | Factory default is `root` / `calvin`. If changed, you must provide the current credentials in `provision_config.yml`. |
+| ☐ | Current iDRAC credentials known | Provide them through the Orchestrator credential workflow when prompted. |
 
 ## Aarch64 Node Prerequisites
 
@@ -318,7 +318,7 @@ via iDRAC or BIOS Setup (F2 at POST).
 | ☐ | Dedicated node for BuildStreaM GitLab deployment | A separate node is required for GitLab. |
 | ☐ | Minimum system resources for BuildStreaM node | 4 GB RAM, 2 CPU cores, 20 GB free disk space. GitLab requires a minimum of 2 CPU cores; more may be needed for production workloads. |
 | ☐ | Network connectivity for GitLab services | Ensure the BuildStreaM node has network access. |
-| ☐ | BuildStreaM containers deployed on OIM | Ensure that Omnia BuildStreaM container, PostgreSQL container, and Playbook Watcher service are deployed. See [Prepare OIM](../HowTo/Setup/prepare_oim.md). |
+| ☐ | BuildStreaM containers deployed on OIM | Ensure that Omnia BuildStreaM container, PostgreSQL container, and Playbook Watcher service are deployed. See [Prepare OIM](../HowTo/main/setup_oim.md). |
 | ☐ | 200 GB free disk space on OIM / partition | Required before triggering any BuildStreaM build pipeline to prevent "No space left on device" errors during image builds. |
 
 ## Final Pre-Flight Checks
@@ -367,3 +367,19 @@ dnf repolist
     deep in the Ansible playbook execution.
 
 You are now ready to choose your deployment path. Return to [Get Started Index](index.md).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
