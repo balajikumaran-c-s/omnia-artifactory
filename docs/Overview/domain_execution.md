@@ -8,7 +8,7 @@ the requested module identifier, and invokes its top-level playbook.
 
 `--run` accepts one module's internal domain identifier per command. It does
 not accept `all` or a comma-separated list. Run each required module in dependency order, or
-use the Build Stream pipeline path where applicable.
+use the BuildStreaM pipeline path where applicable.
 
 ## Prepare the common runtime
 
@@ -106,7 +106,7 @@ For a direct cluster deployment, run modules in this dependency order:
 | 5 | `telemetry` (optional) | Uses the generated Orchestrator inventory and requires a provisioned service Kubernetes cluster. LDMS additionally requires Slurm control and compute nodes. |
 | 6 | `utils` (on demand) | Runs an operation-specific utility and is not a required deployment stage. |
 
-Build Stream is not an additional final step in this direct sequence. It is an
+BuildStreaM is not an additional final step in this direct sequence. It is an
 alternative automation path: its build pipeline invokes Repository Manager and
 Image Build Manager, and its deploy pipeline invokes Orchestrator.
 
@@ -178,7 +178,7 @@ cat <OMNIA_DATA_PATH>/orchestrator/output/<OMNIA_PROJECT_NAME>/orchestrator_stat
 cat <OMNIA_DATA_PATH>/telemetry/output/<OMNIA_PROJECT_NAME>/telemetry_status.yml
 ```
 
-Discovery primarily produces CSV results, Build Stream reports its prepared
+Discovery primarily produces CSV results, BuildStreaM reports its prepared
 services in `build_stream_status.yml`, and Utils writes `utils_status.yml` plus
 operation-specific results. A file's presence alone is not success; inspect its
 reported state and the corresponding module log.

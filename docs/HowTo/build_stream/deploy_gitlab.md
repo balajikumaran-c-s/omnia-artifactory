@@ -1,21 +1,21 @@
-# BuildStream
+# BuildStreaM
 
 ## Overview
 
-BuildStream provides the customer-facing GitLab CI/CD workflow for catalog-driven HPC image creation and deployment. The deployment creates the following components:
+BuildStreaM provides the customer-facing GitLab CI/CD workflow for catalog-driven HPC image creation and deployment. The deployment creates the following components:
 
-- A PostgreSQL container for BuildStream state.
-- The BuildStream Manager (BSM) FastAPI container and the `playbook-watcher.service` on the Omnia Infrastructure Manager (OIM).
+- A PostgreSQL container for BuildStreaM state.
+- The BuildStreaM Manager (BSM) FastAPI container and the `playbook-watcher.service` on the Omnia Infrastructure Manager (OIM).
 - GitLab CE on the configured GitLab host.
 - A project-scoped GitLab Runner in a Podman container.
-- A GitLab project containing the BuildStream build, deploy, and cleanup pipelines.
+- A GitLab project containing the BuildStreaM build, deploy, and cleanup pipelines.
 
 The parent `.gitlab-ci.yml` routes requests to one of three child pipelines. A change to `catalog_rhel.json` starts the image-build pipeline, a change to `input/orchestrator/pxe_mapping_file.csv` starts the deploy pipeline, and cleanup is started manually or through an API trigger. The infrastructure deployment described on this page prepares this workflow; the OS image is built in the subsequent build-pipeline procedure.
 
 ## Prerequisites
 
-- Run BuildStream on an OIM host that meets the source requirements: RHEL or Rocky Linux 10.x, Python 3.12 or later, Ansible Core 2.20 or later, and Podman 5.0 or later.
-- Prepare the `repo_manager` and `image_build_manager` base services. The BuildStream precheck requires the `pulp`, `minio-server`, and `registry` containers to be running. It also requires these credential files for the active project:
+- Run BuildStreaM on an OIM host that meets the source requirements: RHEL or Rocky Linux 10.x, Python 3.12 or later, Ansible Core 2.20 or later, and Podman 5.0 or later.
+- Prepare the `repo_manager` and `image_build_manager` base services. The BuildStreaM precheck requires the `pulp`, `minio-server`, and `registry` containers to be running. It also requires these credential files for the active project:
 
     ```text
     <OMNIA_DATA_PATH>/repo_manager/input/<OMNIA_PROJECT_NAME>/repo_manager_config_credentials.yml
@@ -32,7 +32,7 @@ The parent `.gitlab-ci.yml` routes requests to one of three child pipelines. A c
 
 !!! note
 
-    The BuildStream validator warns when `build_stream_host_ip` and `gitlab_host` are the same. Use a separate GitLab host unless you have deliberately designed and validated a shared-host deployment.
+    The BuildStreaM validator warns when `build_stream_host_ip` and `gitlab_host` are the same. Use a separate GitLab host unless you have deliberately designed and validated a shared-host deployment.
 
 ### Input contract
 
@@ -44,7 +44,7 @@ The current entry playbook reads the following fixed runtime file:
 
 If `OMNIA_DATA_PATH` is changed, replace `/opt/omnia` with that value. Use `OMNIA_PROJECT_NAME=project_default` when initializing this module so that staged inputs and the entry playbook use the same project directory.
 
-`build_stream_config.yml` is the single consolidated BuildStream and GitLab configuration file. Do not create a separate `gitlab_config.yml`, and do not remove parameters from the supplied file.
+`build_stream_config.yml` is the single consolidated BuildStreaM and GitLab configuration file. Do not create a separate `gitlab_config.yml`, and do not remove parameters from the supplied file.
 
 | Parameter | Required value or default | Purpose |
 |---|---|---|
@@ -62,7 +62,7 @@ If `OMNIA_DATA_PATH` is changed, replace `/opt/omnia` with that value. Use `OMNI
 | `gitlab_puma_workers` | `2` | GitLab Puma worker count. |
 | `gitlab_sidekiq_concurrency` | `10` | GitLab Sidekiq concurrency. |
 
-BuildStream creates and manages the following encrypted credential inputs during the credential phase:
+BuildStreaM creates and manages the following encrypted credential inputs during the credential phase:
 
 ```text
 /opt/omnia/build_stream/input/project_default/build_stream_credentials.yml
@@ -77,8 +77,8 @@ Provide each requested value when prompted:
 | `gitlab_ssh_password` | Current root SSH password for the GitLab host. |
 | `build_stream_auth_username` | Username used by GitLab pipelines to register with the BSM API. |
 | `build_stream_auth_password` | BSM registration password; it must contain at least eight characters. |
-| `postgres_user` | PostgreSQL user for BuildStream; the source credential rules do not permit `root`. |
-| `postgres_password` | PostgreSQL password for BuildStream. |
+| `postgres_user` | PostgreSQL user for BuildStreaM; the source credential rules do not permit `root`. |
+| `postgres_password` | PostgreSQL password for BuildStreaM. |
 
 The credential utility encrypts the file with Ansible Vault and assigns mode `0600` to the credential and key files. Do not place credential values in `build_stream_config.yml`.
 
@@ -109,7 +109,7 @@ Configure the repo-manager and image-build-manager inputs before starting an ima
     source /opt/omnia/venv/bin/activate
     ```
 
-2. Initialize the BuildStream runtime directory. The current entry playbook uses `project_default`, so set that project explicitly:
+2. Initialize the BuildStreaM runtime directory. The current entry playbook uses `project_default`, so set that project explicitly:
 
     ```bash title="Run on: OIM host"
     export OMNIA_DATA_PATH=/opt/omnia
@@ -132,7 +132,7 @@ Configure the repo-manager and image-build-manager inputs before starting an ima
 
     At minimum, set `enable_build_stream: true`, `build_stream_host_ip`, and `gitlab_host`. Confirm that `build_stream_port` and `gitlab_https_port` are available.
 
-4. Change to the BuildStream playbook directory and run the prerequisite check:
+4. Change to the BuildStreaM playbook directory and run the prerequisite check:
 
     ```bash title="Run on: OIM host"
     cd playbooks
@@ -147,13 +147,13 @@ Configure the repo-manager and image-build-manager inputs before starting an ima
     ansible-playbook build_stream.yml --tags validate
     ```
 
-6. Deploy the complete BuildStream stack:
+6. Deploy the complete BuildStreaM stack:
 
     ```bash title="Run on: OIM host"
     ansible-playbook build_stream.yml --tags build
     ```
 
-    Enter the six BuildStream credentials listed in the input contract when prompted. Existing non-empty values in the encrypted credential file are reused and are not prompted again.
+    Enter the six BuildStreaM credentials listed in the input contract when prompted. Existing non-empty values in the encrypted credential file are reused and are not prompted again.
 
     The `build` tag performs both phases in order:
 
@@ -162,7 +162,7 @@ Configure the repo-manager and image-build-manager inputs before starting an ima
 
     !!! note
 
-        Run one BuildStream tag at a time. If PostgreSQL, BSM, and the watcher are already prepared, `ansible-playbook build_stream.yml --tags execute` runs only the GitLab phase. That phase verifies all three OIM services and the BSM certificate before changing the GitLab host.
+        Run one BuildStreaM tag at a time. If PostgreSQL, BSM, and the watcher are already prepared, `ansible-playbook build_stream.yml --tags execute` runs only the GitLab phase. That phase verifies all three OIM services and the BSM certificate before changing the GitLab host.
 
 7. Retrieve `/root/gitlab-certs/ca.crt` from the GitLab host and import it into the client browser trust store if the browser must trust the self-signed Omnia CA.
 
@@ -250,4 +250,4 @@ Configure the repo-manager and image-build-manager inputs before starting an ima
 - **The GitLab API is unreachable:** Verify the configured host and HTTPS port, firewall access, and the generated TLS files under `/root/gitlab-certs` on the GitLab host.
 - **Runner image deployment fails:** Verify outbound access to Docker Hub and the GitLab registry, available disk space, and any applicable registry pull limits. The source retries each image pull five times.
 - **The runner is not online:** Check `gitlab-runner.service`, the Podman socket, and the runner configuration under `/srv/gitlab-runner/config`. Changes to the GitLab port or project identity can invalidate the existing runner registration.
-- **A GitLab port or project-name reconfiguration is required:** The source requires cleanup before redeployment. The supported `cleanup` tag removes the complete BuildStream deployment, including GitLab, BSM, PostgreSQL, credentials, and runtime data; back up required data before using it.
+- **A GitLab port or project-name reconfiguration is required:** The source requires cleanup before redeployment. The supported `cleanup` tag removes the complete BuildStreaM deployment, including GitLab, BSM, PostgreSQL, credentials, and runtime data; back up required data before using it.

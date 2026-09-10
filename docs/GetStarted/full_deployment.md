@@ -468,8 +468,8 @@ For source-specific configuration and verification guides, see the
 - Use [Add Nodes](../Operations/add_nodes.md) and
   [Remove Slurm Nodes](../Operations/remove_slurm_nodes.md) for supported
   node lifecycle changes.
-- Use [Build Stream Deployment](buildstream_deployment.md) when the separate
-  Build Stream module is required.
+- Use [BuildStreaM Deployment](buildstream_deployment.md) when the separate
+  BuildStreaM module is required.
 
 ## Troubleshooting
 

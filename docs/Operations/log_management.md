@@ -34,7 +34,7 @@ Each domain writes its Ansible execution log to the OIM host under
 | `<OMNIA_DATA_PATH>/orchestrator/log/openchami/` | OpenCHAMI logs |
 | `<OMNIA_DATA_PATH>/repo_manager/log/` | Repository processing and Pulp logs |
 | `<OMNIA_DATA_PATH>/image_build_manager/log/<OMNIA_PROJECT_NAME>/` | Image build logs |
-| `<OMNIA_DATA_PATH>/build_stream_root/artifacts/<job_id>/` | Build Stream job artifacts and results |
+| `<OMNIA_DATA_PATH>/build_stream_root/artifacts/<job_id>/` | BuildStreaM job artifacts and results |
 
 !!! note
 

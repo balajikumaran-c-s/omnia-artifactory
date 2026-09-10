@@ -29,14 +29,14 @@ logs, and cleaning up domains or the OIM environment.
   custom inventory to PXE boot only the new physical nodes.
 - [Remove Slurm compute nodes](remove_slurm_nodes.md) omitted from the current
   desired mapping, with source-defined handling for active jobs.
-- [Add nodes through Build Stream](build_stream/add_nodes.md) by committing the
+- [Add nodes through BuildStreaM](build_stream/add_nodes.md) by committing the
   revised Orchestrator mapping and running the deploy pipeline.
 - [Reprovision a cluster](reprovision_cluster.md) when existing nodes must be
   provisioned again.
 
-## Build Stream lifecycle
+## BuildStreaM lifecycle
 
-- [Update the Build Stream catalog](build_stream/update_catalog.md).
+- [Update the BuildStreaM catalog](build_stream/update_catalog.md).
 - [Clean up image groups](build_stream/cleanup_operations.md).
 - [Retry a failed pipeline](build_stream/retry_pipelines.md).
 

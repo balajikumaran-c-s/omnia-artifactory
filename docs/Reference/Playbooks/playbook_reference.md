@@ -37,7 +37,7 @@ for `execute`.
 
 | Deployment module | Executable entry point | Implemented customer operations | Module guidance |
 | --- | --- | --- | --- |
-| Build Stream | `src/build_stream/playbooks/build_stream.yml` | `precheck`, `validate`, `credentials`, `prepare`, `execute`, `build`, `cleanup` | [How-to guide](../../HowTo/build_stream/index.md) · [Contract](../domain_contracts/build_stream_contract.md) |
+| BuildStreaM | `src/build_stream/playbooks/build_stream.yml` | `precheck`, `validate`, `credentials`, `prepare`, `execute`, `build`, `cleanup` | [How-to guide](../../HowTo/build_stream/index.md) · [Contract](../domain_contracts/build_stream_contract.md) |
 | Discovery | `src/discovery/playbooks/discovery.yml` | `validate`, `credentials`, `execute` | [How-to guide](../../HowTo/discovery/index.md) · [Contract](../domain_contracts/discovery_contract.md) |
 | Image Build Manager | `src/image_build_manager/playbooks/image_build_manager.yml` | `precheck`, `validate`, `credentials`, `prepare`, `execute`, `build`, `cleanup`, `cleanup_images` | [How-to guide](../../HowTo/image_build_manager/index.md) · [Contract](../domain_contracts/image_build_manager_contract.md) |
 | Orchestrator | `src/orchestrator/playbooks/orchestrator.yml` | `precheck`, `validate`, `credentials`, `prepare`, `deploy`, `provision`, `execute`, `validate-deployment`, `pxeboot`, `cleanup`, `cleanup_credentials`, `upgrade`, `rollback` | [How-to guide](../../HowTo/orchestrator/index.md) · [Contract](../domain_contracts/orchestrator_contract.md) |
@@ -46,7 +46,7 @@ for `execute`.
 | Utils | `src/utils/playbooks/utils.yml` | `precheck`, `collect`, `install_os`, `cleanup`, `cleanup_logs`, `cleanup_install_os` | [How-to guide](../../HowTo/utils/index.md) · [Contract](../domain_contracts/utils_contract.md) |
 
 Discovery's `precheck`, `prepare`, `cleanup`, `upgrade`, and `rollback`
-lifecycle files currently contain placeholders. Build Stream's upgrade and rollback files, Image Build Manager's
+lifecycle files currently contain placeholders. BuildStreaM's upgrade and rollback files, Image Build Manager's
 upgrade and rollback files, and Repo Manager's upgrade and rollback files are
 also placeholders. Do not use a placeholder operation as a deployment step.
 Utils is an on-demand utility module and does not implement the standard
@@ -76,7 +76,7 @@ Discovery (optional)    │
 Utils: run on demand
 ```
 
-Build Stream provides a separate catalog-driven automation path. Its build
+BuildStreaM provides a separate catalog-driven automation path. Its build
 pipeline invokes Repository Manager and Image Build Manager, and its deploy
 pipeline invokes Orchestrator. Telemetry is initialized separately after a
 Kubernetes cluster is available.
@@ -96,7 +96,7 @@ selected modules have been initialized.
 | Deploy Orchestrator services | `./omnia.sh --run orchestrator --tags deploy` |
 | Provision the selected node categories | `./omnia.sh --run orchestrator --tags provision` |
 | Deploy enabled telemetry sources and sinks | `./omnia.sh --run telemetry --tags deploy` |
-| Deploy Build Stream infrastructure and GitLab | `./omnia.sh --run build_stream --tags build` |
+| Deploy BuildStreaM infrastructure and GitLab | `./omnia.sh --run build_stream --tags build` |
 | Collect logs with Utils | `./omnia.sh --run utils --tags collect` |
 
 The Repository Manager entry point supports the standard workflow combination

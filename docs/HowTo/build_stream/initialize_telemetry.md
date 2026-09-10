@@ -1,19 +1,19 @@
-# Initialize Telemetry after a Build Stream Deployment
+# Initialize Telemetry after a BuildStreaM Deployment
 
 ## Overview
 
-Build Stream does not invoke Telemetry automatically. After the deploy pipeline
+BuildStreaM does not invoke Telemetry automatically. After the deploy pipeline
 has provisioned a service Kubernetes cluster, configure and run the Telemetry
 module from the OIM.
 
 Telemetry consumes the Orchestrator inventory for the Kubernetes VIP and, when
 iDRAC metrics are enabled, the generated BMC inventory. It writes its own
-project-scoped status contract; it does not write a Build Stream pipeline
+project-scoped status contract; it does not write a BuildStreaM pipeline
 status file.
 
 ## Prerequisites
 
-- Complete the Build Stream deploy pipeline and verify that the service
+- Complete the BuildStreaM deploy pipeline and verify that the service
   Kubernetes nodes are ready.
 - Confirm that Orchestrator produced:
 
@@ -90,7 +90,7 @@ Then run the source-specific checks linked from the
 
 For iDRAC deployments, use [Verify iDRAC Telemetry](../Telemetry/verify_idrac.md)
 to check the MySQL service inventory and persistent volume. MySQL remains owned
-by the Telemetry domain; Build Stream does not deploy or manage it directly.
+by the Telemetry domain; BuildStreaM does not deploy or manage it directly.
 
 ## Next steps
 

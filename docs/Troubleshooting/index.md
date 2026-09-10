@@ -78,13 +78,13 @@ Monitoring and metrics collection issues - iDRAC telemetry, LDMS samplers, Kafka
 | --- | --- |
 | [Telemetry Issues](telemetry/telemetry.md) | iDRAC telemetry, LDMS samplers, Kafka, VictoriaMetrics, and VictoriaLogs |
 
-### Build Stream module
+### BuildStreaM module
 
-GitOps-based CI/CD pipeline issues - Build Stream execution, GitLab integration, catalog validation
+GitOps-based CI/CD pipeline issues - BuildStreaM execution, GitLab integration, catalog validation
 
 | Topic | Description |
 | --- | --- |
-| [Build Stream Issues](build_stream/build_stream.md) | Build Stream pipeline stage failures, API registration, and catalog parsing |
+| [BuildStreaM Issues](build_stream/build_stream.md) | BuildStreaM pipeline stage failures, API registration, and catalog parsing |
 
 ### Utils module
 

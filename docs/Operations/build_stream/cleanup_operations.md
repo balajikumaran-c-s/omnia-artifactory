@@ -1,8 +1,8 @@
-# Clean Up Build Stream Image Groups
+# Clean Up BuildStreaM Image Groups
 
 ## Overview
 
-Build Stream enforces a retention guard on non-`CLEANED` image groups. The
+BuildStreaM enforces a retention guard on non-`CLEANED` image groups. The
 default `IMAGE_RETENTION_LIMIT` in the source is 50. Use the manual cleanup
 pipeline to select an image group and delete the associated job's S3 images
 and NFS artifacts when the guard blocks a new job or when an image group is no
@@ -10,12 +10,12 @@ longer required.
 
 !!! warning
 
-    Do not cancel a running GitLab pipeline or stage. Cancellation prevents some pipeline steps from executing, which leaves the Build Stream job in an intermediate, inconsistent state.
+    Do not cancel a running GitLab pipeline or stage. Cancellation prevents some pipeline steps from executing, which leaves the BuildStreaM job in an intermediate, inconsistent state.
 
 ## Prerequisites
 
 - Access to the managed GitLab project.
-- The Build Stream API server and PostgreSQL service are running.
+- The BuildStreaM API server and PostgreSQL service are running.
 - The Build pipeline has run at least once so the BSM client credentials are
   available to GitLab.
 - At least one image group has a status other than `CLEANED`.
@@ -79,9 +79,9 @@ longer required.
   value `cleanup` when creating the pipeline.
 - **No image groups are listed:** The Images API returns only groups whose
   status is not `CLEANED`; there is nothing to remove when the list is empty.
-- **Cleanup pipeline failing:** Verify that the Build Stream API server and
+- **Cleanup pipeline failing:** Verify that the BuildStreaM API server and
   PostgreSQL database are running. See
-  [Build Stream troubleshooting](../../Troubleshooting/build_stream/build_stream.md).
+  [BuildStreaM troubleshooting](../../Troubleshooting/build_stream/build_stream.md).
 
 
 

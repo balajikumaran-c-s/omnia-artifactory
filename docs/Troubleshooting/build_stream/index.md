@@ -1,13 +1,13 @@
-# Build Stream module
+# BuildStreaM module
 
-GitOps-based CI/CD pipeline issues - Build Stream execution, GitLab integration, catalog validation
+GitOps-based CI/CD pipeline issues - BuildStreaM execution, GitLab integration, catalog validation
 
-## Build Stream Issues
+## BuildStreaM Issues
 
-Issues related to Build Stream pipeline execution, GitLab integration, catalog validation, and image deployment.
+Issues related to BuildStreaM pipeline execution, GitLab integration, catalog validation, and image deployment.
 
-For detailed troubleshooting information, see [Build Stream Issues](build_stream.md).
+For detailed troubleshooting information, see [BuildStreaM Issues](build_stream.md).
 
 !!! info
-    - [Build Stream Deployment](../../GetStarted/buildstream_deployment.md) -- Build Stream deployment guide
+    - [BuildStreaM Deployment](../../GetStarted/buildstream_deployment.md) -- BuildStreaM deployment guide
     - [Log Management](../../Operations/log_management.md) -- Where to find logs for deeper diagnosis

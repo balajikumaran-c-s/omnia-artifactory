@@ -49,7 +49,7 @@ Select a module above to view its how-to guides. Depending on the module, these 
     Modules can be invoked separately, but downstream modules require the
     contracts produced upstream. A typical direct deployment follows:
     Repository Manager → Image Build Manager → optional Discovery →
-    Orchestrator → optional Telemetry. Build Stream provides a separate GitLab
+    Orchestrator → optional Telemetry. BuildStreaM provides a separate GitLab
     CI/CD automation path; Utilities runs on demand.
 
 

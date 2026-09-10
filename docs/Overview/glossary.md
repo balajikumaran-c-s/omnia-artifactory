@@ -19,14 +19,14 @@ formatting, is also its directory name under `src/` and the value accepted by
 :   Boot Script Service, an OpenCHAMI service that returns the boot parameters
     assigned to a registered node.
 
-**Build Stream**
-:   The deployment module identified as `build_stream`. It deploys PostgreSQL, the Build Stream Manager
+**BuildStreaM**
+:   The deployment module identified as `build_stream`. It deploys PostgreSQL, the BuildStreaM Manager
     API, a playbook-watcher service, GitLab integration, and a managed project
     runner. A change to the project catalog starts the build pipeline; a change
     to the Orchestrator PXE mapping starts the deploy pipeline. See
-    [Build Stream](../HowTo/build_stream/index.md).
+    [BuildStreaM](../HowTo/build_stream/index.md).
 
-**Build Stream Manager (BSM)**
+**BuildStreaM Manager (BSM)**
 :   The FastAPI service that accepts authenticated pipeline requests, records
     jobs in PostgreSQL, and writes playbook requests for the watcher.
 
@@ -82,7 +82,7 @@ formatting, is also its directory name under `src/` and the value accepted by
 :   A capability-based unit of deployment responsibility with its own
     initialization script, dependencies, inputs, entry playbook, logs, and
     outputs. Omnia has seven modules: Repository Manager, Image Build Manager,
-    Discovery, Orchestrator, Telemetry, Build Stream, and Utils. `main` is the
+    Discovery, Orchestrator, Telemetry, BuildStreaM, and Utils. `main` is the
     common controller, not a deployment module.
 
 **Module contract**
@@ -140,7 +140,7 @@ formatting, is also its directory name under `src/` and the value accepted by
 :   Omnia Infrastructure Manager. The Linux management host from which Omnia
     setup and module playbooks run. It stores the shared runtime and hosts
     module-owned management services such as Pulp, MinIO, the registry,
-    OpenCHAMI, and Build Stream services when selected.
+    OpenCHAMI, and BuildStreaM services when selected.
 
 **OpenCHAMI**
 :   The bare-metal provisioning services deployed by Orchestrator. Omnia uses

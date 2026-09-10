@@ -1,12 +1,12 @@
-# Retry Build Stream Pipelines
+# Retry BuildStreaM Pipelines
 
 ## Overview
 
-Retry a Build Stream pipeline when one or more stages have failed. Before retrying, identify and resolve the issue that caused the failure.
+Retry a BuildStreaM pipeline when one or more stages have failed. Before retrying, identify and resolve the issue that caused the failure.
 
 !!! warning
 
-    Do not cancel a running GitLab pipeline or stage. Cancellation prevents some pipeline steps from executing, which leaves the Build Stream job in an intermediate, inconsistent state.
+    Do not cancel a running GitLab pipeline or stage. Cancellation prevents some pipeline steps from executing, which leaves the BuildStreaM job in an intermediate, inconsistent state.
 
 ## Prerequisites
 
@@ -66,7 +66,7 @@ Retry a Build Stream pipeline when one or more stages have failed. Before retryi
   Without the token, the source skips its latest-file refresh.
 - **A BSM stage returns a state conflict:** Retry the complete downstream
   pipeline so the supported stage sequence starts with a new BSM Job.
-- For additional issues, see [Build Stream troubleshooting](../../Troubleshooting/build_stream/build_stream.md).
+- For additional issues, see [BuildStreaM troubleshooting](../../Troubleshooting/build_stream/build_stream.md).
 
 
 

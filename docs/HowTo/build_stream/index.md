@@ -1,8 +1,8 @@
-# Build Stream
+# BuildStreaM
 
 ## Overview
 
-Build Stream provides the GitLab and Build Stream Manager (BSM) services used
+BuildStreaM provides the GitLab and BuildStreaM Manager (BSM) services used
 for catalog-driven image-build, deployment, and cleanup pipelines. BSM runs as
 a FastAPI service on the Omnia Infrastructure Manager (OIM), and the
 playbook-watcher executes the requested Omnia module playbooks.
@@ -23,7 +23,7 @@ PIPELINE_TYPE=cleanup
 ## Prerequisites
 
 - Complete the [OIM setup](../main/setup_oim.md).
-- Use `project_default`. The current Build Stream entry playbook fixes its
+- Use `project_default`. The current BuildStreaM entry playbook fixes its
   input and output directories to that project.
 - Configure
   `/opt/omnia/build_stream/input/project_default/build_stream_config.yml`
@@ -34,7 +34,7 @@ PIPELINE_TYPE=cleanup
   minimums in `build_stream_config.yml`.
 - Ensure Podman and systemd are available on the OIM.
 - Review the
-  [Build Stream Domain Contract](../../Reference/domain_contracts/build_stream_contract.md)
+  [BuildStreaM Domain Contract](../../Reference/domain_contracts/build_stream_contract.md)
   before deployment.
 
 ## Procedure
@@ -43,7 +43,7 @@ Choose the operation that matches the required workflow.
 
 | Task | Use it to |
 |---|---|
-| [Deploy GitLab and Build Stream](deploy_gitlab.md) | Initialize inputs and credentials, deploy PostgreSQL, BSM, the watcher, GitLab, and the managed project and runner. |
+| [Deploy GitLab and BuildStreaM](deploy_gitlab.md) | Initialize inputs and credentials, deploy PostgreSQL, BSM, the watcher, GitLab, and the managed project and runner. |
 | [Execute the build pipeline](execute_build_pipeline.md) | Commit `catalog_rhel.json` or select `PIPELINE_TYPE=build` to synchronize content and build images. |
 | [Execute the deploy pipeline](execute_deploy_pipeline.md) | Commit `input/orchestrator/pxe_mapping_file.csv` or select `PIPELINE_TYPE=deploy` to provision mapped nodes. |
 | [Add nodes](../../Operations/build_stream/add_nodes.md) | Add rows to the Orchestrator mapping contract and run the deploy pipeline. |
@@ -52,13 +52,13 @@ Choose the operation that matches the required workflow.
 | [Clean up pipeline resources](../../Operations/build_stream/cleanup_operations.md) | Run the GitLab cleanup pipeline for selected image resources. |
 | [Retry a pipeline](../../Operations/build_stream/retry_pipelines.md) | Retry a failed parent or downstream pipeline after correcting its cause. |
 
-The Build Stream entry playbook supports no tag, `precheck`, `validate`,
+The BuildStreaM entry playbook supports no tag, `precheck`, `validate`,
 `credentials`, `prepare`, `execute`, `build`, `cleanup`, `upgrade`,
 and `rollback`. See the contract for the implemented behavior of each tag.
 
 ## Verification
 
-After deploying Build Stream, inspect:
+After deploying BuildStreaM, inspect:
 
 ```bash title="Run on: OIM host"
 cat /opt/omnia/build_stream/output/project_default/build_stream_status.yml
@@ -73,7 +73,7 @@ Then verify that the managed GitLab project and its runner are available at the
 reported `gitlab_url`.
 
 Pipeline results are reported through the GitLab pipeline and BSM job state.
-Build Stream does not write `pipeline_status.yml` or
+BuildStreaM does not write `pipeline_status.yml` or
 `catalog_manifest.yml` to its project output directory.
 
 ## Next steps

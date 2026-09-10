@@ -740,7 +740,7 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
 
 ???+ note "Symptom"
 
-    PostgreSQL deployment fails after Build Stream cleanup.
+    PostgreSQL deployment fails after BuildStreaM cleanup.
 
 ??? note "Cause"
 

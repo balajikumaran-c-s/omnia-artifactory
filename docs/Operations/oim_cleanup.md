@@ -37,7 +37,7 @@ each domain owns and exposes its cleanup workflow.
 
 | Domain | Cleanup scope |
 |---|---|
-| `build_stream` | Removes GitLab and Build Stream services, the watcher, PostgreSQL service, NFS artifacts, and Build Stream credentials. PostgreSQL data is preserved by default. |
+| `build_stream` | Removes GitLab and BuildStreaM services, the watcher, PostgreSQL service, NFS artifacts, and BuildStreaM credentials. PostgreSQL data is preserved by default. |
 | `telemetry` | Removes enabled telemetry sources and sinks. Persistent volumes, including the iDRAC MySQL PVC, are preserved by default. |
 | `orchestrator` | Removes enabled OpenCHAMI, OpenLDAP, Slurm, Kubernetes, storage-mount, and generated Orchestrator resources. Credentials are removed by default. |
 | `discovery` | Runs the reserved cleanup entry point. The current source implementation is a placeholder and does not remove Discovery artifacts. |
@@ -74,9 +74,9 @@ environment.
 
 !!! warning
 
-    The current Build Stream entry point contains an unresolved static import
+    The current BuildStreaM entry point contains an unresolved static import
     for its upgrade placeholder. Until that source issue is corrected, the
-    top-level Build Stream playbook can fail during parsing before the
+    top-level BuildStreaM playbook can fail during parsing before the
     `cleanup` tag runs.
 
 !!! note

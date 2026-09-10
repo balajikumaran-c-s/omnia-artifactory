@@ -116,26 +116,26 @@ cluster using **OpenLDAP**. When OpenLDAP support is enabled, the Orchestrator
 
 Centralized authentication is configured via `security_config.yml`.
 
-## BuildStream
+## BuildStreaM
 
-BuildStream is an optional automation framework that provides a REST API and
+BuildStreaM is an optional automation framework that provides a REST API and
 playbook execution pipeline for catalog-driven deployments. When enabled
-(`enable_build_stream: true` in `build_stream_config.yml`), the Build Stream
+(`enable_build_stream: true` in `build_stream_config.yml`), the BuildStreaM
 `prepare` phase deploys the following additional containers on the OIM:
 
 - **omnia_build_stream** -- API server that manages deployment catalogs, job queues, and playbook execution.
-- **omnia_postgres** -- PostgreSQL database for storing BuildStream state, job history, and image group metadata.
+- **omnia_postgres** -- PostgreSQL database for storing BuildStreaM state, job history, and image group metadata.
 
 **Key capabilities**
 
 - **Playbook watcher** -- A systemd service that monitors a playbook queue and executes Ansible playbooks in sequence.
 - **JWT authentication** -- API access is secured via JSON Web Tokens.
-- **GitLab integration** -- When used with the optional GitLab deployment (`gitlab/gitlab.yml`), BuildStream enables CI/CD pipeline execution for cluster deployments.
+- **GitLab integration** -- When used with the optional GitLab deployment (`gitlab/gitlab.yml`), BuildStreaM enables CI/CD pipeline execution for cluster deployments.
 
 !!! tip
 
-    BuildStream is optional. Omnia can run Ansible playbooks directly on the
-    OIM through `omnia.sh`. BuildStream adds an automation layer for teams that
+    BuildStreaM is optional. Omnia can run Ansible playbooks directly on the
+    OIM through `omnia.sh`. BuildStreaM adds an automation layer for teams that
     want API-driven, catalog-based workflows.
 
 !!! info "Related Pages"
