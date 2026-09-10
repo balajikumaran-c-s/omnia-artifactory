@@ -72,6 +72,13 @@ formatting, is also its directory name under `src/` and the value accepted by
 :   The deployment module identified as `discovery`. It queries OpenManage Enterprise and writes a BMC
     discovery report and an Orchestrator-compatible PXE mapping.
 
+**Domain**
+:   An independently executable Omnia deployment unit implemented as an
+    Ansible collection. Each domain has its own playbook, inputs, validation,
+    dependencies, logs, and output contract. Domains exchange contract files
+    instead of importing one another's source code. This meaning is distinct
+    from the DNS domain configured by `SYSTEM_DOMAIN_NAME`.
+
 **Domain identifier**
 :   The internal name accepted by `omnia.sh --run` and used in source paths,
     such as `repo_manager` or `orchestrator`. This implementation term is

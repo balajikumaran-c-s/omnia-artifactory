@@ -41,23 +41,31 @@ The direct deployment flow implemented by `omnia.sh` is:
 omnia.sh setup
       |
       v
-repo_manager  -- repo_status.yml --> image_build_manager
-                                          |
-                                          +-- build_status.yml --+
-                                                               |
-discovery -- bmc_pxe_mapping_file.csv --+                     |
-                                         v                     v
-                                      orchestrator <------------+
-                                         |
-                                         +-- orchestrator_inventory.yaml
-                                         +-- bmc_group_data.csv
-                                         +-- provisioned Slurm/Kubernetes
+repo_manager
+      |
+      +-- repo_status.yml ------------------------------+
+              |                                         |
+              v                                         |
+image_build_manager                                     |
+      |                                                 |
+      +-- build_status.yml -----------------------------+
+                                                        |
+discovery                                               |
+      |                                                 |
+      +-- bmc_pxe_mapping_file.csv ---------------------+
                                                         |
                                                         v
-                                                    telemetry
+                                                 orchestrator
+                                                        |
+                                                        +-- orchestrator_inventory.yaml
+                                                        +-- bmc_group_data.csv
+                                                        +-- provisioned Slurm/Kubernetes
+                                                                    |
+                                                                    v
+                                                               telemetry
 
-utils: invoked independently for a selected operational task
-build_stream: alternate automation path for build and deploy pipelines
+utils        : invoked independently for a selected operational task
+build_stream : alternate automation path for build and deploy pipelines
 ```
 
 The principal handoffs are:
