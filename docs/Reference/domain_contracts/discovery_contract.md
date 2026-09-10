@@ -19,6 +19,14 @@ The defaults are `/opt/omnia` and `project_default`.
 | `discovery_credentials.yml` | When OME discovery is enabled | Ansible Vault-encrypted OME username and password, created by the credential workflow. |
 | `.discovery_credentials_key` | With the credential file | Vault password file used by the Discovery roles. |
 
+`network_spec.yml` is a Discovery-owned copy. The current execution flow reads
+only `Networks[].admin_network.subnet` and `Networks[].ib_network.subnet`. It
+combines each subnet's first two octets with the BMC IP's last two octets to
+derive `ADMIN_IP` and, when an InfiniBand NIC is detected, `IB_IP`.
+
+The Discovery validation tag validates `discovery_config.yml`; it does not
+validate `network_spec.yml`. Review both subnet values before execution.
+
 ### `discovery_config.yml`
 
 The schema is
@@ -81,6 +89,12 @@ Review and correct the generated values before copying the file to:
 $OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv
 ```
 
+For `slurm_node_x86_64` and `slurm_node_aarch64`, Discovery sets
+`PARENT_SERVICE_TAG` to the service tag of a
+`service_kube_node_x86_64` in the same `GROUP_NAME`. It leaves this field empty
+for other functional groups or when a matching service Kubernetes worker is
+not present.
+
 ### `discovery_status.yml`
 
 | Field | Purpose |
@@ -92,6 +106,30 @@ $OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv
 | `timestamp` | Execution timestamp. |
 | `failed_task` | Present after a failed execution. |
 | `failure_reason` | Present after a failed execution. |
+
+The status file is written only after the OME discovery role starts. Setup,
+input-validation, and credential failures can leave it absent or unchanged
+from an earlier run.
+
+## Execution contract
+
+Run the domain from `src/main` with `./omnia.sh --run discovery`. The supported
+tags are `precheck`, `validate`, `credentials`, `prepare`, `execute`,
+`discovery`, `cleanup`, `upgrade`, and `rollback`. Tags are mutually exclusive.
+
+The operational tags are:
+
+| Tag | Behavior |
+|---|---|
+| *(none)* | Runs validation, credentials, and OME execution. |
+| `validate` | Validates `discovery_config.yml` without credential prompting. |
+| `credentials` | Creates or updates the encrypted OME credential file. |
+| `execute` | Runs the OME discovery flow. |
+| `discovery` | Alias of `execute`. |
+
+`precheck`, `prepare`, `cleanup`, `upgrade`, and `rollback` are accepted
+placeholders in the current source. They do not perform the named lifecycle
+operation. In particular, `cleanup` does not remove Discovery artifacts.
 
 ## Related documentation
 

@@ -35,12 +35,44 @@ Victoria pump endpoint using the same checks as the deployment role.
       wget -qO- http://localhost:2112/metrics
     ```
 
+4. Verify the MySQL Secret and persistent volume claim:
+
+    ```bash title="Run on: Kubernetes VIP"
+    kubectl get secret mysqldb-credentials -n telemetry
+    kubectl get pvc mysqldb-pvc-idrac-telemetry-0 -n telemetry
+    ```
+
+5. Connect to MySQL and inspect only the non-sensitive service inventory
+   fields. Use the `mysqldb_user` value from the encrypted Telemetry credential
+   file and enter its password when prompted:
+
+    ```bash title="Run on: Kubernetes VIP"
+    POD=$(kubectl get pods -n telemetry -l app=idrac-telemetry -o jsonpath='{.items[0].metadata.name}')
+    read -rp "MySQL user: " MYSQL_USER
+    kubectl exec -it -n telemetry "$POD" -c mysqldb -- \
+      mysql -u "$MYSQL_USER" -p idrac_telemetrydb
+    ```
+
+    At the MySQL prompt, run:
+
+    ```sql
+    SHOW TABLES;
+    SELECT ip, serviceType, authType FROM services;
+    ```
+
+    !!! caution
+
+        Do not query, copy, or publish the `services.auth` column. It contains
+        authentication data used by the iDRAC receiver.
+
 ## Verification
 
 At least one StatefulSet replica must be ready, each container must report
 `true`, the Kafka topic must be Ready, and the Victoria pump endpoint should
-return metrics. Confirm `sources.idrac.metrics: deployed` in
-`telemetry_status.yml`.
+return metrics. The `mysqldb-credentials` Secret must exist, the
+`mysqldb-pvc-idrac-telemetry-0` claim must be Bound, and the database query must
+return the expected non-sensitive service inventory. Confirm
+`sources.idrac.metrics: deployed` in `telemetry_status.yml`.
 
 The status and resource checks do not prove that a BMC is publishing records.
 Inspect the `idrac` topic and query VictoriaMetrics for a known BMC metric to
@@ -62,3 +94,14 @@ complete end-to-end verification.
 - **The pump endpoint is pending:** The role retries this check and treats a
   temporarily unavailable endpoint as pending; recheck after data begins to
   flow.
+- **MySQL is not ready:** Inspect both initialization and runtime logs:
+
+    ```bash title="Run on: Kubernetes VIP"
+    POD=$(kubectl get pods -n telemetry -l app=idrac-telemetry -o jsonpath='{.items[0].metadata.name}')
+    kubectl logs -n telemetry "$POD" -c cleanup-mysql-locks
+    kubectl logs -n telemetry "$POD" -c mysqldb
+    ```
+
+  The initialization container removes stale `.sock` and `.pid` files after an
+  ungraceful shutdown. Do not manually delete InnoDB data or lock files without
+  a validated recovery plan and a current backup.

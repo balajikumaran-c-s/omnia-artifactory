@@ -90,14 +90,19 @@ Omnia configures the following ports for use by third-party tools installed by O
 
 ### Telemetry Ports
 
+Telemetry ports are service-cluster traffic requirements. The iDRAC MySQL
+service is a headless Kubernetes service and is not exposed as a LoadBalancer,
+NodePort, or customer-facing database endpoint. Ports 3306 and 33060 must remain
+restricted to the trusted service-cluster network.
+
 | Port | Protocol | Service Name | Type of Node |
 |---|---|---|---|
 |8161|TCP|ActiveMQ Console|Manager (Telemetry K8s)|
 |61613|TCP|ActiveMQ STOMP (port 1)|Manager (Telemetry K8s)|
 |61616|TCP|ActiveMQ STOMP (port 2)|Manager (Telemetry K8s)|
 |8082|TCP|Telemetry Config UI|Manager (Telemetry K8s)|
-|3306|TCP|MySQL primary|Manager (Telemetry K8s)|
-|33060|TCP|MySQL X Protocol|Manager (Telemetry K8s)|
+|3306|TCP|iDRAC MySQL primary (cluster internal)|Service Kubernetes cluster|
+|33060|TCP|iDRAC MySQL X Protocol (cluster internal)|Service Kubernetes cluster|
 |9092|TCP|Kafka broker plaintext|Manager (Telemetry K8s)|
 |9093|TCP|Kafka broker TLS|Manager (Telemetry K8s)|
 |9094|TCP|Kafka LoadBalancer|Manager (Telemetry K8s)|
@@ -168,7 +173,8 @@ Omnia creates and stores log files related to containers at `<nfs_share_path>/om
 
 | Location | Purpose |
 |----------|---------|
-| `/opt/omnia/log/core/playbooks/discovery.log` | Discovery logs |
+| `/var/log/omnia/discovery/discovery.log` | Discovery playbook log |
+| `/opt/omnia/log/core/playbooks/discovery_validation_<project>.log` | Discovery input-validation log |
 | `/opt/omnia/log/core/playbooks/local_repo.log` | Local Repository logs |
 | `/opt/omnia/log/core/playbooks/prepare_oim.log` | Prepare OIM logs |
 | `/opt/omnia/log/core/playbooks/provision.log` | Provision logs |
@@ -237,8 +243,6 @@ The format is described in the following table.
 Omnia performs network and application security scans on all modules of the product. Omnia additionally performs Blackduck scans on the open source softwares, which are installed by Omnia at runtime. However, Omnia is not responsible for the third-party software installed using Omnia. Review all third party software before using Omnia to install it.
 
 If you have any feedback about Omnia documentation, please reach out at [omnia.readme@dell.com](mailto:omnia.readme@dell.com).
-
-
 
 
 

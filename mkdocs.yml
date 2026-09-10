@@ -185,6 +185,7 @@ nav:
     - discovery:
       - HowTo/discovery/index.md
       - Discover Nodes: HowTo/discovery/discover_nodes.md
+      - Create a Mapping File: HowTo/discovery/create_mapping_file.md
     - orchestrator:
       - HowTo/orchestrator/index.md
       - Deploy OpenCHAMI: HowTo/orchestrator/deploy_openchami.md

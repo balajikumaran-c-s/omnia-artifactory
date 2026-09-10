@@ -6,6 +6,15 @@
 Omnia provides an additional utility playbook called `get_config_credentials.yml`. When executed, this playbook creates an input file called `omnia_config_credentials.yml` in the `/opt/omnia/input/project_default` folder. Additionally, the `build_stream_oauth_credentials.yml` file is created in the same folder only when the `enable_build_stream` parameter is set to `true` in the `/opt/omnia/input/project_default/build_stream_config.yml` input file.
 In these input files, you can preemptively provide all types of mandatory and optional credentials required by Omnia during its execution. Otherwise, you'll be prompted to enter them during playbook execution.
 
+!!! note "Telemetry credentials"
+
+    The Telemetry domain does not use `omnia_config_credentials.yml` for iDRAC
+    MySQL credentials. When iDRAC metrics are enabled, Telemetry conditionally
+    requests `mysqldb_user`, `mysqldb_password`, and
+    `mysqldb_root_password` and stores them in the encrypted
+    `<OMNIA_DATA_PATH>/telemetry/input/<project>/telemetry_credentials.yml`
+    file. See [Configure iDRAC Telemetry](../Telemetry/configure_idrac.md).
+
 
 ## Prerequisites
 
@@ -83,9 +92,9 @@ Provide all required mandatory credentials for the cluster. See the tables below
 | BMC (iDRAC) username | Mandatory | `bmc_username` | Username for BMC (iDRAC) access. The same credentials must be used across all servers. |
 | BMC (iDRAC) password | Mandatory | `bmc_password` | Password required for BMC (iDRAC) access. Length must be at least 3 characters and must not contain commas (`,`), hyphens (`-`), single quotes (`'`), double quotes (`"`), or backslashes (`\`). |
 | Pulp container password | Mandatory | `pulp_password` | Password required for setting up the Pulp container. Length must be at least 8 characters and must not contain commas (`,`), hyphens (`-`), single quotes (`'`), double quotes (`"`), or backslashes (`\`). |
-| MySQL DB username | Mandatory | `mysqldb_user` | Username of the MySQL user. This parameter is mandatory in order to set up iDRAC telemetry services. |
-| MySQL DB password | Mandatory | `mysqldb_password` | Password of the MySQL user. This parameter is mandatory in order to set up iDRAC telemetry services. |
-| MySQL DB root password | Mandatory | `mysqldb_root_password` | Root password of the MySQL database (DB). This parameter is mandatory in order to set up iDRAC telemetry services. |
+| MySQL DB username | Conditional Mandatory | `mysqldb_user` | Telemetry-scoped MySQL username. Required only when iDRAC metrics are enabled and stored in `telemetry_credentials.yml`. |
+| MySQL DB password | Conditional Mandatory | `mysqldb_password` | Telemetry-scoped MySQL password. Required only when iDRAC metrics are enabled and stored in `telemetry_credentials.yml`. |
+| MySQL DB root password | Conditional Mandatory | `mysqldb_root_password` | Telemetry-scoped MySQL root password. Required only when iDRAC metrics are enabled and stored in `telemetry_credentials.yml`. |
 | Docker username | Optional | `docker_username` | Username for the Dockerhub account. This is used to log in to Docker and pull required packages to the cluster. |
 | Docker password | Optional | `docker_password` | Password for Dockerhub account. Must be at least 8 characters long and can contain letters, numbers, and special characters. |
 | Slurm database password | Optional | `slurm_db_password` | Password for the Slurm database. **Mandatory** if you want to deploy Slurm on your cluster. SlurmDB password must not contain special characters like hyphens (`-`), single quotes (`'`), double quotes (`"`), or backslashes (`\`). |

@@ -149,6 +149,10 @@ their tags are selected explicitly.
   cleanup tags are discoverable in the current playbook, sink cleanup is gated
   by the full `cleanup` operation.
 
+  For `cleanup_idrac`, the preserved data includes the MySQL PVC
+  `mysqldb-pvc-idrac-telemetry-0`. Deleting that PVC permanently removes the
+  iDRAC service inventory stored in `idrac_telemetrydb`.
+
 ## Troubleshooting
 
 - **Input validation fails:** Correct every file listed in the validation

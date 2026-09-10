@@ -299,37 +299,9 @@ After applying `telemetry.yml` with VictoriaMetrics deployment mode as `cluster`
 
 ### Access the MySQL Database
 
-After `telemetry.yml` has been executed, you can check the MySQL database inside the `mysqldb` container:
-
-1. Get the names of all telemetry pods:
-
-    ```bash title="Run on: Service Kubernetes Control plane"
-    kubectl get pods -n telemetry -l app=idrac-telemetry
-    ```
-
-    !!! note
-
-        The `idrac-telemetry-0` pod is always responsible for collecting telemetry data of the management nodes (`oim`, `service_kube_control_plane_x86_64`, `service_kube_node_x86_64`, `login_node_x86_64`, etc.).
-
-2. Execute the following command:
-
-    ```bash title="Run on: Service Kubernetes Control plane"
-    kubectl exec -it -n telemetry <iDRAC_telemetry_pod_name> -c mysqldb -- mysql -u <MYSQL_USER> -p
-    ```
-
-3. When prompted, enter the MySQL password to log in.
-
-4. Enter the `idrac_telemetry_db`:
-
-    ```bash title="Run on: Service Kubernetes Control plane"
-    use idrac_telemetrydb;
-    ```
-
-5. Access the services table:
-
-    ```bash title="Run on: Service Kubernetes Control plane"
-    select * from services;
-    ```
+MySQL is owned by the Telemetry domain rather than Build Stream. Use
+[Verify iDRAC Telemetry](../Telemetry/verify_idrac.md) for the current database,
+Secret, PVC, and service-inventory checks.
 
 ## Next Steps
 
@@ -340,4 +312,5 @@ After `telemetry.yml` has been executed, you can check the MySQL database inside
 
 - **Telemetry pods not running**: Verify that the service cluster is deployed and Kubernetes is running. Check pod logs with `kubectl logs -n telemetry <pod-name>`.
 - **No Kafka messages**: Verify that iDRAC telemetry is enabled and nodes are accessible. Wait 2-3 minutes after discovery before checking.
-- For additional issues, see [BuildStreaM Troubleshooting](../../Troubleshooting/buildstream.md).
+- For additional issues, see
+  [BuildStreaM Troubleshooting](../../Troubleshooting/build_stream/build_stream.md).

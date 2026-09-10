@@ -8,6 +8,11 @@ requires both Kafka and VictoriaMetrics collection targets. When a BMC CSV is
 provided, the workflow validates BMC reachability, Redfish access, credentials,
 firmware, and an iDRAC Datacenter license before enabling collection.
 
+MySQL stores the iDRAC service inventory used by the receiver. It runs as the
+`mysqldb` container in the StatefulSet, uses the `idrac_telemetrydb` database,
+and is reachable only through the internal `idrac-telemetry-service` headless
+service. Its data is stored on a ReadWriteOnce persistent volume.
+
 ## Prerequisites
 
 - Complete the common [Telemetry deployment prerequisites](deploy_telemetry.md#prerequisites).
@@ -18,6 +23,11 @@ firmware, and an iDRAC Datacenter license before enabling collection.
   BMCs from the control-plane VIP.
 - Have one common `bmc_username` and `bmc_password` for the BMCs, plus
   `mysqldb_user`, `mysqldb_password`, and `mysqldb_root_password`.
+
+  These credentials are requested only when iDRAC metrics are enabled. They are
+  stored in the encrypted project file
+  `<OMNIA_DATA_PATH>/telemetry/input/<project>/telemetry_credentials.yml` and
+  deployed to the `mysqldb-credentials` Kubernetes Secret.
 
 ## Procedure
 
@@ -33,7 +43,7 @@ firmware, and an iDRAC Datacenter license before enabling collection.
           - kafka
 
     idrac_telemetry_configurations:
-      bmc_group_data_path: "/opt/omnia/input/bmc_group_data.csv"
+      bmc_group_data_path: "/opt/omnia/orchestrator/output/project_default/bmc_group_data.csv"
       mysqldb_storage: "1Gi"
       oim_bmc_ips:
         oim1: ""
@@ -75,6 +85,34 @@ unsupported, invalid, unreachable, and removed BMCs.
 These checks confirm the deployed resources. Confirm records in Kafka and
 VictoriaMetrics separately to verify end-to-end collection from a BMC.
 
+Use [Verify iDRAC Telemetry](verify_idrac.md) to check the MySQL container,
+Secret, PVC, database, and non-sensitive service inventory fields.
+
+## Lifecycle and cleanup
+
+Setting `telemetry_sources.idrac.metrics_enabled: false` and running Telemetry
+deployment scales the `idrac-telemetry` StatefulSet to zero replicas. The MySQL
+PVC is preserved so the service inventory remains available when iDRAC
+telemetry is enabled again.
+
+To remove only the iDRAC Telemetry resources while preserving the MySQL PVC:
+
+```bash title="Run on: OIM"
+cd src/main
+./omnia.sh --run telemetry --tags cleanup_idrac
+```
+
+Delete the MySQL PVC only when a complete iDRAC telemetry data reset is
+intended:
+
+```bash title="Run on: OIM"
+./omnia.sh --run telemetry --tags cleanup_idrac -e Delete_volume=true
+```
+
+!!! warning
+
+    `Delete_volume=true` permanently removes the MySQL service inventory.
+
 ## Next steps
 
 - Use [Verify iDRAC Telemetry](verify_idrac.md) for the repeatable source checks.
@@ -94,3 +132,6 @@ VictoriaMetrics separately to verify end-to-end collection from a BMC.
   routes.
 - **Kafka or VictoriaMetrics is missing:** Confirm the corresponding sink is
   deployed; both are required by the iDRAC role.
+- **MySQL is not ready:** Inspect the `mysqldb` container and the
+  `cleanup-mysql-locks` init container by following
+  [Verify iDRAC Telemetry](verify_idrac.md).

@@ -173,11 +173,17 @@ This behavior is observed in the following configurations:
 
 **Cause:**
 
-This is by-design behavior for the current Omnia 2.2 release. The correlation is designed for /16 subnet environments or multi-subnet topologies where multiple /24 subnets fall within the same /16 range, and differentiation is based on the 3rd and 4th octets. In single-subnet /24 environments where BMC and Admin networks differ only at the 3rd octet, the auto-generated mapping file will produce incorrect Admin and IB IP addresses.
+The current Discovery mapping generator uses this fixed octet-substitution
+behavior. It is suitable only when the intended admin or InfiniBand address
+keeps the BMC address's third and fourth octets. In environments where the
+networks differ at either of those octets, the generated mapping contains an
+incorrect address.
 
 **Resolution:**
 
-Manually edit the generated `pxe_mapping_file.csv` to correct the `ADMIN_IP` and `IB_IP` columns before running `provision.yml`.
+Manually edit the generated mapping to correct `ADMIN_IP` and `IB_IP`, copy the
+reviewed file to the Orchestrator project input directory, and validate it
+before provisioning.
 
 
 ## Telemetry Limitations
@@ -186,15 +192,41 @@ Manually edit the generated `pxe_mapping_file.csv` to correct the `ADMIN_IP` and
 
 **Symptom:**
 
-When a Kubernetes worker node hosting telemetry pods (such as Kafka, VictoriaMetrics, VictoriaLogs, or iDRAC/MySQL) fails, the affected telemetry services may take time to failover to available another node. During this period, telemetry data collection or ingestion may be delayed or temporarily unavailable.
+When a Kubernetes worker node hosting telemetry pods such as Kafka,
+VictoriaMetrics, VictoriaLogs, or iDRAC/MySQL fails, the affected services may
+take time to recover on another node. During this period, telemetry collection
+or ingestion may be delayed or temporarily unavailable.
 
 **Cause:**
 
-Kubernetes reschedules pods to healthy nodes based on pod disruption budgets, persistent volume availability, and StatefulSet or Deployment readiness. Telemetry workloads that use persistent volumes and StatefulSets require additional time to safely attach storage and complete initialization on the new node.
+Kubernetes reschedules pods to healthy nodes based on persistent-volume
+availability and StatefulSet or Deployment readiness. The iDRAC MySQL database
+runs as a single replica and uses a ReadWriteOnce PVC. It does not provide
+database-level high availability; recovery depends on pod rescheduling, volume
+detachment and reattachment, and successful MySQL initialization.
 
 **Resolution:**
 
 No manual intervention is required. Wait for the telemetry services to recover and fail over automatically. Do not restart pods or nodes during this period, as it may extend recovery time.
+
+### Removed iDRAC Inventory Reconciliation
+
+**Symptom:**
+
+Telemetry deployment can fail while removing BMC addresses that are no longer
+present in the configured BMC inventory.
+
+**Cause:**
+
+The current MySQL deletion module has inconsistent `mysql_*` and `mysqldb_*`
+argument names. This affects removal of stale records from the `services` table;
+it does not affect initial MySQL deployment or insertion of valid BMC records.
+
+**Resolution:**
+
+Keep the source inventory and database state unchanged until the module argument
+names are corrected. Do not manually delete database rows without a current
+backup and an approved recovery plan.
 
 
 ### Limited iDRAC Telemetry Metrics for PowerEdge XE8712
@@ -219,8 +251,6 @@ There is currently no workaround available.
 An enhancement request has been submitted to enable support for the complete set of iDRAC telemetry metrics on the PowerEdge XE8712 platform:
 
 **GitHub Enhancement Request:** [Enhancement Request: Support Complete iDRAC Telemetry Metrics on PowerEdge XE8712 with NVIDIA GB200](https://github.com/dell/iDRAC-Telemetry-Reference-Tools/issues/190)
-
-
 
 
 

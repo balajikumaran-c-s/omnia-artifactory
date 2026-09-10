@@ -88,6 +88,10 @@ Confirm that:
 Then run the source-specific checks linked from the
 [Telemetry landing page](../Telemetry/index.md).
 
+For iDRAC deployments, use [Verify iDRAC Telemetry](../Telemetry/verify_idrac.md)
+to check the MySQL service inventory and persistent volume. MySQL remains owned
+by the Telemetry domain; Build Stream does not deploy or manage it directly.
+
 ## Next steps
 
 - Export [Kafka connection details](../Telemetry/configure_external_kafka.md)

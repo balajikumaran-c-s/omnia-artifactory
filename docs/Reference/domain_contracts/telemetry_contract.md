@@ -45,6 +45,20 @@ cross-field validators.
 | `telemetry_bridges.vector_ome` | Optional | Routes OME metrics or logs from Kafka to VictoriaMetrics or VictoriaLogs. |
 | Source-specific configuration | Conditional | Supplies endpoints, ports, inventory paths, and other fields required by enabled sources. |
 
+For iDRAC metrics, `idrac_telemetry_configurations` supplies the following
+MySQL and inventory settings:
+
+| Field | Requirement | Purpose |
+|---|---|---|
+| `bmc_group_data_path` | Required when iDRAC metrics are enabled | Selects the BMC inventory CSV consumed by the iDRAC source. |
+| `mysqldb_storage` | Required, non-empty; default `1Gi` | Sets the requested capacity of the MySQL PVC. |
+| `oim_bmc_ips` | Optional | Adds OIM BMC addresses to the service inventory when configured. |
+
+The encrypted `telemetry_credentials.yml` contains `bmc_username`,
+`bmc_password`, `mysqldb_user`, `mysqldb_password`, and
+`mysqldb_root_password` when iDRAC metrics are enabled. The deployment renders
+the MySQL values into the `mysqldb-credentials` Kubernetes Secret.
+
 PowerScale, UFM, and VAST are imported by the root deployment only when their
 metrics channel is enabled. Logs for these external systems require manual
 configuration to forward syslog to VLAgent; a logs-only source configuration
@@ -126,6 +140,29 @@ available instead of presenting an incomplete export as valid.
 The domain supports setup, validation, precheck, deployment, cleanup, and the
 two external connection exports. The `upgrade` and `rollback` operations are
 placeholders in the current source and do not perform lifecycle changes.
+
+## iDRAC MySQL runtime contract
+
+MySQL is an implementation component of the Telemetry domain; it is not an
+independent deployment domain.
+
+| Resource | Runtime contract |
+|---|---|
+| StatefulSet | `idrac-telemetry` in the `telemetry` namespace, with one replica. |
+| Container | `mysqldb`, using the MySQL image selected by `images.idrac.mysql`; the current default is `docker.io/library/mysql:9.7.2`. |
+| Service | Internal headless service `idrac-telemetry-service`, with ports 3306 and 33060. It is not exported as a customer-facing MySQL endpoint. |
+| Database | `idrac_telemetrydb`; the `services` table stores the iDRAC service inventory consumed by the receiver. |
+| Secret | `mysqldb-credentials`, generated from the encrypted Telemetry credential file. |
+| Persistent storage | `mysqldb-pvc-idrac-telemetry-0`, requested as ReadWriteOnce using `mysqldb_storage`. |
+| Recovery initialization | The `cleanup-mysql-locks` init container removes stale `.sock` and `.pid` files after an ungraceful shutdown. |
+
+Disabling iDRAC metrics scales the StatefulSet to zero replicas and preserves
+the MySQL PVC. `cleanup_idrac` removes the source resources but also preserves
+the PVC by default. Passing `Delete_volume=true` deletes the PVC and permanently
+removes the stored service inventory.
+
+The `services.auth` column contains authentication data used by the receiver.
+Operational verification must not print or publish this column.
 
 ## Related documentation
 
