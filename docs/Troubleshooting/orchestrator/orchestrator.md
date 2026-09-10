@@ -24,7 +24,7 @@ Issues related to the Orchestrator module: Slurm job scheduling, Kubernetes serv
     1. Verify PXE mapping file:
 
         ```bash title="Run on: OIM host"
-        cat /opt/omnia/input/project_default/pxe_mapping_file.csv
+        cat /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv
         ```
 
     2. Check DHCP logs:
@@ -36,7 +36,7 @@ Issues related to the Orchestrator module: Slurm job scheduling, Kubernetes serv
     3. Verify network configuration:
 
         ```bash title="Run on: OIM host"
-        cat /opt/omnia/input/project_default/network_spec.yml
+        cat /opt/omnia/orchestrator/input/project_default/network_spec.yml
         ```
 
     4. Check cloud-init logs on node:
@@ -168,7 +168,7 @@ Issues related to the Orchestrator module: Slurm job scheduling, Kubernetes serv
     4. Verify network configuration:
 
         ```bash title="Run on: OIM host"
-        cat /opt/omnia/input/project_default/network_spec.yml
+        cat /opt/omnia/orchestrator/input/project_default/network_spec.yml
         ```
 
 ## Authentication Issues
@@ -210,7 +210,7 @@ Issues related to the Orchestrator module: Slurm job scheduling, Kubernetes serv
     3. Check LDAP configuration:
 
         ```bash title="Run on: OIM host"
-        cat /opt/omnia/input/project_default/security_config.yml
+        cat /opt/omnia/orchestrator/input/project_default/security_config.yml
         ```
 
 ## Storage Issues
@@ -252,7 +252,7 @@ Issues related to the Orchestrator module: Slurm job scheduling, Kubernetes serv
     4. Check storage configuration:
 
         ```bash title="Run on: OIM host"
-        cat /opt/omnia/input/project_default/storage_config.yml
+        cat /opt/omnia/orchestrator/input/project_default/storage_config.yml
         ```
 
 ## Related Topics
@@ -263,7 +263,6 @@ Issues related to the Orchestrator module: Slurm job scheduling, Kubernetes serv
 - [Configure InfiniBand](../../HowTo/orchestrator/configure_infiniband.md)
 - [Configure Cluster DNS](../../HowTo/orchestrator/configure_cluster_dns.md)
 - [Configure Storage](../../HowTo/orchestrator/configure_storage.md)
-
 
 
 

@@ -7,6 +7,11 @@ to determine which content must be available. The catalog is not staged by
 `domain-init.sh`. Its root `catalog` object contains catalog metadata and three
 connected collections:
 
+Repository Manager synchronizes catalog-selected content into Pulp and
+publishes it through `repo_status.yml`. It does not install packages on cluster
+nodes. Image Build Manager consumes the successful Repository Manager contract
+when it builds images.
+
 - `functionallayer` defines the functional roles used to build images. Each
   functional layer lists group keys in `components`.
 - `groups` organizes related content. Each group lists package keys in

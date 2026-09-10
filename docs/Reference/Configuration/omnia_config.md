@@ -12,6 +12,14 @@ This file controls the deployment of Slurm and Kubernetes across cluster nodes.
 
 --8<-- "html/omnia_config-k8s_cluster.html"
 
+PowerScale CSI is controlled by `enable_powerscale_csi` on the
+`service_k8s_cluster` selected with `deployment: true`. The optional Boolean
+defaults to `false`. When set to `true`, both
+`csi_powerscale_driver_secret_file_path` and
+`csi_powerscale_driver_values_file_path` are required and must identify
+existing regular files by absolute path. Catalog membership and populated file
+paths do not enable CSI when the flag is `false` or omitted.
+
 ## Usage example
 
 ```yaml title="File: /opt/omnia/orchestrator/input/project_default/omnia_config.yml"
@@ -48,6 +56,7 @@ slurm_cluster:
 service_k8s_cluster:
   - cluster_name: service_cluster
     deployment: true
+    enable_powerscale_csi: false
     etcd_on_local_disk: false
     k8s_cni: "calico"
     pod_external_ip_range: "172.16.107.170-172.16.107.200"
@@ -67,7 +76,6 @@ service_k8s_cluster:
     - [HA Config](high_availability_config.md) -- Kubernetes high-availability settings.
     - [Slurm Storage Architecture](../../HowTo/orchestrator/deploy_slurm.md#slurm-storage-architecture) -- How NFS and VAST mounts are used by Slurm.
     - [K8s Storage Architecture](../../HowTo/orchestrator/deploy_kubernetes.md#k8s-storage-architecture) -- How NFS mounts are used by service K8s.
-
 
 
 

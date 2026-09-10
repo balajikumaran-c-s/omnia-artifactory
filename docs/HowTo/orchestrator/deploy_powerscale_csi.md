@@ -60,7 +60,8 @@ Orchestrator `provision` workflow.
 ## Prerequisites
 
 1. **Kubernetes cluster configured:** A `service_k8s_cluster` must be defined
-   in `omnia_config.yml` with `deployment: true`. See
+   in `omnia_config.yml` with `deployment: true` and
+   `enable_powerscale_csi: true`. See
    [Set Up Kubernetes](deploy_kubernetes.md) for details.
 
 2. **NFS share for Kubernetes:** An NFS mount entry named to match the
@@ -233,18 +234,14 @@ Orchestrator `provision` workflow.
         uninstall the driver (see [Uninstallation](#uninstallation)) and then
         manually re-install it.
 
-10. **Set up credentials:** Run the Orchestrator credential workflow to create
-    the encrypted credential file, then set `csi_username` and `csi_password`
-    in that file. The current credential prompt list does not collect the CSI
-    fields automatically, although the source credential template and
-    PowerScale role consume them.
+10. **Set up credentials:** After setting `enable_powerscale_csi: true` on the
+    deployed `service_k8s_cluster`, run the Orchestrator credential workflow.
+    It prompts for `csi_username` and `csi_password` and stores them in the
+    encrypted Orchestrator credential file.
 
     ```bash title="Run on: OIM"
     cd src/main
     ./omnia.sh --run orchestrator --tags credentials
-    ansible-vault edit \
-      --vault-password-file /opt/omnia/orchestrator/input/project_default/.omnia_config_credentials_key \
-      /opt/omnia/orchestrator/input/project_default/omnia_config_credentials.yml
     ```
 
 
@@ -252,15 +249,15 @@ Orchestrator `provision` workflow.
 
 1. **Select the CSI driver catalog content.** Ensure that the catalog selected
    by `CATALOG_FILE_PATH` includes its PowerScale CSI group for `x86_64`, such
-   as the source sample's `csi_powerscale_v2_17_0`. Orchestrator derives
-   feature support from catalog group names containing `csi` and `powerscale`.
+   as the source sample's `csi_powerscale_v2_17_0`, so Repo Manager can publish
+   the required dependencies. Catalog content does not enable the driver.
 
 2. **Synchronize the required artifacts** by following
    [Configure Repositories](../repo_manager/configure_repos.md). Repo Manager
    publishes the CSI PowerScale driver, Helm charts, external-snapshotter, and
    required images in `repo_status.yml` for Orchestrator.
 
-3. **Configure the CSI driver file paths** in
+3. **Enable and configure the CSI driver** in
    `/opt/omnia/orchestrator/input/project_default/omnia_config.yml` under the
    `service_k8s_cluster` section:
 
@@ -268,6 +265,7 @@ Orchestrator `provision` workflow.
     service_k8s_cluster:
       - cluster_name: service_cluster
         deployment: true
+        enable_powerscale_csi: true
         k8s_cni: "calico"
         pod_external_ip_range: "172.16.107.170-172.16.107.200"
         k8s_service_addresses: "10.233.0.0/18"
@@ -279,10 +277,14 @@ Orchestrator `provision` workflow.
     ```
 
     !!! important
+        `enable_powerscale_csi` is the only setting that enables PowerScale
+        CSI. Omitting it or setting it to `false` disables CSI even when the
+        catalog contains CSI content or the file paths are populated.
+
         Both `csi_powerscale_driver_secret_file_path` and
         `csi_powerscale_driver_values_file_path` must be absolute paths to
-        the files you downloaded and configured in the prerequisites. If
-        either path is empty, the CSI driver will not be deployed.
+        existing regular files when `enable_powerscale_csi` is `true`. An
+        empty, relative, missing, or non-file path causes validation to fail.
 
 4. **Build the service Kubernetes images** by following
    [Build Images](../image_build_manager/build_images.md).
@@ -604,7 +606,6 @@ state. Check the pod status and logs:
 ```bash title="Run on: kube_control_plane"
 kubectl logs -n isilon deployment/isilon-controller --all-containers
 ```
-
 
 
 

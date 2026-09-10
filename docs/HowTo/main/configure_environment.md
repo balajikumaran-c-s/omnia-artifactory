@@ -2,10 +2,11 @@
 
 ## Overview
 
-`src/main/omnia.env` defines the shared environment used by `omnia.sh` and the
-module playbooks. During OIM setup, Main installs this file at
-`/etc/omnia/omnia.env` and creates `/etc/profile.d/omnia-env.sh` so that new
-login shells load the installed values.
+`src/main/omnia.env` is the initial environment template. During the first OIM
+setup, Main installs it as `/etc/omnia/omnia.env` and creates
+`/etc/profile.d/omnia-env.sh` so that new login shells load the installed
+values. After installation, `/etc/omnia/omnia.env` is authoritative and
+subsequent setup runs preserve it.
 
 ## Prerequisites
 
@@ -23,8 +24,9 @@ login shells load the installed values.
     cd src/main
     ```
 
-2. Edit `omnia.env`. Set `SYSTEM_ADMIN_NIC_IPV4` to an address assigned to the
-   OIM. Review the optional values and keep or replace their supplied defaults:
+2. Before the first OIM setup, edit `omnia.env`. Set `SYSTEM_ADMIN_NIC_IPV4`
+   to an address assigned to the OIM. Review the optional values and keep or
+   replace their supplied defaults:
 
     ```bash title="File: src/main/omnia.env"
     SYSTEM_ADMIN_NIC_IPV4=172.16.107.254
@@ -68,7 +70,7 @@ printf '%s\n' "$OMNIA_DATA_PATH"
 printf '%s\n' "$OMNIA_PROJECT_NAME"
 ```
 
-The printed values must match the values configured in `src/main/omnia.env`.
+The printed values must match `/etc/omnia/omnia.env`.
 
 ## Next steps
 
@@ -80,8 +82,9 @@ The printed values must match the values configured in `src/main/omnia.env`.
 - **The administrative address is rejected**: Set `SYSTEM_ADMIN_NIC_IPV4` to
   an IPv4 address assigned to a local OIM interface.
 - **Hostname validation fails**: Make `SYSTEM_HOSTNAME` match `hostname -s`.
-- **The installed values did not change**: Edit `src/main/omnia.env` and rerun
-  `./omnia.sh --setup-venv`; editing the source file alone does not replace
-  `/etc/omnia/omnia.env`.
+- **The installed values did not change**: After the first setup, edit
+  `/etc/omnia/omnia.env` for normal configuration changes. To intentionally
+  replace it with `src/main/omnia.env`, run
+  `./omnia.sh --setup-venv --force-env`.
 - **The activation script is not at `/opt/omnia`**: Use the configured
   `OMNIA_DATA_PATH` when locating `activate-omnia.sh`.

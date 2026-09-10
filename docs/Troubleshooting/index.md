@@ -80,12 +80,11 @@ Monitoring and metrics collection issues - iDRAC telemetry, LDMS samplers, Kafka
 
 ### Build Stream module
 
-GitOps-based CI/CD pipeline issues - BuildStreaM execution, GitLab integration, catalog validation
+GitOps-based CI/CD pipeline issues - Build Stream execution, GitLab integration, catalog validation
 
 | Topic | Description |
 | --- | --- |
-| [BuildStreaM Issues](build_stream/build_stream.md) | BuildStreaM pipeline stage failures, API registration, and catalog parsing |
-| [BuildStream Issues](build_stream/buildstream.md) | BuildStream pipeline execution issues |
+| [Build Stream Issues](build_stream/build_stream.md) | Build Stream pipeline stage failures, API registration, and catalog parsing |
 
 ### Utils module
 
@@ -107,7 +106,6 @@ Helper utilities issues - Backup, install, and prepare operations
     If you cannot resolve an issue using this guide, open an issue on the
     [Omnia GitHub repository](https://github.com/dell/omnia/issues) with
     the relevant log output and a description of your environment.
-
 
 
 

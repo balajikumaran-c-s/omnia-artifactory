@@ -10,7 +10,7 @@ Issues related to OpenCHAMI services, including stack health checks, certificate
 
 **When to use this reference:**
 
-- Before running `provision.yml` to confirm the OpenCHAMI stack is ready
+- Before running the Orchestrator `provision` phase to confirm the OpenCHAMI stack is ready
 - After an OIM reboot to verify all services recovered
 - When investigating any OpenCHAMI-related failure described in the sections below
 - As a post-recovery validation after applying a fix
@@ -73,7 +73,7 @@ If the restart does not resolve the issue, refer to the specific troubleshooting
 
 ???+ note "Symptom"
 
-    - `provision.yml` or `ochami` CLI commands fail with TLS errors
+    - The Orchestrator `provision` phase or `ochami` CLI commands fail with TLS errors
     - BSS or cloud-init-server returns connection refused or certificate errors
     - Nodes fail to PXE boot or cloud-init cannot reach the OIM
 
@@ -119,7 +119,7 @@ If the restart does not resolve the issue, refer to the specific troubleshooting
 ???+ note "Symptom"
 
     - ochami CLI commands return 401 Unauthorized
-    - provision.yml fails during OpenCHAMI authentication phase
+    - The Orchestrator `provision` phase fails during OpenCHAMI authentication
     - BSS or SMD API calls return authentication errors
 
     **Example errors:**
@@ -165,11 +165,11 @@ If the restart does not resolve the issue, refer to the specific troubleshooting
     journalctl -u hydra -n 50 --no-pager
     ```
 
-## provision.yml Fails — OpenCHAMI Services Not Running
+## Orchestrator Provision Phase Fails — OpenCHAMI Services Not Running
 
 ???+ note "Symptom"
 
-    - `provision.yml` fails during the "Provision nodes, configure bss and cloud-init" play
+    - The Orchestrator `provision` phase fails while registering nodes and configuring OpenCHAMI services
     - Playbook output contains one of the following error messages:
         - `cloud-init-server is not running after 16 retries`
         - `openchami.target is not up after 16 retries`
@@ -199,13 +199,13 @@ If the restart does not resolve the issue, refer to the specific troubleshooting
 
 ??? note "Cause"
 
-    `provision.yml` requires the OpenCHAMI stack (`openchami.target`, which manages `smd`, `bss`, `cloud-init-server`, `hydra`, `acme-deploy`) to be running on the OIM. Common causes of failure:
+    The Orchestrator `provision` phase requires the OpenCHAMI stack (`openchami.target`, which manages `smd`, `bss`, `cloud-init-server`, `hydra`, `acme-deploy`) to be running on the OIM. Common causes of failure:
 
-    - `prepare_oim.yml` was not run or failed partway through, leaving OpenCHAMI services undeployed
+    - The Orchestrator `prepare` phase was not run or failed partway through, leaving OpenCHAMI services undeployed
     - OpenCHAMI service crashed after deployment (certificate expiry, database failure, port conflict)
     - OIM was rebooted and `openchami.target` did not recover automatically (dependency ordering, NIC autoconnect disabled)
-    - Access token expired — the JWT token issued by Hydra OIDC has a limited lifetime; `provision.yml` calls `openchami_auth.yml` to regenerate it, but if Hydra itself is down, token generation fails
-    - SELinux context on OpenCHAMI workdir is incorrect (`provision.yml` sets `container_file_t` but this can be reset after NFS remount)
+    - Access token expired — the JWT token issued by Hydra OIDC has a limited lifetime; the Orchestrator `provision` phase runs the OpenCHAMI authentication tasks to regenerate it, but if Hydra itself is down, token generation fails
+    - SELinux context on the OpenCHAMI work directory is incorrect (the Orchestrator `provision` phase sets `container_file_t`, but this can be reset after an NFS remount)
     - `nodes.yaml` generation failed — invalid `pxe_mapping_file.csv` or missing `functional_groups_config.yml` produced malformed input for `ochami discover`
 
 ??? note "Resolution"
@@ -287,7 +287,7 @@ If the restart does not resolve the issue, refer to the specific troubleshooting
     export <OIM_HOSTNAME>_ACCESS_TOKEN=$(sudo bash -lc 'gen_access_token')
     ```
 
-    **5. If nodes.yaml is malformed:** Verify `pxe_mapping_file.csv` has valid entries (MAC addresses, xnames, functional groups), then re-run `provision.yml` — it regenerates `nodes.yaml` from the CSV on every run.
+    **5. If nodes.yaml is malformed:** Verify `pxe_mapping_file.csv` has valid entries (MAC addresses, xnames, functional groups), then rerun the Orchestrator `provision` phase. The phase regenerates the node data from the CSV.
 
     **6. If SELinux context is incorrect:** Re-apply the context:
 
@@ -295,23 +295,24 @@ If the restart does not resolve the issue, refer to the specific troubleshooting
     chcon -R system_u:object_r:container_file_t:s0 /opt/omnia/openchami
     ```
 
-    After resolving the issue, re-run `provision.yml`:
+    After resolving the issue, rerun the Orchestrator `provision` phase from `src/main`:
 
     ```bash title="Run on: OIM host"
-    ansible-playbook provision/provision.yml
+    cd <OMNIA_SOURCE_PATH>/src/main
+    ./omnia.sh --run orchestrator --tags provision
     ```
 
     !!! note
 
-        `provision.yml` automatically retries cloud-init-server (16 retries × 15 seconds) and attempts an `openchami.target` restart if the initial check fails. If the playbook still fails after these retries, the underlying service has a persistent problem that requires manual diagnosis.
+        The Orchestrator `provision` phase retries OpenCHAMI readiness checks 16 times at 15-second intervals and attempts an `openchami.target` restart if the metadata-service readiness check fails. If the phase still fails after these retries, the underlying service has a persistent problem that requires manual diagnosis.
 
 ## SMD Node Discovery Fails
 
 ???+ note "Symptom"
 
-    - `provision.yml` fails at "Discover ochami nodes" task
+    - The Orchestrator `provision` phase fails at the node-discovery task
     - `ochami smd component get` returns empty results or HTTP 404
-    - Nodes are not visible in SMD after running `provision.yml`
+    - Nodes are not visible in SMD after running the Orchestrator `provision` phase
 
     **Example errors:**
 
@@ -358,7 +359,7 @@ If the restart does not resolve the issue, refer to the specific troubleshooting
         ochami smd service status
         ```
 
-    2. Verify `pxe_mapping_file.csv` contains valid MAC addresses and xnames, then re-run `provision.yml`.
+    2. Verify `pxe_mapping_file.csv` contains valid MAC addresses and xnames, then rerun the Orchestrator `provision` phase.
 
 ## BSS Boot Parameters Not Applied
 
@@ -366,7 +367,7 @@ If the restart does not resolve the issue, refer to the specific troubleshooting
 
     - Nodes boot with the default image instead of the expected functional group image
     - `ochami bss boot params get` returns empty or incorrect kernel/initrd paths
-    - Nodes do not pick up updated boot parameters after re-running `provision.yml`
+    - Nodes do not pick up updated boot parameters after rerunning the Orchestrator `provision` phase
 
     **Example errors:**
 
@@ -397,13 +398,13 @@ If the restart does not resolve the issue, refer to the specific troubleshooting
 
     1. Ensure `build_image_x86_64.yml` (or `build_image_aarch64.yml`) completed successfully and images exist in S3.
     2. Verify MAC addresses in `pxe_mapping_file.csv` match node hardware.
-    3. Re-run `provision.yml` to refresh BSS boot parameters.
+    3. Rerun the Orchestrator `provision` phase to refresh BSS boot parameters.
 
 ## cloud-init-server Not Reachable
 
 ???+ note "Symptom"
 
-    - `provision.yml` fails at "Verify cloud-init-server is reachable" task
+    - The Orchestrator `provision` phase fails while verifying that the metadata service is reachable
     - Nodes complete PXE boot but cloud-init fails to fetch user-data from the OIM
 
     **Example errors:**
@@ -445,7 +446,7 @@ If the restart does not resolve the issue, refer to the specific troubleshooting
     sudo systemctl restart openchami.target
     ```
 
-    Once the service is running, re-run `provision.yml`.
+    Once the service is running, rerun the Orchestrator `provision` phase.
 
 ## Cloud-init Execution Failures on Compute Nodes
 

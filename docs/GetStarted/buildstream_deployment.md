@@ -408,5 +408,5 @@ pipeline results.
   the deploy-pipeline retry procedure.
 - Do not cancel a running stage or start an overlapping pipeline against the
   same resources; either action can leave shared workflow state incomplete.
-- See [Build Stream troubleshooting](../Troubleshooting/build_stream/buildstream.md)
+- See [Build Stream troubleshooting](../Troubleshooting/build_stream/build_stream.md)
   for detailed investigations.

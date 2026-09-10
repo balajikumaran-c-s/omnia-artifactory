@@ -18,7 +18,8 @@ Issues related to the Kubernetes service cluster, including image pulls, pod sch
 ??? note "Resolution"
 
     1. Add Docker credentials to `omnia_config_credentials.yml`.
-    2. Ensure `local_repo.yml` completed successfully.
+    2. Verify that Repository Manager synchronized the selected catalog and
+       that `repo_status.yml` reports `overall_status: success`.
 
     For more information, see [Pull an Image from a Private Registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).
 

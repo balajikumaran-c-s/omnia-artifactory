@@ -117,7 +117,7 @@
             <td>
                 <div class="omnia-indent-desc"></div>
                 <div class="omnia-cell">
-                    <p>The iDRAC IP address of the OIM server. Mandatory only if idrac_telemetry is set to true and telemetry data needs to be collected from the OIM server. Optional - can be omitted if iDRAC telemetry for the OIM server is not required.</p>
+                    <p>The OIM BMC/iDRAC IP address. Specify an IPv4 address to include the OIM in the generated BMC group data consumed by iDRAC telemetry. Set the value to an empty string to exclude the OIM.</p>
                     <p><b>Default value:</b> <code class="docutils literal notranslate"><span class="pre">""</span></code></p>
                 </div>
             </td>
@@ -240,4 +240,3 @@
         </tr>
     </tbody>
 </table>
-

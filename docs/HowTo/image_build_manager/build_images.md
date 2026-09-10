@@ -77,7 +77,7 @@ files are not stored in the Image Build Manager input directory.
 
 | Upstream or external input | When required | Contract |
 |----------------------------|---------------|----------|
-| `repo_status.yml` | Build, execute, or the default untagged flow | Read from `repo_manager_output_path`. The default path is `<OMNIA_DATA_PATH>/repo_manager/output/<OMNIA_PROJECT_NAME>/repo_status.yml`. `overall_status` must be `success`; `repositories` must contain at least one non-empty x86_64 repository URL; and any configured Repo Manager certificate must exist. |
+| `repo_status.yml` | Build, execute, or the default untagged flow | Read from `repo_manager_output_path`. The default path is `<OMNIA_DATA_PATH>/repo_manager/output/<OMNIA_PROJECT_NAME>/repo_status.yml`. `overall_status` must be `success`; `repositories` must contain at least one non-empty x86_64 or aarch64 repository URL; and any configured Repo Manager certificate must exist. |
 | Catalog JSON | `functional_groups_source: "catalog"` | Read from the absolute path set in `CATALOG_FILE_PATH`. Packages are resolved through `catalog.functionallayer`, `catalog.groups`, and `catalog.packages`. Layer names beginning with `baseos` provide the base packages; other matching architecture layers become functional-group images. |
 
 For MinIO, leave `s3_configurations.endpoint_url` empty; the endpoint is set to
@@ -395,7 +395,7 @@ used by the workflow are fixed.
 - **`repo_status.yml` is missing or rejected**: Confirm that
   `repo_manager_output_path` points to the Repo Manager output for the current
   project. The file must report `overall_status: "success"`, contain at least
-  one usable x86_64 repository URL, and reference an existing certificate when
+  one usable x86_64 or aarch64 repository URL, and reference an existing certificate when
   `repo_manager.certificates.server_crt` is set. The build also fails when a
   listed repository URL is unreachable.
 

@@ -18,6 +18,10 @@ output.
 
 **Consumers**: Image Build Manager and cluster provisioning workflows.
 
+The current producer does not write a `schema_version` or `contract_version`
+field. Consumers determine compatibility by validating the required fields
+directly.
+
 | Field | Type | Purpose |
 |---|---|---|
 | `overall_status` | string | Aggregate readiness across selected catalog contexts. |
@@ -37,6 +41,14 @@ distribution makes the affected version and aggregate status `failed`. During
 a multi-version download, `overall_status` remains `in_progress` while later
 contexts are pending and becomes `success` only after every selected context
 completes.
+
+The `status` operation publishes `repo_status.yml` atomically. It writes and
+flushes a temporary file in the destination directory, sets mode `0644`, and
+then replaces the current status file. If status collection fails or a required
+distribution is unavailable, Repository Manager publishes a fail-closed
+manifest with `overall_status: failed` and without consumable repository URLs.
+If file publication itself fails, the task fails and no new contract is
+published.
 
 Registry authentication references, usernames, passwords, and tokens are not
 written to `repo_status.yml`. Selective cleanup removes the stale status file;

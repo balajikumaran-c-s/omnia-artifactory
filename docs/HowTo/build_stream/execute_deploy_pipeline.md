@@ -182,8 +182,7 @@ After the deploy pipeline completes:
 
 - **Deploy stage failing**: Check the log path from the API response. Ensure the functional groups in the PXE mapping file match the `catalog_rhel.json`.
 - **Restart stage failing**: Verify iDRAC readiness and BMC network connectivity.
-- For additional issues, see [Build Stream Troubleshooting](../../Troubleshooting/build_stream/buildstream.md).
-
+- For additional issues, see [Build Stream Troubleshooting](../../Troubleshooting/build_stream/build_stream.md).
 
 
 

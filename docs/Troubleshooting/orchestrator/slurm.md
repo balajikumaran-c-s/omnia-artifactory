@@ -145,7 +145,7 @@ state problems, job submission errors, and GPU detection.
 
     !!! warning
 
-        `slurm.conf` is managed by the `slurm_config` role. Manual edits will be overwritten on the next `provision.yml` run. Update the source configuration instead to make permanent changes.
+        `slurm.conf` is managed by the `slurm_config` role. Manual edits will be overwritten the next time the Orchestrator `provision` phase runs. Update the source configuration instead to make permanent changes.
 
     **4. Invalid State (Resource Mismatch)**
 
@@ -216,7 +216,7 @@ state problems, job submission errors, and GPU detection.
 
     !!! note
 
-        When using the `slurm_config` role to manage `slurm.conf`, update the source configuration (inventory variables or configuration files) rather than manually editing `/etc/slurm/slurm.conf`. Manual edits are overwritten on the next `provision.yml` execution.
+        When using the `slurm_config` role to manage `slurm.conf`, update the source configuration (inventory variables or configuration files) rather than manually editing `/etc/slurm/slurm.conf`. Manual edits are overwritten the next time the Orchestrator `provision` phase runs.
 
     **Prevention**
 
@@ -386,7 +386,7 @@ state problems, job submission errors, and GPU detection.
     ```
 
     !!! note
-        Partition definitions and Slurm accounting are managed by the slurm_config Ansible role. Manual changes to slurm.conf will be overwritten on the next provision.yml run. To make permanent changes, update the config_sources input configuration.
+        Partition definitions and Slurm accounting are managed by the `slurm_config` Ansible role. Manual changes to `slurm.conf` will be overwritten the next time the Orchestrator `provision` phase runs. To make permanent changes, update the `config_sources` input configuration.
 
 ## `slurmdbd` Connection Issues
 
@@ -632,8 +632,10 @@ state problems, job submission errors, and GPU detection.
     2. Confirm the corresponding DCGM package is present in the local
        Pulp repository.
 
-    3. Update `local_repo_config.yml` to include the correct DCGM
-       package version and re-run `local_repo.yml`.
+    3. Ensure the selected catalog requests the correct DCGM package and that
+       its source repository is configured in `repo_manager_config.yml`. Rerun
+       the Repository Manager `download` and `status` phases, rebuild the
+       affected image, and reprovision the node.
 
 ### `nvidia-peermem` Not Loading
 
@@ -795,8 +797,8 @@ state problems, job submission errors, and GPU detection.
 
 ???+ note "Symptom"
 
-    Newly added compute nodes appear as `down` in `sinfo` after running
-    `provision.yml` and PXE booting.
+    Newly added compute nodes appear as `down` in `sinfo` after running the
+    Orchestrator `provision` phase and PXE booting.
 
 ??? note "Cause"
 
@@ -832,13 +834,13 @@ state problems, job submission errors, and GPU detection.
 
 ??? note "Cause"
 
-    - The `provision.yml` playbook did not complete successfully.
+    - The Orchestrator `provision` phase did not complete successfully.
     - The Slurm controller has not been reconfigured.
 
 ??? note "Resolution"
 
-    1. Verify that `provision.yml` completed successfully and check the
-       Slurm controller logs:
+    1. Verify that the Orchestrator `provision` phase completed successfully
+       and check the Slurm controller logs:
 
         ```bash title="Run on: Slurm controller node"
         journalctl -u slurmctld --no-pager -n 20
@@ -1141,7 +1143,8 @@ state problems, job submission errors, and GPU detection.
     !!! note
     
         `slurmdbd.conf` and `slurm.conf` are managed by the `slurm_config` Ansible role.
-        Manual edits will be overwritten on the next `provision.yml` run.
+        Manual edits will be overwritten the next time the Orchestrator
+        `provision` phase runs.
         Update the source input configuration to make permanent changes.
 
 ## Container Image Pull Fails on NFS Exports

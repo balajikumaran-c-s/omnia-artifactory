@@ -83,19 +83,23 @@ when `enable_pxe_boot` is `true`.
 ./omnia.sh --run orchestrator
 ```
 
-To control each phase, run one tag at a time:
+To control each phase, run one tag at a time after the validation and precheck
+commands in step 2. Each phase requires the preceding phase to have completed;
+selecting a tag does not automatically run its prerequisites:
 
 ```bash title="Run on: OIM"
-./omnia.sh --run orchestrator --tags credentials
-./omnia.sh --run orchestrator --tags deploy
+./omnia.sh --run orchestrator --tags prepare
 ./omnia.sh --run orchestrator --tags provision
 ./omnia.sh --run orchestrator --tags pxeboot
 ```
 
-`provision` configures every category present in the mapping and writes a
-provisioning report. It does not trigger iDRAC. `pxeboot` sets the boot source,
-restarts mapped physical servers, waits for SSH on their admin IPs, verifies
-that each boot occurred after the PXE trigger, and writes the final status.
+`prepare` collects credentials, deploys OpenCHAMI and any catalog-selected
+OpenLDAP service, and validates their readiness. Use `deploy` only to retry
+service deployment after preparation. `provision` configures every category
+present in the mapping and writes a provisioning report. It does not trigger
+iDRAC. `pxeboot` sets the boot source, restarts mapped physical servers, waits
+for SSH on their admin IPs, verifies that each boot occurred after the PXE
+trigger, and writes the final status.
 
 ## Verification
 

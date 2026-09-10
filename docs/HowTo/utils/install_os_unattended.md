@@ -91,6 +91,12 @@ The first installation run prompts for `bmc_username`, `bmc_password`, and
     ssh_verify_delay: 30
     ```
 
+    The ISO creation workflow validates `custom_iso_path` before accessing the
+    NFS share. Use a valid hostname or IPv4 address, an absolute NFS path, and
+    an ISO filename containing only letters, numbers, underscores, hyphens,
+    and periods. The filename must end with lowercase `.iso`. Do not include
+    `..`, wildcards, or shell metacharacters.
+
     Replace the example addresses and paths with values for the deployment.
 
 4. Run the complete workflow:
@@ -200,9 +206,10 @@ file.
   the staged file under `<OMNIA_DATA_PATH>/utils/input/<project>/`.
 - **The source ISO is rejected**: Confirm `source_iso_path` exists and that
   `source_iso_checksum`, when configured, is the correct SHA-256 value.
-- **The custom ISO path cannot be resolved**: Confirm `custom_iso_path` uses
-  `server:/path/file.iso` format and that the NFS export is mountable from the
-  OIM.
+- **The custom ISO path is rejected or cannot be resolved**: Confirm
+  `custom_iso_path` uses `server:/absolute/path/file.iso` format, satisfies the
+  filename and path restrictions above, and identifies an NFS export mountable
+  from the OIM.
 - **Architecture detection fails**: Set `target_architecture` explicitly to
   `x86_64` or `aarch64`; do not rely on detection when the ISO filename omits
   the architecture.

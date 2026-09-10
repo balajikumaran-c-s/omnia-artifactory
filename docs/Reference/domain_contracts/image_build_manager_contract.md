@@ -26,6 +26,23 @@ output.
 **Consumer**: The provisioning workflow, for image validation and BSS template
 rendering.
 
+The current manifest does not contain a `schema_version` or
+`contract_version` field. Consumers determine compatibility by validating the
+required fields directly.
+
+The producer also writes
+`build_status_<OMNIA_VERSION>_<YYYYMMDD_HHMM>.yml` beside the latest file.
+The version and timestamp in that filename identify the producing product run;
+they are not a manifest schema version.
+
+The latest `build_status.yml` is overwritten only when the workflow reaches
+the status-writing step after the selected image builds. If a build fails
+before that step, an existing manifest from an earlier run is not replaced or
+removed. Verify that the current build completed successfully and that the
+manifest references its expected S3 artifacts before using it for
+provisioning. Full Image Build Manager cleanup removes both the latest and
+versioned status outputs.
+
 | Field | Type | Purpose |
 |---|---|---|
 | `overall_status` | string | Reports `success` or `failed`. |

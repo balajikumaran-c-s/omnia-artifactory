@@ -18,7 +18,12 @@ Issues related to PXE booting, node discovery, cloud-init configuration, and the
 
     1. Ensure the old node is powered off or disconnected.
     2. Verify the IP address is unused on the network.
-    3. Re-run `provision.yml`.
+    3. Rerun the Orchestrator `pxeboot` phase from `src/main`:
+
+        ```bash title="Run on: OIM host"
+        cd <OMNIA_SOURCE_PATH>/src/main
+        ./omnia.sh --run orchestrator --tags pxeboot
+        ```
 
 ### PXE Boot Timeout (TFTP/Service Timeout)
 

@@ -2,6 +2,27 @@
 
 **Deployment module**: Orchestrator | **CLI identifier**: `orchestrator`
 
+## Phase input requirements
+
+Orchestrator phase tags select only that phase; they do not run earlier
+prerequisite phases automatically.
+
+| Phase | Catalog | `repo_status.yml` | `build_status.yml` | Prior state |
+|---|---|---|---|---|
+| `validate` | No | No | No | Staged Orchestrator YAML inputs |
+| `precheck` | Yes | Successful | Successful | Current PXE mapping and reachable image artifacts |
+| `credentials` | Yes | No | No | Applicable credential values |
+| `prepare` | Yes | No | No | Current PXE mapping |
+| `deploy` | Yes | No | No | Completed `prepare`, including stored credentials |
+| `provision` | Yes | Successful | Successful | Successful `precheck` and `prepare`; healthy deployed services |
+| `execute` | Yes | Successful | Successful | Same as `provision`; BMC access when PXE is enabled |
+| `validate-deployment` | Yes | No | No | Deployed OpenCHAMI and any catalog-selected OpenLDAP service |
+| `pxeboot` | No | Successful | Successful | Completed provisioning, stored BMC credentials, and reachable mapped iDRACs |
+
+Cleanup and credential cleanup do not require upstream status files. Upgrade
+requires a supported deployed source version and successful
+`repo_status.yml`; rollback is unavailable in this release.
+
 ## Upstream domain contracts
 
 | Producer | Output consumed by Orchestrator | Required contract |
@@ -29,6 +50,9 @@ Customer-readable project outputs are written under:
 $OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/
 ```
 
+`provisioning_report.yml`, `orchestrator_status.yml`, `pxeboot_status.yml`,
+and `failed_nodes.json` use schema version `1.0`.
+
 | Output | Purpose |
 |---|---|
 | `orchestrator_status.yml` | Stable aggregate containing the provisioning and PXE phase states. |
@@ -42,7 +66,7 @@ $OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/
 Orchestrator also writes the shared generated file:
 
 ```text
-$OMNIA_DATA_PATH/.data/functional_groups_config.yml
+$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/.data/functional_groups_config.yml
 ```
 
 This file is derived from `pxe_mapping_file.csv` and is consumed by inventory

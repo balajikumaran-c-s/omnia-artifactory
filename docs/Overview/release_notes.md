@@ -2,6 +2,23 @@
 
 This page summarizes the features, enhancements, and changes introduced in each Omnia release.
 
+## Omnia 2.3.0.0 RC1
+
+Omnia 2.3.0.0 RC1 is validated with RHEL 10.0 on the Omnia Infrastructure
+Manager (OIM) and cluster nodes. For operating-system requirements, see the
+[Operating Systems Matrix](../Reference/SupportMatrix/operating_systems.md).
+
+| Feature | Description |
+| --- | --- |
+| **Domain-Based Deployment Architecture** | Repo Manager, Image Build Manager, Discovery, Orchestrator, Telemetry, Build Stream, and Utils operate as independent domains. `omnia.sh` initializes and runs each domain through its supported lifecycle tags. Domain inputs, outputs, and logs are organized by `$OMNIA_DATA_PATH` and `$OMNIA_PROJECT_NAME`. For details, see the [Playbook Reference](../Reference/Playbooks/playbook_reference.md). |
+| **Catalog-Driven Repository Management** | Repository Manager uses catalog content to resolve and synchronize RPM repositories, container images, Python packages, files, and source artifacts for `x86_64` and `aarch64`. It also supports catalog management, validation, and selective content cleanup. For details, see [Configure Repositories](../HowTo/repo_manager/configure_repos.md). |
+| **Image Build Manager Enhancements** | Image Build Manager supports the `image-builder` and `image-thrillhouse` engines, catalog- or configuration-based functional groups, parallel builds, and selective image cleanup. Builds can produce `x86_64` and `aarch64` images; a native aarch64 build host is required for aarch64 images. For details, see [Build OS Images](../HowTo/image_build_manager/build_images.md). |
+| **Installed Environment Configuration** | Initial setup installs `/etc/omnia/omnia.env`, which becomes the authoritative environment configuration. Subsequent setup runs preserve that file unless `--force-env` is used to replace it from the source template. For details, see [Configure the Omnia Environment](../HowTo/main/configure_environment.md). |
+| **PXE Node Registration Verification** | PXE boot completion is verified through passwordless SSH, a boot timestamp newer than the PXE operation, and successful cloud-init completion. Metadata Service phone-home callbacks are not used to determine node completion. For details, see [Configure PXE Boot](../HowTo/orchestrator/configure_pxe_boot.md). |
+| **Explicit PowerScale CSI Activation** | PowerScale CSI deployment for the service Kubernetes cluster is controlled by `enable_powerscale_csi`. Catalog membership or populated PowerScale file paths do not enable the driver. For details, see [Deploy PowerScale CSI](../HowTo/orchestrator/deploy_powerscale_csi.md). |
+| **Scoped Cleanup and Data Preservation** | Domains provide scoped cleanup workflows. Cleanup options determine whether credentials are preserved, while Telemetry preserves persistent volumes unless volume deletion is explicitly requested. Review the applicable cleanup procedure before running a cleanup tag. For details, see [OIM Cleanup](../Operations/oim_cleanup.md). |
+| **Stricter Input Validation** | Environment, catalog, repository, image-build, ISO filename, and NFS location inputs are validated before the applicable workflow proceeds, providing earlier feedback for invalid configuration. See the configuration reference for each domain for accepted values and formats. |
+
 ## Omnia 2.2.0.0
 
 | Feature | Description |
@@ -36,7 +53,7 @@ This page summarizes the features, enhancements, and changes introduced in each 
 | Feature | Description |
 | --- | --- |
 | **BuildStream: Catalog-Driven Build Automation** | Omnia BuildStreaM provides a comprehensive automation solution for managing infrastructure build workflows. It uses a catalog-driven approach where you define your build requirements in a structured catalog file, and BuildStreaM executes automated pipelines to create and deploy images according to your specifications. For more details, see [BuildStreaM Documentation](../HowTo/build_stream/deploy_gitlab.md). |
-| **Support for Installation of Additional Packages** | Enables the installation of additional packages on the cluster nodes, allowing to extend cluster functionality with custom software and tools. For more details, see [Deploy Additional Packages](../HowTo/repo_manager/../repo_manager/deploy_additional_packages.md). |
+| **Support for Installation of Additional Packages** | Enables the installation of additional packages on the cluster nodes, allowing to extend cluster functionality with custom software and tools. For more details, see [Configure Catalog Content and Add Packages](../HowTo/repo_manager/adding_additional_packages.md). |
 | **Add and Remove Slurm Compute Nodes** | Provides the ability to add and remove Slurm compute nodes from the cluster, allowing for dynamic scaling of the cluster. See [Add Nodes](../Operations/add_nodes.md) and [Remove Slurm Compute Nodes](../Operations/remove_slurm_nodes.md). |
 | **Support for Apptainer** | Run apptainer pull to store the SIF container image on the cluster's NFS-mounted shared storage. This ensures uniform access across all compute nodes, enabling them to run jobs from the same SIF file. For more details, see [Use Apptainer](../HowTo/orchestrator/../orchestrator/use_apptainer.md). |
 | **Telemetry Collection from OME and SFM** | Enables collection of telemetry data from OpenManage Enterprise (OME) and Smart Fabric Manager (SFM), providing insights into cluster health, performance, and resource utilization. For more details, see [Deploy Telemetry](../HowTo/Telemetry/deploy_telemetry.md). |
@@ -58,8 +75,6 @@ This page summarizes the features, enhancements, and changes introduced in each 
 | **Security Enhancements** | Credentials are now encrypted using industry-standard algorithms (for example, AES-256), improving compliance with security best practices and reducing the risk of data exposure. For more details, see [Product and Subsystem Security](../SecurityConfigurationGuide/product_subsystem_security.md). |
 | **Platform Support** | Supports `x86_64` and `aarch64` architectures, enabling deployment on both traditional and ARM-based HPC nodes for improved flexibility and energy efficiency. For more details, see [Software Requirements](../Reference/../Reference/../Reference/ClusterRequirements/software_requirements.md). |
 | **Input Template and Validator** | Provides predefined configuration templates and early input validation to reduce configuration errors and accelerate HPC cluster provisioning. This improves deployment reliability and overall user experience. For current task-specific procedures, see the [module how-to guides](../HowTo/index.md). |
-
-
 
 
 

@@ -14,33 +14,48 @@ This section outlines the key software and repository requirements for the compo
 
 - Ensure that RHEL has an **active subscription** or is configured to access **local repositories**.
 - Verify that all **repository URLs** for the software packages are **accessible** -- downloads will fail for inaccessible packages.
-- For RHEL systems without a subscription, the repository URLs for `x86_64_codeready-builder`, `x86_64_appstream`, and `x86_64_baseos` are mandatory.
+- For RHEL systems without a subscription, configure non-empty URLs for `baseos`, `appstream`, and `codeready-builder` under each required RHEL 10.0 architecture in `repo_manager_config.yml`.
 - Docker credentials are a mandatory requirement to pull in the essential packages during local repository deployment.
-- If the Slurm RPMS is already available, update the value in the URL of the `user_repo_url_x86_64` or `user_repo_url_aarch64` parameter in `/opt/omnia/input/project_default/local_repo_config.yml`.
-- In a mixed architecture environment where the Slurm control node and compute nodes use different architectures (for example, control node with x86_64 and compute nodes with aarch64), ensure that Slurm binaries for both architectures are compiled and available in the user repository.
-- If the repository is hosted, use the URL created in the `local_repo_config.yml` file.
+- If the Slurm RPMs are already available, configure the hosted repository under `repositories."10.0".<architecture>.user_repos.slurm_custom` in `$OMNIA_DATA_PATH/repo_manager/input/$OMNIA_PROJECT_NAME/repo_manager_config.yml` for each required architecture.
+- In a mixed architecture environment where the Slurm control node and compute nodes use different architectures (for example, control node with x86_64 and compute nodes with aarch64), ensure that compatible Slurm packages for both architectures are available in the user repository.
+- Ensure that the selected catalog references `slurm_custom` and that its Slurm package names match the hosted RPMs.
 
-    ```yaml title="File: /opt/omnia/input/project_default/local_repo_config.yml"
-    user_repo_url_x86_64:
-      - { url: "http://<ipaddress>/slurm-repo/x86_64", gpgkey: "", sslcacert: "", sslclientkey: "", sslclientcert: "", name: "slurm_custom" }
-
-    user_repo_url_aarch64:
-      - { url: "http://<ipaddress>/slurm-repo/aarch64", gpgkey: "", sslcacert: "", sslclientkey: "", sslclientcert: "", name: "slurm_custom" }
+    ```yaml title="File: $OMNIA_DATA_PATH/repo_manager/input/$OMNIA_PROJECT_NAME/repo_manager_config.yml"
+    repositories:
+      "10.0":
+        x86_64:
+          user_repos:
+            slurm_custom:
+              url: "http://<host>/slurm-repo/x86_64"
+        aarch64:
+          user_repos:
+            slurm_custom:
+              url: "http://<host>/slurm-repo/aarch64"
     ```
 
-    Run `ansible-playbook local_repo/local_repo.yml`.
+    Synchronize the catalog content and verify the result:
 
-- Create Slurm repository build for x86_64. See [Build Slurm repository for x86_64]() and [Host RPMS on Apache server]().
+    ```bash title="Run on: OIM host"
+    ./omnia.sh --run repo_manager --tags download
+    ./omnia.sh --run repo_manager --tags status
+    ```
 
 !!! note
 
-    - If any user repository is already hosted externally, update the value of the `user_repo_url_x86_64` or `user_repo_url_aarch64` parameter in `/opt/omnia/input/project_default/local_repo_config.yml` with the hosted repository URL based on the architecture.
-    - If the RPMs are already available but are not externally hosted, place the RPMs in the OIM and follow the steps in [Host RPMS on Apache server](). After hosting the RPMs, update the `user_repo_url_x86_64` or `user_repo_url_aarch64` parameter with the newly created repository URL.
+    Omnia consumes a reachable RPM repository; it does not build or host the
+    Slurm RPMs. Set the repository URL in the matching `user_repos` entry for
+    each required architecture. See
+    [Add an RPM Repository](../../HowTo/repo_manager/adding_additional_repositories.md).
 
 ## Lightweight Directory Access Protocol (LDAP)
 
-- The LDAP server details are required to configure the `omnia_auth` container and OpenLDAP as a proxy server.
-- To deploy an external OpenLDAP server for authentication, ensure that the OpenLDAP server is deployed and configured with the required directory structure (users and groups). For the detailed steps, see [External LDAP Deployment](../../HowTo/Authentication/deploy_external_ldap.md).
+- Include the OpenLDAP group in the selected catalog when centralized
+  authentication is required. Orchestrator deploys the `omnia_auth` OpenLDAP
+  container on the OIM; it does not configure an external LDAP endpoint.
+- Configure `SYSTEM_DOMAIN_NAME`, `SYSTEM_ADMIN_NIC_IPV4`, and
+  `ldap_connection_type`. Provide the OpenLDAP database username and password
+  when the Orchestrator credential phase prompts for them. See
+  [Deploy OpenLDAP](../../HowTo/orchestrator/deploy_openldap.md).
 
 ## Lightweight Distributed Metric Service (LDMS)
 
@@ -50,19 +65,29 @@ This section outlines the key software and repository requirements for the compo
     sudo dnf install -y python3-devel python3-Cython
     ```
 
-- The LDMS RPM must be available in the user repository, and the `ldms.json` file should be updated accordingly. If the LDMS RPM is not available, refer to [Building LDMS PRODUCER RPM Package](https://github.com/dell/omnia-containers?tab=readme-ov-file#building-ldms-producer-rpm-package) for instructions on building LDMS RPMs.
-- If the LDMS RPMS are already available, update the value (`<hosted LDMS repository url>`) in the URL of the `user_repo_url_x86_64` or `user_repo_url_aarch64` parameter in `/opt/omnia/input/project_default/local_repo_config.yml`.
-- If the repository is hosted, use the URL created in the `local_repo_config.yml` file.
+- The LDMS RPM must be available in the user repository. If the LDMS RPM is not available, refer to [Building LDMS PRODUCER RPM Package](https://github.com/dell/omnia-containers?tab=readme-ov-file#building-ldms-producer-rpm-package) for instructions on building LDMS RPMs.
+- Ensure that the selected catalog references `ldms` and that its LDMS package names match the hosted RPMs.
+- For every required architecture, configure the hosted LDMS repository under `repositories."10.0".<architecture>.user_repos.ldms` in `$OMNIA_DATA_PATH/repo_manager/input/$OMNIA_PROJECT_NAME/repo_manager_config.yml`.
 
-    ```yaml title="File: /opt/omnia/input/project_default/local_repo_config.yml"
-    user_repo_url_x86_64:
-      - { url: "http://<ipaddress>/ldms-repo/x86_64", gpgkey: "", sslcacert: "", sslclientkey: "", sslclientcert: "", name: "ldms" }
-
-    user_repo_url_aarch64:
-      - { url: "http://<ipaddress>/ldms-repo/aarch64", gpgkey: "", sslcacert: "", sslclientkey: "", sslclientcert: "", name: "ldms" }
+    ```yaml title="File: $OMNIA_DATA_PATH/repo_manager/input/$OMNIA_PROJECT_NAME/repo_manager_config.yml"
+    repositories:
+      "10.0":
+        x86_64:
+          user_repos:
+            ldms:
+              url: "http://<host>/ldms-repo/x86_64"
+        aarch64:
+          user_repos:
+            ldms:
+              url: "http://<host>/ldms-repo/aarch64"
     ```
 
-    Run `ansible-playbook local_repo/local_repo.yml`.
+    Synchronize the catalog content and verify the result:
+
+    ```bash title="Run on: OIM host"
+    ./omnia.sh --run repo_manager --tags download
+    ./omnia.sh --run repo_manager --tags status
+    ```
 
 ## BuildStreaM
 
@@ -75,8 +100,6 @@ This section outlines the key software and repository requirements for the compo
 !!! info
 
     - [Installed Software](../SupportMatrix/installed_software.md) -- Refer to this document for the list of software installed in OMNIA.
-
-
 
 
 

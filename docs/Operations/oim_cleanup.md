@@ -39,7 +39,7 @@ each domain owns and exposes its cleanup workflow.
 |---|---|
 | `build_stream` | Removes GitLab and Build Stream services, the watcher, PostgreSQL service, NFS artifacts, and Build Stream credentials. PostgreSQL data is preserved by default. |
 | `telemetry` | Removes enabled telemetry sources and sinks. Persistent volumes, including the iDRAC MySQL PVC, are preserved by default. |
-| `orchestrator` | Removes enabled OpenCHAMI, OpenLDAP, Slurm, Kubernetes, storage-mount, and generated Orchestrator resources. Credentials are preserved by default. |
+| `orchestrator` | Removes enabled OpenCHAMI, OpenLDAP, Slurm, Kubernetes, storage-mount, and generated Orchestrator resources. Credentials are removed by default. |
 | `discovery` | Runs the reserved cleanup entry point. The current source implementation is a placeholder and does not remove Discovery artifacts. |
 | `image_build_manager` | Removes MinIO, the registry, build output, domain data, logs, and Image Build Manager credentials. |
 | `repo_manager` | Removes the Pulp deployment, Pulp data, CLI configuration, repository integration, and logs. Credential removal is selected interactively unless explicitly configured. |
@@ -97,12 +97,17 @@ To remove only iDRAC Telemetry resources, use `--tags cleanup_idrac`. Its MySQL
 PVC `mysqldb-pvc-idrac-telemetry-0` is also preserved unless
 `Delete_volume=true` is supplied.
 
-Orchestrator preserves its encrypted credentials and Vault key during normal
-cleanup. To remove them with the components, run:
+Orchestrator removes its encrypted credentials and Vault key during full
+cleanup by default. To preserve them, run:
 
 ```bash title="Run on: OIM"
-./omnia.sh --run orchestrator --tags cleanup,cleanup_credentials
+./omnia.sh --run orchestrator --tags cleanup -e cleanup_credentials=false
 ```
+
+Slurm and Kubernetes shared-data deletion is selected independently during
+full cleanup. Review
+[Clean Up Orchestrator](../HowTo/orchestrator/cleanup_orchestrator.md) before
+running the command.
 
 Repository Manager and Utils can prompt before removing credentials. Review
 each prompt carefully and select the option that matches the redeployment

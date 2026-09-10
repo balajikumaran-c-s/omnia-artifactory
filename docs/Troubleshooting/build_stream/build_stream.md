@@ -1,21 +1,21 @@
-# BuildStreaM Issues
+# Build Stream Issues
 
-Issues related to BuildStreaM pipeline execution, GitLab integration, catalog validation, and image deployment.
+Issues related to Build Stream pipeline execution, GitLab integration, catalog validation, and image deployment.
 
 ## Health Check Stage Failing
 
 ???+ note "Symptom"
 
-    Health Check stage is failing in the BuildStreaM pipeline.
+    Health Check stage is failing in the Build Stream pipeline.
 
 ??? note "Cause"
 
-    - GitLab target IP and host IP of the BuildStreaM API server are not reachable from each other
-    - BuildStreaM containers are not running properly
+    - GitLab target IP and host IP of the Build Stream API server are not reachable from each other
+    - Build Stream containers are not running properly
 
 ??? note "Resolution"
 
-    1. Ensure the GitLab target IP and BuildStreaM API server are in the same subnet.
+    1. Ensure the GitLab target IP and Build Stream API server are in the same subnet.
 
     2. Verify that the `omnia_build_stream` container and the `omnia_postgres` and `playbook_watcher` services are running on the OIM node:
 
@@ -36,16 +36,16 @@ Issues related to BuildStreaM pipeline execution, GitLab integration, catalog va
 
 ???+ note "Symptom"
 
-    API-Registration stage is failing in the BuildStreaM pipeline.
+    API-Registration stage is failing in the Build Stream pipeline.
 
 ??? note "Cause"
 
-    - Maximum client limit reached for BuildStreaM API server registration
+    - Maximum client limit reached for Build Stream API server registration
     - Other API registration errors
 
 !!! note
 
-    Currently, only one client can be registered with the BuildStreaM API server.
+    Currently, only one client can be registered with the Build Stream API server.
 
 ??? note "Resolution"
 
@@ -59,7 +59,7 @@ Issues related to BuildStreaM pipeline execution, GitLab integration, catalog va
 
 ???+ note "Symptom"
 
-    Token-Generation stage is failing in the BuildStreaM pipeline.
+    Token-Generation stage is failing in the Build Stream pipeline.
 
 ??? note "Cause"
 
@@ -74,7 +74,7 @@ Issues related to BuildStreaM pipeline execution, GitLab integration, catalog va
 
 ???+ note "Symptom"
 
-    Parse-Catalog stage is failing in the BuildStreaM pipeline.
+    Parse-Catalog stage is failing in the Build Stream pipeline.
 
 ??? note "Cause"
 
@@ -91,12 +91,12 @@ Issues related to BuildStreaM pipeline execution, GitLab integration, catalog va
 
 ???+ note "Symptom"
 
-    Create-Local-Repo stage is failing in the BuildStreaM pipeline.
+    Create-Local-Repo stage is failing in the Build Stream pipeline.
 
 ??? note "Cause"
 
     - Playbook execution failed
-    - Configuration issues in `local_repo_config.yml`
+    - Catalog or `repo_manager_config.yml` configuration issues
 
 ??? note "Resolution"
 
@@ -112,11 +112,12 @@ Issues related to BuildStreaM pipeline execution, GitLab integration, catalog va
             "ended_at": "2026-03-11T10:49:20.639894+00:00Z",
             "error_code": "PLAYBOOK_EXECUTION_FAILED",
             "error_summary": "Playbook exited with code 2",
-            "log_file_path": "/nfs/omnia/log/build_stream/5a4f69f4-44df-42eb-b88b-1583ea2610a8/local_repo.yml_20260311_171630.log"
+            "log_file_path": "/var/log/omnia/repo_manager/<job-id>/repo_manager.yml_20260311_171630.log"
         }
         ```
 
-    2. Verify the configuration settings in `local_repo_config.yml`.
+    2. Verify the selected catalog and the project-scoped
+       `repo_manager_config.yml` settings.
 
     3. After fixing the configuration issues, re-run the pipeline.
 
@@ -124,7 +125,7 @@ Issues related to BuildStreaM pipeline execution, GitLab integration, catalog va
 
 ???+ note "Symptom"
 
-    Build Images stage is failing in the BuildStreaM pipeline.
+    Build Images stage is failing in the Build Stream pipeline.
 
 ??? note "Cause"
 
@@ -133,7 +134,7 @@ Issues related to BuildStreaM pipeline execution, GitLab integration, catalog va
 
 ??? note "Resolution"
 
-    1. Ensure the catalog has the predefined functional groups. For the supported functional groups, see the [BuildStreaM deployment guide](../../GetStarted/buildstream_deployment.md).
+    1. Ensure the catalog has the predefined functional groups. For the supported functional groups, see the [Build Stream deployment guide](../../GetStarted/buildstream_deployment.md).
 
     2. If changes are required in the catalog, make the necessary modifications to the catalog.
 
@@ -143,7 +144,7 @@ Issues related to BuildStreaM pipeline execution, GitLab integration, catalog va
 
 ???+ note "Symptom"
 
-    Deploy Images stage is failing in the BuildStreaM pipeline.
+    Deploy Images stage is failing in the Build Stream pipeline.
 
 ??? note "Cause"
 
@@ -181,8 +182,6 @@ Issues related to BuildStreaM pipeline execution, GitLab integration, catalog va
     - [Execute Deploy Pipeline](../../HowTo/build_stream/execute_deploy_pipeline.md) -- Deploy pipeline operations
     - [Retry Pipelines](../../Operations/build_stream/retry_pipelines.md) -- Retry failed pipeline operations
     - [Update Catalog](../../Operations/build_stream/update_catalog.md) -- Catalog configuration
-
-
 
 
 

@@ -50,8 +50,9 @@ storage, and architecture-specific build failures.
  
 ???+ note "Symptom"
  
-    - `provision.yml` fails with a kernel validation error.
-    - The specified `kernel_version_override` is not found in S3.
+    - The Orchestrator `precheck` phase fails with a kernel validation error.
+    - The specified `kernel_version_override` does not match the kernel recorded
+      for the functional group in `build_status.yml`.
  
 ??? note "Cause"
  
@@ -81,17 +82,25 @@ storage, and architecture-specific build failures.
        The build process selects the latest kernel available across all
        configured repositories.
  
-    4. Re-run the build image playbook to rebuild with the correct kernel:
+    4. Rerun the Image Build Manager `build` phase from `src/main`:
  
         ```bash title="Run on: OIM host"
-        source /opt/omnia/activate-omnia.sh
-        cd src/image_build_manager/playbooks
-        ansible-playbook image_build_manager.yml --tags build
+        cd <OMNIA_SOURCE_PATH>/src/main
+        ./omnia.sh --run image_build_manager --tags build
         ```
  
  
-    5. After the build completes, verify the new kernel image in S3 using
-       `s3cmd ls -Hr s3://boot-images` and then re-run `provision.yml`.
+    5. After the build completes, verify the new kernel image in S3 and rerun
+       the Orchestrator `precheck` phase:
+
+        ```bash title="Run on: OIM host"
+        s3cmd ls -Hr s3://boot-images
+        cd <OMNIA_SOURCE_PATH>/src/main
+        ./omnia.sh --run orchestrator --tags precheck
+        ```
+
+       When the precheck succeeds, return to the applicable Orchestrator
+       deployment procedure.
  
 ## Build Image Fails for aarch64 — Missing Inventory
  
@@ -138,14 +147,15 @@ storage, and architecture-specific build failures.
  
 ???+ note "Symptom"
  
-    - `local_repo.yml` fails to sync the additional kernel repositories.
+    - The Repository Manager `download` phase fails to synchronize the
+      additional kernel repositories.
     - Kernel packages are not available in Pulp after sync.
     - `build_image_x86_64.yml` builds an image with an older kernel than
       expected.
  
 ??? note "Cause"
  
-    Repository URLs in `local_repo_config.yml` are incorrect or
+    Repository URLs in `repo_manager_config.yml` are incorrect or
     unreachable, or RHEL subscription certificates are invalid or expired.
  
 ??? note "Resolution"
@@ -185,8 +195,9 @@ storage, and architecture-specific build failures.
         ```
  
  
-    5. If no kernel packages are found, correct the repository URLs in
-       `local_repo_config.yml` and re-run `local_repo.yml`.
+    5. If no kernel packages are found, correct the repository URLs in the
+       project-scoped `repo_manager_config.yml`, then rerun Repository Manager
+       with the `download` and `status` tags.
  
 ## Images Not Created for All Functional Groups
  
@@ -201,8 +212,8 @@ storage, and architecture-specific build failures.
  
     - The mapping file contains functional groups that do not match the
       target architecture of the playbook being run.
-    - `local_repo.yml` was not executed with software packages for all
-      required functional groups.
+    - Repository Manager did not synchronize the catalog content required for
+      every architecture and functional group.
  
 ??? note "Resolution"
  

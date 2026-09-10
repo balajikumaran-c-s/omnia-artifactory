@@ -16,10 +16,16 @@ $OMNIA_DATA_PATH/utils/input/$OMNIA_PROJECT_NAME/install_os_config.yml
 |---|---|---|
 | `source_iso_path` | Empty | Local path to the original distribution ISO; required for build and kickstart-generation modes. |
 | `source_iso_checksum` | Empty | Optional SHA-256 checksum for the source ISO. |
-| `custom_iso_path` | Empty | NFS URI in `server:/path/file.iso` format; required for build, Kickstart generation, and deployment modes. |
+| `custom_iso_path` | Empty | NFS URI in `server:/absolute/path/file.iso` format; required for build, Kickstart generation, and deployment modes. |
 | `kickstart_delivery_method` | `embedded` | `embedded` or `nfs`. |
 | `kickstart_file` | Empty | Optional user-provided kickstart file. |
 | `kickstart_template` | `rhel10` | Built-in template used when `kickstart_file` is empty. |
+
+During ISO creation, `custom_iso_path` must meet these requirements:
+
+- The server must be a valid hostname or IPv4 address.
+- The NFS path must be absolute and must not contain `..`, wildcards, or shell metacharacters.
+- The ISO filename may contain letters, numbers, underscores, hyphens, and periods. It must end with lowercase `.iso` and must not contain `..`.
 
 ## Target-node parameters
 

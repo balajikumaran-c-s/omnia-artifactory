@@ -52,12 +52,12 @@ Initialization copies source templates from `src/<domain>/input/` to:
 Edit the staged project inputs before running a deployment phase. Existing
 files may require confirmation before an initialization script overwrites them.
 
-`./omnia.sh --prepare-base` runs the `validate`, `credentials`, and `prepare`
-tags for Repository Manager, Image Build Manager, and Orchestrator in that
-order. It does not synchronize repositories, build images, or provision nodes.
-The Repository Manager entry playbook implements configuration validation under
-`precheck`, not `validate`; run its `precheck` operation explicitly before
-using its outputs.
+`./omnia.sh --prepare-base` runs the validation, `credentials`, and `prepare`
+phases for Repository Manager, Image Build Manager, and Orchestrator. During
+the validation phase, it runs `precheck` for Repository Manager and `validate`
+for Image Build Manager and Orchestrator. It does not synchronize repositories,
+build images, or provision nodes. No separate Repository Manager `precheck` is
+required after the helper completes successfully.
 
 ## Run one module
 

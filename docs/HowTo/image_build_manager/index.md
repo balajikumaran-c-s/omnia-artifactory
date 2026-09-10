@@ -50,5 +50,5 @@ for the configuration, credentials, upstream Repo Manager contract, package
 sources, generated `build_status.yml`, services, and S3 artifact layout.
 
 After Image Build Manager produces a successful `build_status.yml`, the
-[Orchestrator provisioning workflow](../orchestrator/provision_nodes.md) can
+[Orchestrator provisioning workflow](../orchestrator/index.md) can
 consume its functional-group image paths.

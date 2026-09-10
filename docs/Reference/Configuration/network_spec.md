@@ -76,7 +76,7 @@ Networks:
 
 !!! note
 
-    - The `router` field is optional and specifies the gateway IP address for the admin network. The configured value is advertised to nodes via DHCP as their default gateway.
+    - The `router` field is required and specifies the gateway IP address advertised to nodes through DHCP option 3 as their default gateway.
     - In connected deployments, set `router` to the external rack gateway (such as a SONiC switch) which provides connectivity beyond the rack network.
     - In air-gapped deployments, set `router` to the OIM's IP address if the OIM is acting as the rack gateway. If a dedicated router or gateway is available, specify its IP address instead.
     - Default value: `172.16.107.254`
@@ -88,7 +88,6 @@ Networks:
     - [Network Topologies](../SupportMatrix/network_topologies.md) -- How topologies
       affect NIC and VLAN assignments.
     - [Nics](../SupportMatrix/nics.md) -- Supported NIC models.
-
 
 
 
