@@ -82,13 +82,12 @@
         return `<div class="of-dv"><span>${part.text}</span></div>`;
       case 'step': {
         const hasDetails = part.details && part.details.href && part.details.text;
-        const flexStyle = hasDetails ? ' style="display: flex; flex-direction: column;"' : '';
-        let stepHtml = `<div class="of-s"${flexStyle}><div class="t">${part.title}</div>`;
+        let stepHtml = `<div class="of-s"><div class="t">${part.title}</div>`;
         if (part.desc) {
           stepHtml += `<div class="d">${part.desc}</div>`;
         }
         if (hasDetails) {
-          stepHtml += `<div style="text-align: right; margin-top: auto; padding-top: 18px;"><a href="${part.details.href}" style="font-size: 0.72em; font-weight: 700; text-decoration: none; color: var(--c-primary);" title="${part.details.title || part.details.text}">${part.details.text}</a></div>`;
+          stepHtml += `<div class="of-more"><a href="${part.details.href}" title="${part.details.title || part.details.text}">${part.details.text}</a></div>`;
         }
         stepHtml += '</div>';
         return stepHtml;
@@ -125,15 +124,15 @@
     add('mode', 'mode', {});
     add('connector', 'c0b', {});
 
-    add('step', 's-create', { title: 'Set Up the OIM', desc: '<code>./omnia.sh --setup-venv</code>' });
+    add('step', 's-create', { title: 'Set Up the OIM', desc: '<code>./omnia.sh --setup-venv</code>', details: { href: '../HowTo/main/setup_oim.html', text: 'Learn more: OIM setup >>' } });
     add('connector', 'c2', {});
-    add('step', 's-login', { title: 'Activate the Omnia Environment', desc: '<code>source /opt/omnia/activate-omnia.sh</code>' });
+    add('step', 's-login', { title: 'Activate the Omnia Environment', desc: '<code>source /opt/omnia/activate-omnia.sh</code>', details: { href: '../HowTo/main/configure_environment.html', text: 'Learn more: Main environment >>' } });
     add('connector', 'c3', {});
-    add('step', 's-input', { title: 'Configure Domain Inputs', desc: '<code>&lt;OMNIA_DATA_PATH&gt;/&lt;domain&gt;/input/&lt;project&gt;</code>' });
+    add('step', 's-input', { title: 'Configure Domain Inputs', desc: '<code>&lt;OMNIA_DATA_PATH&gt;/&lt;domain&gt;/input/&lt;project&gt;</code>', details: { href: '../HowTo/index.html', text: 'Learn more: Domain guides >>' } });
     add('connector', 'c4', {});
 
     if (S.mode === 'buildstream') {
-      add('step', 'sb-base', { title: 'Prepare Base Services', desc: '<code>./omnia.sh --prepare-base</code>' });
+      add('step', 'sb-base', { title: 'Prepare Base Services', desc: '<code>./omnia.sh --prepare-base</code>', details: { href: '../HowTo/main/prepare_base.html', text: 'Learn more: Prepare base >>' } });
       add('connector', 'cb-base', {});
     }
 
@@ -145,14 +144,14 @@
     add('connector', 'c5', {});
 
     if (S.ome === 'yes') {
-      add('step', 's-ome-y', { title: 'Generate PXE Mapping File via OME', desc: '<code>./omnia.sh --run discovery</code>' });
+      add('step', 's-ome-y', { title: 'Generate PXE Mapping File via OME', desc: '<code>./omnia.sh --run discovery</code>', details: { href: '../HowTo/discovery/discover_nodes.html', text: 'Learn more: Discover nodes >>' } });
     } else {
-      add('step', 's-ome-n', { title: 'Create PXE Mapping File Manually', desc: '<code>&lt;pxe_mapping_file_path.csv&gt;</code>' });
+      add('step', 's-ome-n', { title: 'Create PXE Mapping File Manually', desc: '<code>&lt;pxe_mapping_file_path.csv&gt;</code>', details: { href: '../HowTo/discovery/create_mapping_file.html', text: 'Learn more: Create mapping >>' } });
     }
     add('connector', 'c6', {});
 
     if (S.mode === 'standard') {
-      add('step', 'ss-pulp', { title: 'Prepare Local Repositories', desc: '<code>./omnia.sh --run repo_manager</code>' });
+      add('step', 'ss-pulp', { title: 'Prepare Local Repositories', desc: '<code>./omnia.sh --run repo_manager</code>', details: { href: '../HowTo/repo_manager/configure_repos.html', text: 'Learn more: Repository Manager >>' } });
       add('connector', 'cs2', {});
 
       add('decision', 'd-arch-s', {
@@ -162,15 +161,15 @@
       });
       add('connector', 'cs4', {});
 
-      add('step', 'ss-img', { title: 'Build Diskless Images', desc: '<code>./omnia.sh --run image_build_manager</code>' });
+      add('step', 'ss-img', { title: 'Build Diskless Images', desc: '<code>./omnia.sh --run image_build_manager</code>', details: { href: '../HowTo/image_build_manager/build_images.html', text: 'Learn more: Build OS images >>' } });
       add('connector', 'cs3', {});
 
       if (S.aarch64 === 'yes') {
-        add('step', 'ss-rhel', { title: 'Install RHEL on an aarch64 Node', desc: '<code>./omnia.sh --run utils --tags install_os</code>' });
+        add('step', 'ss-rhel', { title: 'Install RHEL on an aarch64 Node', desc: '<code>./omnia.sh --run utils --tags install_os</code>', details: { href: '../HowTo/utils/install_os_unattended.html', text: 'Learn more: Install RHEL >>' } });
         add('connector', 'cs5', {});
       }
 
-      add('step', 'ss-prov', { title: 'Provision and PXE Boot Nodes', desc: '<code>./omnia.sh --run orchestrator</code>' });
+      add('step', 'ss-prov', { title: 'Provision and PXE Boot Nodes', desc: '<code>./omnia.sh --run orchestrator</code>', details: { href: '../HowTo/orchestrator/provision_nodes.html', text: 'Learn more: Provision nodes >>' } });
     }
 
     if (S.mode === 'buildstream') {
@@ -182,20 +181,20 @@
       add('connector', 'cb1', {});
 
       if (S.aarch64 === 'yes') {
-        add('step', 'sb-rhel', { title: 'Install RHEL10 on aarch64 Node', desc: '<code>./omnia.sh --run utils --tags install_os</code>' });
+        add('step', 'sb-rhel', { title: 'Install RHEL10 on aarch64 Node', desc: '<code>./omnia.sh --run utils --tags install_os</code>', details: { href: '../HowTo/utils/install_os_unattended.html', text: 'Learn more: Install RHEL >>' } });
         add('connector', 'cb2', {});
       }
 
-      add('step', 'sb-oim', { title: 'Deploy BuildStreaM and Configure GitLab', desc: '<code>./omnia.sh --run build_stream</code>' });
+      add('step', 'sb-oim', { title: 'Deploy BuildStreaM and Configure GitLab', desc: '<code>./omnia.sh --run build_stream</code>', details: { href: '../HowTo/build_stream/deploy_gitlab.html', text: 'Learn more: Deploy BuildStreaM >>' } });
       add('connector', 'cb3', {});
 
-      add('step', 'sb-cat', { title: 'Update Catalog', desc: 'GitLab' });
+      add('step', 'sb-cat', { title: 'Update Catalog', desc: 'GitLab', details: { href: '../HowTo/build_stream/execute_build_pipeline.html', text: 'Learn more: Update catalog >>' } });
       add('connector', 'cb5', {});
-      add('step', 'sb-ci', { title: 'Triggers Build Pipeline', desc: 'GitLab' });
+      add('step', 'sb-ci', { title: 'Triggers Build Pipeline', desc: 'GitLab', details: { href: '../HowTo/build_stream/execute_build_pipeline.html', text: 'Learn more: Build pipeline >>' } });
       add('connector', 'cb6', {});
-      add('step', 'sb-pxe', { title: 'Modify PXE Mapping File', desc: 'GitLab' });
+      add('step', 'sb-pxe', { title: 'Modify PXE Mapping File', desc: 'GitLab', details: { href: '../HowTo/build_stream/execute_deploy_pipeline.html', text: 'Learn more: PXE mapping >>' } });
       add('connector', 'cb7', {});
-      add('step', 'sb-dep', { title: 'Triggers Deploy Pipeline', desc: 'GitLab' });
+      add('step', 'sb-dep', { title: 'Triggers Deploy Pipeline', desc: 'GitLab', details: { href: '../HowTo/build_stream/execute_deploy_pipeline.html', text: 'Learn more: Deploy pipeline >>' } });
     }
 
     add('connector', 'cf0', {});
@@ -208,7 +207,13 @@
     });
     if (S.idractelemetry === 'yes') {
       add('connector', 'cf2', {});
-      add('step', 's-telem', { title: 'Enable Telemetry', desc: '<code>telemetry.yml</code>' });
+      add('step', 's-telem', {
+        title: 'Enable Telemetry',
+        desc: '<code>telemetry.yml</code>',
+        details: S.mode === 'buildstream'
+          ? { href: '../HowTo/build_stream/initialize_telemetry.html', text: 'Learn more: Initialize telemetry >>' }
+          : { href: '../HowTo/Telemetry/deploy_telemetry.html', text: 'Learn more: Deploy telemetry >>' }
+      });
     }
     add('connector', 'cf3', {});
     add('pill', 'end', { text: 'End' });
