@@ -2,33 +2,32 @@
 
 ## Overview
 
-Image Build Manager builds RHEL or Rocky Linux images for `x86_64` and
+Image Build Manager builds RHEL images for `x86_64` and
 `aarch64` HPC cluster provisioning by using OpenCHAMI. It deploys MinIO S3 and
 a local OCI registry, builds an image for each functional group, and writes
-`build_status.yml` for the provisioning workflow.
+`build_status.yml` for the Orchestrator provisioning workflow.
 
 Image Build Manager runs on the Omnia Infrastructure Manager (OIM). Tasks run
 locally except for `aarch64` builds, which use SSH to run on a remote ARM host.
 
 ```text
-  repo_status.yml                                                    build_status.yml
-  catalog_rhel.json (or package_groups.yml)                          S3 artifacts
-  +---------------------+     +-------------------------------------+     +-----------+
-  |                     |     |       Image Build Manager            |     |           |
-  |  repo_manager       |---->|                                     |---->| provision |
-  |  (upstream)         |     |  setup -> validate -> prepare       |     | workflow  |
-  |                     |     |         -> build -> write_status    |     | (consumer)|
-  +---------------------+     +-------------------------------------+     +-----------+
-                                       |              |
-                                  MinIO S3      OCI Registry
-                                 (boot-images)  (+ regctl)
+  repo_status.yml                                                       build_status.yml
+  catalog_rhel.json (or package_groups.yml)                             S3 artifacts
+  +----------------------+     +--------------------------------------+     +----------------------+
+  | Repo Manager         |     | Image Build Manager                  |     | Orchestrator         |
+  | (upstream)           |---->| setup -> validate -> prepare         |---->| (consumer)           |
+  |                      |     |          -> build -> write_status    |     | provision workflow   |
+  +----------------------+     +--------------------------------------+     +----------------------+
+                                         |              |
+                                    MinIO S3       OCI Registry
+                                   (boot-images)    (+ regctl)
 ```
 
 ## Prerequisites
 
 | Requirement | Minimum | Validated |
 |---|---|---|
-| OIM operating system | RHEL 10.x or Rocky Linux 10.x | RHEL 10.0 |
+| OIM operating system | RHEL 10.x | RHEL 10.0 |
 | Python | 3.12+ | 3.12.8 |
 | Ansible | `ansible-core` 2.20+ | 2.20.0 |
 | Podman | 5.0+ | 5.3.1 |
@@ -51,5 +50,5 @@ for the configuration, credentials, upstream Repo Manager contract, package
 sources, generated `build_status.yml`, services, and S3 artifact layout.
 
 After Image Build Manager produces a successful `build_status.yml`, the
-[provisioning workflow](../orchestrator/provision_nodes.md) can consume its
-functional-group image paths.
+[Orchestrator provisioning workflow](../orchestrator/provision_nodes.md) can
+consume its functional-group image paths.

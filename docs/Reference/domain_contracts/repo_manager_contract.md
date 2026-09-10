@@ -1,6 +1,6 @@
 # Repository Manager Input/Output Contract
 
-**Deployment module**: Repository Manager | **CLI identifier**: `repo_manager` | **Collection**: `omnia.repo_manager`
+**Deployment module**: Repository Manager | **CLI identifier**: `repo_manager`
 
 ## Input contract
 

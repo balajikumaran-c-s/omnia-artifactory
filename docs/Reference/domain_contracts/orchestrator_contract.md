@@ -1,6 +1,6 @@
 # Orchestrator Input/Output Contract
 
-**Deployment module**: Orchestrator | **CLI identifier**: `orchestrator` | **Collection**: `omnia.orchestrator`
+**Deployment module**: Orchestrator | **CLI identifier**: `orchestrator`
 
 ## Input contract
 

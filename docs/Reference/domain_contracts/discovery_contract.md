@@ -1,6 +1,6 @@
 # Discovery Input/Output Contract
 
-**Deployment module**: Discovery | **CLI identifier**: `discovery` | **Collection**: `omnia.discovery`
+**Deployment module**: Discovery | **CLI identifier**: `discovery`
 
 ## Input contract
 

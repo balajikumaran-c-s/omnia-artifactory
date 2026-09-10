@@ -1,6 +1,6 @@
 # Image Build Manager Input/Output Contract
 
-**Deployment module**: Image Build Manager | **CLI identifier**: `image_build_manager` | **Collection**: `omnia.image_build`
+**Deployment module**: Image Build Manager | **CLI identifier**: `image_build_manager`
 
 ## Input contract
 

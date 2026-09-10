@@ -1,6 +1,6 @@
 # Telemetry Input/Output Contract
 
-**Deployment module**: Telemetry | **CLI identifier**: `telemetry` | **Collection**: `omnia.telemetry`
+**Deployment module**: Telemetry | **CLI identifier**: `telemetry`
 
 ## Input contract
 

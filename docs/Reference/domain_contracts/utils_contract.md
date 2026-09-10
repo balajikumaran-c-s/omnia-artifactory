@@ -1,6 +1,6 @@
 # Utils Input/Output Contract
 
-The `omnia.utils` collection provides log collection and unattended operating
+The Utils module provides log collection and unattended operating
 system installation through its `playbooks/utils.yml` entry point. This
 contract describes the files and artifacts used by those implemented
 workflows.
