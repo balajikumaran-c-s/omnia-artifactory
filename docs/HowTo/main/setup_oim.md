@@ -10,7 +10,7 @@ Omnia Infrastructure Manager (OIM).
 ## Prerequisites
 
 - Use an Omnia source checkout on the OIM.
-- Install Python 3.11 or later. Main searches for `python3.12`, `python3.11`,
+- Install Python 3.11 or later. `omnia.sh` searches for `python3.12`, `python3.11`,
   and then `python3`.
 - Use an account that can write to `/etc/omnia`, `/etc/profile.d`, the
   configured data path, and the configured virtual-environment path.
@@ -73,22 +73,13 @@ Omnia Infrastructure Manager (OIM).
 
 ## Verification
 
-Verify the files and virtual-environment commands created by setup:
+Verify the installed environment and dependencies:
 
 ```bash title="Run on: OIM host"
-test -f /etc/omnia/omnia.env
-test -f /etc/profile.d/omnia-env.sh
-test -f "$OMNIA_DATA_PATH/activate-omnia.sh"
-test -x "$OMNIA_VENV_PATH/bin/python"
-python --version
 ansible --version
-```
-
-Python must report version 3.11 or later. Unless `--skip-catalog` was used,
-confirm that the catalog directory contains the supplied samples:
-
-```bash title="Run on: OIM host"
-find "$OMNIA_DATA_PATH/catalog" -maxdepth 1 -type f
+pip list
+ansible-galaxy collection list
+ls /etc/omnia/omnia.env
 ```
 
 ## Next steps

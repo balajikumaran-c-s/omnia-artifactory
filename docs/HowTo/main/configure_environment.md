@@ -40,25 +40,13 @@ login shells load the installed values.
     `SYSTEM_HOSTNAME` must match the value returned by `hostname -s`. A
     mismatch between `SYSTEM_DOMAIN_NAME` and `hostname -d` produces a warning.
 
-3. For a non-standard layout, uncomment and update only the component paths
-   that must differ from `<OMNIA_DATA_PATH>/<component>`:
-
-    ```bash title="File: src/main/omnia.env"
-    IMAGE_BUILD_MANAGER_DATA_PATH=${OMNIA_DATA_PATH}/image_build_manager
-    REPO_MANAGER_DATA_PATH=${OMNIA_DATA_PATH}/repo_manager
-    DISCOVERY_DATA_PATH=${OMNIA_DATA_PATH}/discovery
-    ORCHESTRATOR_DATA_PATH=${OMNIA_DATA_PATH}/orchestrator
-    TELEMETRY_DATA_PATH=${OMNIA_DATA_PATH}/telemetry
-    BUILD_STREAM_DATA_PATH=${OMNIA_DATA_PATH}/build_stream
-    ```
-
-4. Install the environment as part of OIM setup:
+3. Install the environment as part of OIM setup:
 
     ```bash title="Run on: OIM host"
     ./omnia.sh --setup-venv
     ```
 
-5. After setup, load the installed environment and activate the shared virtual
+4. After setup, load the installed environment and activate the shared virtual
    environment in the current shell:
 
     ```bash title="Run on: OIM host"
@@ -74,8 +62,6 @@ Verify that Main installed the source configuration and exported the selected
 values:
 
 ```bash title="Run on: OIM host"
-test -f /etc/omnia/omnia.env
-test -f /etc/profile.d/omnia-env.sh
 source /etc/profile.d/omnia-env.sh
 printf '%s\n' "$SYSTEM_ADMIN_NIC_IPV4"
 printf '%s\n' "$OMNIA_DATA_PATH"
