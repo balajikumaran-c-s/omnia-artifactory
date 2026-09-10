@@ -22,7 +22,9 @@ values must match.
   or TLS material.
 - Ensure the repository exposes `repodata/repomd.xml` and is reachable from
   the OIM.
-- Identify the catalog package or group that will consume the repository.
+- Identify the catalog package or group that will consume the repository. See
+  [Select or update the catalog](../main/update_catalog.md) to confirm which
+  catalog file is active.
 
 ## Procedure
 

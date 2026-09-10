@@ -18,9 +18,10 @@ and `reponame`; an image source is matched by `registry`.
 ## Prerequisites
 
 - Complete the prerequisites on the [Repository Manager](index.md) page.
-- Prepare an existing catalog JSON file. Each functional layer must reference
-  exactly one group with `type: "base_os"`, and every group and package
-  reference must resolve.
+- [Select or update the catalog](../main/update_catalog.md), and set
+  `CATALOG_FILE_PATH` to the selected JSON file. Each functional layer must
+  reference exactly one group with `type: "base_os"`, and every group and
+  package reference must resolve.
 - Ensure all selected source URLs are reachable from the OIM.
 - Have credentials available for the Pulp administrator and for any private
   registries that use basic authentication. Docker Hub credentials are
@@ -48,6 +49,9 @@ At minimum, the environment must contain:
 SYSTEM_ADMIN_NIC_IPV4=<OIM-admin-network-IPv4>
 CATALOG_FILE_PATH=/absolute/path/to/catalog_rhel.json
 ```
+
+For catalog choices and the persistent environment configuration, follow
+[Select or update the catalog](../main/update_catalog.md).
 
 `OMNIA_DATA_PATH` defaults to `/opt/omnia`, and `OMNIA_PROJECT_NAME` defaults
 to `project_default`. `REPO_MANAGER_DATA_PATH` can override the Repo Manager
@@ -268,6 +272,8 @@ pulp python distribution list --limit 1000
 ## Next steps
 
 - [Build Cluster Images](../image_build_manager/build_images.md).
+- [Select or update the catalog](../main/update_catalog.md) before rerunning
+  Repo Manager for a different workload, architecture, or VAST option.
 - [Configure and add packages to the catalog](adding_additional_packages.md).
 - [Configure a new RPM repository](adding_additional_repositories.md).
 - [Update synchronized content after catalog changes](../../Operations/repo_manager/updating_local_repositories.md).

@@ -47,8 +47,9 @@ Infrastructure Manager (OIM).
       environment at `OMNIA_VENV_PATH`.
     - Upgrades `pip`, `setuptools`, and `wheel` in the virtual environment.
     - Runs each selected module's `domain-init.sh`.
-    - Copies JSON and YAML samples from `src/main/samples/` to
-      `<OMNIA_DATA_PATH>/catalog/`.
+    - Copies top-level JSON and YAML samples from `src/main/samples/` to
+      `<OMNIA_DATA_PATH>/catalog/`. Deployment-specific catalogs under
+      `src/main/samples/catalogs/` are not copied automatically.
 
 3. Use setup options when required:
 
@@ -88,9 +89,11 @@ ls /etc/omnia/omnia.env
 
 ## Next steps
 
-- Continue with the [Repository Manager flow](../repo_manager/index.md) to
-  configure repository inputs, deploy Pulp, synchronize catalog content, and
-  generate the repository output required by Image Build Manager.
+- [Select or update the catalog](update_catalog.md) when the default catalog
+  does not match the required workload, architecture, or VAST selection.
+- [Prepare the base infrastructure](prepare_base.md) to validate the core
+  domain inputs, collect credentials, and deploy the services required before
+  repository synchronization and image building.
 
 ## Troubleshooting
 

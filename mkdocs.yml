@@ -170,10 +170,12 @@ nav:
     - "Path D: BuildStreaM": GetStarted/buildstream_deployment.md
   - How-to Guides:
     - HowTo/index.md
-    - MAIN CONTROLLER:
+    - MAIN:
       - HowTo/main/index.md
       - Configure Environment: HowTo/main/configure_environment.md
       - Setup the OIM: HowTo/main/setup_oim.md
+      - Update Catalog: HowTo/main/update_catalog.md
+      - Prepare Base Infrastructure: HowTo/main/prepare_base.md
     - REPOSITORY MANAGER:
       - HowTo/repo_manager/index.md
       - Create Local Repositories: HowTo/repo_manager/configure_repos.md
@@ -344,7 +346,6 @@ nav:
       - Local Repository and Pulp Issues: Troubleshooting/repo_manager/repo_manager.md
     - IMAGE BUILD MANAGER:
       - Troubleshooting/image_build_manager/index.md
-      - Build Cluster Image Issues: Troubleshooting/image_build_manager/build_cluster_images.md
       - Image Build Manager Issues: Troubleshooting/image_build_manager/image_build_manager.md
     - DISCOVERY:
       - Troubleshooting/discovery/index.md

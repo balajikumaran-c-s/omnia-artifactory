@@ -7,6 +7,9 @@ to determine which content must be available. The catalog is not staged by
 `domain-init.sh`. Its root `catalog` object contains catalog metadata and three
 connected collections:
 
+For selecting the deployment catalog and configuring `CATALOG_FILE_PATH`, see
+[Select or update the catalog](../main/update_catalog.md).
+
 Repository Manager synchronizes catalog-selected content into Pulp and
 publishes it through `repo_status.yml`. It does not install packages on cluster
 nodes. Image Build Manager consumes the successful Repository Manager contract
@@ -52,8 +55,9 @@ duplicate component references.
 
 - Create and synchronize the local repositories as described in
   [Create Local Repositories](configure_repos.md).
-- Set the required `SYSTEM_ADMIN_NIC_IPV4` and `CATALOG_FILE_PATH` environment
-  variables.
+- Set the required `SYSTEM_ADMIN_NIC_IPV4` environment variable and follow
+  [Select or update the catalog](../main/update_catalog.md) to configure
+  `CATALOG_FILE_PATH`.
 - Edit `repo_manager_config.yml` and `repo_manager_endpoint_config.yml` under
   `<OMNIA_SOURCE_PATH>/src/repo_manager/input/` before staging the inputs.
 - Identify the existing catalog functional layer and group that should own the

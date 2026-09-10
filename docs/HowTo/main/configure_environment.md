@@ -18,15 +18,15 @@ subsequent setup runs preserve it.
 
 ## Procedure
 
-1. Change to the Main source directory:
+1. Change to the Main source directory and open `src/main/omnia.env`:
 
     ```bash title="Run on: OIM host"
     cd src/main
+    vi omnia.env
     ```
 
-2. Before the first OIM setup, edit `omnia.env`. Set `SYSTEM_ADMIN_NIC_IPV4`
-   to an address assigned to the OIM. Review the optional values and keep or
-   replace their supplied defaults:
+2. Set `SYSTEM_ADMIN_NIC_IPV4` to an address assigned to the OIM. Review the
+   optional values and keep or replace their supplied defaults:
 
     ```bash title="File: src/main/omnia.env"
     SYSTEM_ADMIN_NIC_IPV4=172.16.107.254
@@ -41,6 +41,13 @@ subsequent setup runs preserve it.
 
     `SYSTEM_HOSTNAME` must match the value returned by `hostname -s`. A
     mismatch between `SYSTEM_DOMAIN_NAME` and `hostname -d` produces a warning.
+
+    !!! note
+
+        After the first setup, edit `/etc/omnia/omnia.env` for configuration
+        changes. If you instead update `src/main/omnia.env`, run
+        `./omnia.sh -s --force-env` to replace the installed environment with
+        the updated source file.
 
 3. Install the environment as part of OIM setup:
 

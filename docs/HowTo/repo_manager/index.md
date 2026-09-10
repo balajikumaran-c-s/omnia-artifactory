@@ -10,6 +10,8 @@ Manager (OIM).
 
 Repo Manager validates catalog sources, deploys Pulp, synchronizes the selected
 content, and generates `repo_status.yml` for downstream Omnia components.
+Before configuring repositories, [select or update the catalog](../main/update_catalog.md)
+for the required workload, architecture, and VAST option.
 
 ```text
 catalog JSON + repository configuration + endpoint configuration
@@ -41,6 +43,7 @@ catalog JSON + repository configuration + endpoint configuration
 
 | Task | Use it to |
 |---|---|
+| [Select or update the catalog](../main/update_catalog.md) | Choose the catalog file that Repo Manager will consume through `CATALOG_FILE_PATH`. |
 | [Create Local Repositories](configure_repos.md) | Configure Repo Manager inputs, deploy Pulp, synchronize catalog content, and generate `repo_status.yml`. |
 | [Configure Catalog Content and Add Packages](adding_additional_packages.md) | Define functional groups, connect packages to functional layers, resolve package sources, and add or update catalog content. |
 | [Add an RPM Repository](adding_additional_repositories.md) | Map a catalog RPM source to a repository by OS version, architecture, and `reponame`. |

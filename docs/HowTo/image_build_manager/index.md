@@ -37,10 +37,15 @@ Build operations also require a successful `repo_status.yml` from Repo Manager.
 An `aarch64` build requires a separate, reachable ARM host because
 cross-architecture builds are not supported.
 
+When using catalog mode, [select or update the catalog](../main/update_catalog.md)
+before configuring the image build. The selected catalog determines the
+functional layers and architectures that Image Build Manager builds.
+
 ## Choose a task
 
 | Task | Use it to |
 |---|---|
+| [Select or update the catalog](../main/update_catalog.md) | Choose the workload, architecture, and VAST variant used for catalog-based image builds. |
 | [Build OS Images](build_images.md) | Configure the build inputs, prepare storage and registry services, build functional-group images, upload their artifacts, and generate `build_status.yml`. |
 
 ## Contract reference

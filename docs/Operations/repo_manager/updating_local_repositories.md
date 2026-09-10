@@ -14,7 +14,9 @@ everything again.
 
 - Pulp is deployed and running.
 - `SYSTEM_ADMIN_NIC_IPV4` and `CATALOG_FILE_PATH` are exported.
-- The updated catalog remains an existing absolute `.json` file.
+- The updated catalog remains an existing absolute `.json` file. To select a
+  different catalog, follow
+  [Select or update the catalog](../../HowTo/main/update_catalog.md).
 - Any new RPM repositories or private registries are mapped in
   `repo_manager_config.yml`.
 
