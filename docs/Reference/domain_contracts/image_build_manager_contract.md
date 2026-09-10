@@ -8,6 +8,15 @@ Image Build Manager consumes `repo_status.yml`, the output contract produced
 by Repository Manager. Build-related flows require the file and validate it
 against the Repo Manager status schema before loading repository data.
 
+| Contract | Default producer output | Structure sample |
+|---|---|---|
+| `repo_status.yml` | `$OMNIA_DATA_PATH/repo_manager/output/$OMNIA_PROJECT_NAME/repo_status.yml` | [Image Build Manager upstream contract samples](https://github.com/dell/omnia/tree/issue-4849-omnia-modernization/src/image_build_manager/samples) (`repo_manager_output/repo_status.yml`) |
+
+The path can be overridden by `repo_manager_output_path` in
+`image_build_config.yml`. The generated Repository Manager output is
+authoritative; the linked file is a structure sample for the consumer
+contract.
+
 The required contract includes a successful overall status, operating-system
 metadata, versioned repository mappings, and Repo Manager certificate data.
 When a certificate path is present, the certificate must also exist. The

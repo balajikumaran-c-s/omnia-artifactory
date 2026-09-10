@@ -31,6 +31,20 @@ requires a supported deployed source version and successful
 | Image Build Manager | `build_status.yml` | Provisioning and PXE flows require `overall_status: success` and a usable S3 endpoint. Functional-group image records supply the boot artifacts. |
 | Discovery or an administrator | `pxe_mapping_file.csv` | Node data must use the mapping columns below. Discovery output must be reviewed and staged for Orchestrator; the handoff is not automatic. |
 
+### Contract locations and structure samples
+
+| Contract | Producer output | Structure sample |
+|---|---|---|
+| `repo_status.yml` | `$OMNIA_DATA_PATH/repo_manager/output/$OMNIA_PROJECT_NAME/repo_status.yml` | [Repository Manager output sample](https://github.com/dell/omnia/blob/issue-4849-omnia-modernization/src/orchestrator/samples/repo_manager_output/repo_status.yml) |
+| `build_status.yml` | `$OMNIA_DATA_PATH/image_build_manager/output/$OMNIA_PROJECT_NAME/build_status.yml` | [Image Build Manager output sample](https://github.com/dell/omnia/blob/issue-4849-omnia-modernization/src/orchestrator/samples/image_build_manager_output/build_status.yml) |
+| `pxe_mapping_file.csv` | `$OMNIA_DATA_PATH/discovery/output/$OMNIA_PROJECT_NAME/bmc_pxe_mapping_file.csv` | [PXE mapping structure sample](https://github.com/dell/omnia/blob/issue-4849-omnia-modernization/src/orchestrator/examples/pxe_mapping_file.csv) |
+
+Custom Repo Manager and Image Build Manager output paths can be set in
+`orchestrator_config.yml`. Discovery output must be reviewed and copied to
+`$OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv`.
+Generated producer outputs remain authoritative; the linked files show the
+structures expected by Orchestrator.
+
 The PXE mapping contract is:
 
 ```text
