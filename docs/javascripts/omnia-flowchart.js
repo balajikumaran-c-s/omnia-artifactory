@@ -132,6 +132,11 @@
     add('step', 's-input', { title: 'Configure Domain Inputs', desc: '<code>&lt;OMNIA_DATA_PATH&gt;/&lt;domain&gt;/input/&lt;project&gt;</code>' });
     add('connector', 'c4', {});
 
+    if (S.mode === 'buildstream') {
+      add('step', 'sb-base', { title: 'Prepare Base Services', desc: '<code>./omnia.sh --prepare-base</code>' });
+      add('connector', 'cb-base', {});
+    }
+
     add('decision', 'd-ome', {
       label: 'Discover nodes using OME?',
       options: [{ l: 'Yes', v: 'yes' }, { l: 'No', v: 'no' }],
@@ -147,13 +152,8 @@
     add('connector', 'c6', {});
 
     if (S.mode === 'standard') {
-      add('step', 'ss-oim', { title: 'Prepare Base Services', desc: '<code>./omnia.sh --prepare-base</code>' });
-      add('connector', 'cs1', {});
-
-      add('step', 'ss-pulp', { title: 'Synchronize Catalog Content', desc: '<code>./omnia.sh --run repo_manager</code>' });
+      add('step', 'ss-pulp', { title: 'Prepare Local Repositories', desc: '<code>./omnia.sh --run repo_manager</code>' });
       add('connector', 'cs2', {});
-      add('step', 'ss-img', { title: 'Build Diskless Images', desc: '<code>./omnia.sh --run image_build_manager</code>' });
-      add('connector', 'cs3', {});
 
       add('decision', 'd-arch-s', {
         label: 'aarch64 required?',
@@ -162,16 +162,15 @@
       });
       add('connector', 'cs4', {});
 
+      add('step', 'ss-img', { title: 'Build Diskless Images', desc: '<code>./omnia.sh --run image_build_manager</code>' });
+      add('connector', 'cs3', {});
+
       if (S.aarch64 === 'yes') {
         add('step', 'ss-rhel', { title: 'Install RHEL on an aarch64 Node', desc: '<code>./omnia.sh --run utils --tags install_os</code>' });
         add('connector', 'cs5', {});
-        add('step', 'ss-abuild', { title: 'Build aarch64 Diskless Images', desc: '<code>./omnia.sh --run image_build_manager</code>' });
-        add('connector', 'cs6', {});
       }
 
-      add('step', 'ss-prov', { title: 'Provision Nodes', desc: '<code>./omnia.sh --run orchestrator --tags provision</code>' });
-      add('connector', 'cs7', {});
-      add('step', 'ss-pxe', { title: 'PXE Boot Nodes', desc: '<code>./omnia.sh --run orchestrator --tags pxeboot</code>' });
+      add('step', 'ss-prov', { title: 'Provision and PXE Boot Nodes', desc: '<code>./omnia.sh --run orchestrator</code>' });
     }
 
     if (S.mode === 'buildstream') {
@@ -183,15 +182,13 @@
       add('connector', 'cb1', {});
 
       if (S.aarch64 === 'yes') {
-        add('step', 'sb-rhel', { title: 'Install RHEL10 on aarch64 Node', desc: '' });
+        add('step', 'sb-rhel', { title: 'Install RHEL10 on aarch64 Node', desc: '<code>./omnia.sh --run utils --tags install_os</code>' });
         add('connector', 'cb2', {});
       }
 
-      add('step', 'sb-oim', { title: 'Deploy Build Stream on OIM', desc: '<code>./omnia.sh --run build_stream</code>' });
+      add('step', 'sb-oim', { title: 'Deploy BuildStreaM and Configure GitLab', desc: '<code>./omnia.sh --run build_stream</code>' });
       add('connector', 'cb3', {});
 
-      add('step', 'sb-git', { title: 'Deploy GitLab', desc: '<code>gitlab.yml</code>' });
-      add('connector', 'cb4', {});
       add('step', 'sb-cat', { title: 'Update Catalog', desc: 'GitLab' });
       add('connector', 'cb5', {});
       add('step', 'sb-ci', { title: 'Triggers Build Pipeline', desc: 'GitLab' });
@@ -205,13 +202,13 @@
     add('divider', 'dv-fin', { text: 'Your cluster is now ready' });
     add('connector', 'cf1', { cls: 'sm na' });
     add('decision', 'd-idrac-telemetry', {
-      label: 'Is iDRAC Telemetry Configured?',
+      label: 'Is telemetry required?',
       options: [{ l: 'Yes', v: 'yes' }, { l: 'No', v: 'no' }],
       stateKey: 'idractelemetry'
     });
     if (S.idractelemetry === 'yes') {
       add('connector', 'cf2', {});
-      add('step', 's-telem', { title: 'Enable iDRAC Telemetry', desc: '<code>telemetry.yml</code>' });
+      add('step', 's-telem', { title: 'Enable Telemetry', desc: '<code>telemetry.yml</code>' });
     }
     add('connector', 'cf3', {});
     add('pill', 'end', { text: 'End' });
