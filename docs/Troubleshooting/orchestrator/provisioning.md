@@ -169,22 +169,19 @@ Issues related to PXE booting, node discovery, cloud-init configuration, and the
 
     2. Review the provisioning log on the OIM:
 
-        ```bash title="Run on: omnia_core"
-        cat /opt/omnia/log/provision.log
+        ```bash title="Run on: OIM"
+        cat /var/log/omnia/orchestrator/orchestrator.log
         ```
 
-        !!! note
-
-            The log path `/opt/omnia/log/provision.log` is on the OIM host filesystem, accessible from within the omnia_core container.
-
-
-    3. If cloud-init completed with errors, re-run `provision.yml` after
+    3. If cloud-init completed with errors, rerun
+       `./omnia.sh --run orchestrator --tags provision` after
        fixing the root cause.
 
     4. If the hostname or root password is not configured because cloud-init
        was not loaded in time, wait 5 minutes and retry provisioning the
-       node. If the issue persists, redeploy the cluster after running the
-       `oim_cleanup.yml` playbook.
+       node. If the issue persists, follow the
+       [Re-provision Cluster Nodes](../../Operations/reprovision_cluster.md)
+       procedure.
 
 
 ## IP Route Conflict After Provisioning

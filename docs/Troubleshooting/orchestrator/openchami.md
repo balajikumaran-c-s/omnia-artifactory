@@ -248,14 +248,19 @@ If the restart does not resolve the issue, refer to the specific troubleshooting
 
     Follow the appropriate resolution based on the diagnostic findings:
 
-    **1. If prepare_oim.yml was never run or failed:** Run the cleanup and re-deploy:
+    **1. If OpenCHAMI deployment never ran or failed:** Clean the OpenCHAMI
+    component and redeploy Orchestrator services:
 
-    ```bash title="Run on: OIM host"
-    ansible-playbook utils/oim_cleanup.yml
-    ansible-playbook prepare_oim/prepare_oim.yml
+    ```bash title="Run on: OIM"
+    cd <OMNIA_SOURCE_PATH>/src/orchestrator
+    ansible-playbook playbooks/cleanup/cleanup_orchestrator.yml --tags openchami
+
+    cd ../main
+    ./omnia.sh --run orchestrator --tags deploy
+    ./omnia.sh --run orchestrator --tags provision
     ```
 
-    After `prepare_oim.yml` completes successfully, re-run `provision.yml`.
+    Verify OpenCHAMI health before provisioning nodes.
 
     **2. If openchami.target services are down but were previously deployed:** Restart the target and wait for all services:
 
@@ -585,4 +590,3 @@ If the restart does not resolve the issue, refer to the specific troubleshooting
     !!! note
 
         Omnia collects cloud-init logs from all node types during log collection (`log_collector/collect.yml`). The collected files include `/var/log/cloud-init.log` and `/var/log/cloud-init-output.log`.
-

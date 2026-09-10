@@ -241,6 +241,7 @@ nav:
     - utils:
       - HowTo/utils/index.md
       - Install OS Unattended: HowTo/utils/install_os_unattended.md
+      - Clean Up Utils: HowTo/utils/cleanup_utils.md
   
   - Reference:
     - Reference/index.md
@@ -312,8 +313,6 @@ nav:
     - Operations/index.md
     - Platform Lifecycle:
       - Maintain the Main Environment: Operations/maintain_main_environment.md
-      - Upgrade Omnia: Operations/upgrade_omnia.md
-      - Rollback Omnia: Operations/rollback_omnia.md
       - OIM Cleanup: Operations/oim_cleanup.md
     - Node Lifecycle:
       - Add Nodes: Operations/add_nodes.md
@@ -338,8 +337,6 @@ nav:
     - Troubleshooting/index.md
     - Cross-Module Issues:
       - General: Troubleshooting/general.md
-      - General Troubleshooting Steps: Troubleshooting/general_troubleshooting.md
-      - Upgrade and Rollback: Troubleshooting/upgrade_rollback.md
       - Known Limitations: Troubleshooting/known_limitations.md
     - repo_manager:
       - Troubleshooting/repo_manager/index.md

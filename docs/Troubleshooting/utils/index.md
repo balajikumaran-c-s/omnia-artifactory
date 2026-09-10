@@ -1,10 +1,9 @@
 # Utils module
 
-Helper utilities issues - Backup, install, and prepare operations
+Troubleshoot the current Utils environment, log collection, unattended
+operating-system installation, and cleanup workflows.
 
 ## Utils Issues
-
-Helper utilities issues - Backup, install, and prepare operations
 
 For detailed troubleshooting information, see [Utils Issues](utils.md).
 

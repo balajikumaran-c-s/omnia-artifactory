@@ -33,14 +33,14 @@ Virtual Media.
 |---|---|---|---|
 | `source_iso_path` | ISO build or Kickstart generation | Empty | Local path to the source installation ISO. |
 | `source_iso_checksum` | No | Empty | Optional SHA-256 checksum used to verify the source ISO. |
-| `custom_iso_path` | ISO build or deployment | Empty | Custom ISO location in `nfs_server:/export/path/file.iso` format. |
+| `custom_iso_path` | ISO build, Kickstart generation, or deployment | Empty | Custom ISO and generated-artifact location in `nfs_server:/export/path/file.iso` format. |
 | `kickstart_delivery_method` | No | `embedded` | Selects `embedded` or `nfs` Kickstart delivery. |
 | `kickstart_file` | No | Empty | Optional user-provided Kickstart file. |
 | `kickstart_template` | No | `rhel10` | Built-in template used when `kickstart_file` is empty. |
 | `target_bmc_ip` | Deployment | Empty | iDRAC address of the target node. |
-| `target_hostname` | No | Empty | Hostname written into the generated Kickstart configuration. |
-| `target_admin_ip` | Deployment | Empty | Static operating-system address and SSH verification target. |
-| `target_architecture` | No | Detected from the ISO filename; otherwise `x86_64` | Accepts `x86_64` or `aarch64`. |
+| `target_hostname` | ISO build or Kickstart generation | Empty | Hostname written into the generated static-network Kickstart configuration. |
+| `target_admin_ip` | ISO build, Kickstart generation, or deployment | Empty | Static operating-system address and SSH verification target. |
+| `target_architecture` | No | Detected from the ISO filename | Accepts `x86_64` or `aarch64`; set it explicitly when the filename does not contain the architecture. |
 | `network_device` | No | First active link | Network device configured by Kickstart. |
 | `netmask` | No | `255.255.255.0` | Static network mask. |
 | `gateway` | No | Empty | Static default gateway. |
@@ -59,6 +59,14 @@ The credential flow creates an Ansible Vault-encrypted
 `os_root_password`. It stores the Vault password in
 `.install_os_credentials_key`. Both files are placed in the active Utils
 project input directory and use mode `0600`.
+
+!!! warning
+
+    The current `cleanup_install_os` implementation targets the legacy Vault
+    key name `.install_os_vault_key`. After requesting credential cleanup,
+    verify whether `.install_os_credentials_key` remains in the project input
+    directory and remove it securely when the credentials are intentionally
+    being reset.
 
 ### `collect_pxe.yml`
 
@@ -90,6 +98,11 @@ $OMNIA_DATA_PATH/utils/output/$OMNIA_PROJECT_NAME/utils_status.yml
 The file contains `utility`, `overall_status`, `playbook`, `version`,
 `started_at`, and `completed_at`. It can also contain role results, errors,
 and warnings when those values are supplied to the status writer.
+
+The current status writer emits `version: "2.2.0"` even though the Utils Galaxy
+collection is version `2.3.0`. Treat this field as status-schema metadata until
+the source version is aligned; do not use it to determine the installed Omnia
+release.
 
 ### OS installation artifacts
 
@@ -166,8 +179,8 @@ integrated into an administrator-maintained playbook:
 | `cleanup_logs` | Applies log archive retention and removes collection workspaces. |
 | `cleanup_install_os` | Removes temporary installation files and optionally credentials. |
 | `cleanup` | Runs both cleanup workflows. |
-| `upgrade` | Prints a placeholder message; no upgrade is implemented. |
-| `rollback` | Prints a placeholder message; no entry-point rollback is implemented. |
+| `upgrade` | Unsupported placeholder; it only prints a message and performs no upgrade. |
+| `rollback` | Unsupported placeholder; it only prints a message and performs no rollback. |
 
 The installation playbook also supports the direct stage tags `credentials`,
 `generate_ks`, `build_iso`, and `deploy`.
@@ -176,5 +189,6 @@ The installation playbook also supports the direct stage tags `credentials`,
 
 - [Utils overview](../../HowTo/utils/index.md)
 - [Install an OS unattended](../../HowTo/utils/install_os_unattended.md)
+- [Clean up Utils](../../HowTo/utils/cleanup_utils.md)
 - [Collect cluster logs](../../Operations/collect_cluster_logs.md)
 - [Use the Slurm configuration roles](../../Operations/slurm_configuration_roles.md)

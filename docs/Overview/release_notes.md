@@ -23,7 +23,7 @@ This page summarizes the features, enhancements, and changes introduced in each 
 | **Vast Repo and Vast Client Installation** | Vast NFS client installation streamlined by building Vast repository from source, hosting RPMs on HTTP server, configuring repository, and automatic installation during provisioning when InfiniBand NIC is present. For more details, see [Configure VAST Storage](../HowTo/Telemetry/configure_vast.md). |
 | **One-Shot Combined Log Extraction for Debugging** | One-shot log collection playbook for gathering cluster logs from Kubernetes and Slurm nodes with full and curated support collection modes, log collection from all node types, and timestamped tar.gz bundle output. For more details, see [Log Management](../Operations/log_management.md). |
 | **ETCD on Local Disk Support for Kubernetes Service Cluster** | ETCD deployment on local disk instead of NFS for Kubernetes service cluster with configurable `etcd_on_local_disk` setting in `omnia_config.yml`, automatic disk selection prioritizing BOSS cards (BOSS-N1/N2) with fallback to SSD/SATA disks, `/var/lib/etcd` mount point, support for pre-configured RAID 1 or RAID 10 on BOSS cards, and minimum 20 GB disk space recommendation. For more details, see [Configure Kubernetes HA](../HowTo/orchestrator/configure_kubernetes_ha.md). |
-| **Unattended OS Installation via iDRAC Virtual Media** | Automated bare-metal OS installation using iDRAC Virtual Media with NFS-based Kickstart, one server at a time. Supports aarch64 nodes via `install_os_arm_node.yml` orchestrator and generic x86_64 nodes via `install_os.yml`. For more details, see [Unattended OS Installation via iDRAC](../HowTo/utils/install_os_unattended.md). |
+| **Unattended OS Installation via iDRAC Virtual Media** | Automated bare-metal OS installation using the unified Utils `install_os.yml` workflow with embedded or NFS-based Kickstart, one server at a time. The same workflow supports `x86_64` and `aarch64`. For more details, see [Unattended OS Installation via iDRAC](../HowTo/utils/install_os_unattended.md). |
 
 ### Known Issues
 
@@ -58,7 +58,6 @@ This page summarizes the features, enhancements, and changes introduced in each 
 | **Security Enhancements** | Credentials are now encrypted using industry-standard algorithms (for example, AES-256), improving compliance with security best practices and reducing the risk of data exposure. For more details, see [Product and Subsystem Security](../SecurityConfigurationGuide/product_subsystem_security.md). |
 | **Platform Support** | Supports `x86_64` and `aarch64` architectures, enabling deployment on both traditional and ARM-based HPC nodes for improved flexibility and energy efficiency. For more details, see [Software Requirements](../Reference/../Reference/../Reference/ClusterRequirements/software_requirements.md). |
 | **Input Template and Validator** | Provides predefined configuration templates and early input validation to reduce configuration errors and accelerate HPC cluster provisioning. This improves deployment reliability and overall user experience. For current task-specific procedures, see the [module how-to guides](../HowTo/index.md). |
-
 
 
 

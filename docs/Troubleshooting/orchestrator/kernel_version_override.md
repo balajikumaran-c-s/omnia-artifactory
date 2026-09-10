@@ -149,8 +149,3 @@ Issues related to kernel version override functionality, including repository sy
     3. Verify the `sslcacert`, `sslclientkey`, and `sslclientcert` paths in `local_repo_config.yml` match the actual file locations on the OIM.
 
     4. After correcting the certificates, re-run `local_repo.yml`.
-
-!!! info
-
-    - [Upgrade Omnia](../../Operations/upgrade_omnia.md) — Upgrade procedure.
-    - [Rollback Omnia](../../Operations/rollback_omnia.md) — Rollback procedure.

@@ -16,7 +16,7 @@ $OMNIA_DATA_PATH/utils/input/$OMNIA_PROJECT_NAME/install_os_config.yml
 |---|---|---|
 | `source_iso_path` | Empty | Local path to the original distribution ISO; required for build and kickstart-generation modes. |
 | `source_iso_checksum` | Empty | Optional SHA-256 checksum for the source ISO. |
-| `custom_iso_path` | Empty | NFS URI in `server:/path/file.iso` format; required for build and deployment modes. |
+| `custom_iso_path` | Empty | NFS URI in `server:/path/file.iso` format; required for build, Kickstart generation, and deployment modes. |
 | `kickstart_delivery_method` | `embedded` | `embedded` or `nfs`. |
 | `kickstart_file` | Empty | Optional user-provided kickstart file. |
 | `kickstart_template` | `rhel10` | Built-in template used when `kickstart_file` is empty. |
@@ -26,9 +26,9 @@ $OMNIA_DATA_PATH/utils/input/$OMNIA_PROJECT_NAME/install_os_config.yml
 | Parameter | Source value | Description |
 |---|---|---|
 | `target_bmc_ip` | Empty | iDRAC/BMC IPv4 address; required for deployment. |
-| `target_hostname` | Empty | Hostname assigned by kickstart. |
-| `target_admin_ip` | Empty | Admin-network IP assigned to the installed host; required for deployment. |
-| `target_architecture` | Empty | `x86_64` or `aarch64`; when empty, the workflow derives it from the source ISO name. |
+| `target_hostname` | Empty | Hostname assigned by Kickstart; required for a usable generated static-network configuration. |
+| `target_admin_ip` | Empty | Admin-network IP assigned by Kickstart and used for SSH verification; required for build, Kickstart generation, and deployment. |
+| `target_architecture` | Empty | `x86_64` or `aarch64`; set this explicitly when the source ISO filename does not contain the architecture. |
 | `network_device` | Empty | Installation NIC; empty uses the first active link. |
 | `netmask` | `255.255.255.0` | Target network mask. |
 | `gateway` | Empty | Target default gateway. |
@@ -44,8 +44,8 @@ $OMNIA_DATA_PATH/utils/input/$OMNIA_PROJECT_NAME/install_os_config.yml
 | `rebuild_iso` | `false` | Rebuild the custom ISO when it already exists. |
 | `force_reinstall` | `false` | Reinstall even when the target is reachable over SSH. |
 | `ssh_verify_enabled` | `true` | Verify the installed node using SSH. |
-| `ssh_verify_retries` | `60` | Maximum SSH verification attempts. |
-| `ssh_verify_delay` | `30` | Delay between SSH attempts, in seconds. |
+| `ssh_verify_retries` | `60` | Multiplier used with `ssh_verify_delay` to calculate the SSH wait timeout. |
+| `ssh_verify_delay` | `30` | Initial delay before the SSH check and multiplier used in the total timeout calculation, in seconds. |
 
 ## Usage example
 

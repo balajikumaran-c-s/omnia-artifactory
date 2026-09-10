@@ -20,7 +20,7 @@ When you encounter an issue, follow this general diagnostic flow:
 
 4. **Use the ochami CLI.** For provisioning issues, the `ochami-cli` provides direct access to the OpenCHAMI state manager for inspecting node inventory, boot status, and hardware state:
 
-    **Execution context: omnia_core container**
+    **Execution context: OIM**
 
     ```bash
     ochami smd component get
@@ -99,9 +99,7 @@ Helper utilities issues - Backup, install, and prepare operations
 
 | Topic | Description |
 | --- | --- |
-| [General](general.md) | Core container failures, OIM issues, OpenCHAMI certificates, system recovery, InfiniBand, and Ansible Vault errors |
-| [General Troubleshooting](general_troubleshooting.md) | General troubleshooting steps and procedures |
-| [Upgrade and Rollback](upgrade_rollback.md) | Lock file conflicts, manifest tracking, component-specific upgrade/rollback failures, and kernel version override |
+| [General](general.md) | OIM issues, OpenCHAMI certificates, system recovery, InfiniBand, and Ansible Vault errors |
 | [Known Limitations](known_limitations.md) | Current limitations, constraints, and known issues |
 
 !!! tip
@@ -109,7 +107,6 @@ Helper utilities issues - Backup, install, and prepare operations
     If you cannot resolve an issue using this guide, open an issue on the
     [Omnia GitHub repository](https://github.com/dell/omnia/issues) with
     the relevant log output and a description of your environment.
-
 
 
 

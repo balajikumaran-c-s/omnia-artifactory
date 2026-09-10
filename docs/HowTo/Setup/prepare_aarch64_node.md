@@ -87,7 +87,7 @@ The output should return `aarch64`.
 
 ## Next Steps
 
-- [Unattended OS Installation via iDRAC](install_os_unattended.md) -- Automate RHEL installation on the aarch64 node using iDRAC Virtual Media instead of a manual install.
+- [Unattended OS Installation via iDRAC](../utils/install_os_unattended.md) -- Automate RHEL installation on the aarch64 node using iDRAC Virtual Media instead of a manual install.
 - [Build Cluster Images](build_cluster_images.md) -- Build x86_64 and aarch64 images for provisioning.
 
 ## Troubleshooting

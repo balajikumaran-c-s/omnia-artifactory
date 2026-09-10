@@ -135,11 +135,11 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
 
     For more information on managing encrypted parameters, see [Encrypted Parameters Management](../SecurityConfigurationGuide/misc_configuration.md#encrypted-parameters-management).
 
-## OIM Cleanup NFS Directory Deletion Failure
+## Orchestrator Cleanup NFS Directory Deletion Failure
 
 ???+ note "Symptom"
 
-    - `oim_cleanup.yml` fails with: `rmtree failed: [Errno 39] Directory not empty`.
+    - The Orchestrator `cleanup` workflow fails with: `rmtree failed: [Errno 39] Directory not empty`.
     - Specific error on directories like `/share_omnia_k8s/<node_ip>/kubelet/pods`.
     - Cleanup process completes partially but leaves NFS share directories intact.
 
@@ -154,7 +154,8 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
 
     !!! note
 
-        The OIM cleanup process cleans the contents of NFS shares for both Slurm and Kubernetes. Active processes or mounts may prevent successful cleanup.
+        Orchestrator cleanup can remove managed NFS content for Slurm and
+        Kubernetes. Active processes or mounts may prevent successful cleanup.
 
 ??? note "Resolution"
 
@@ -168,11 +169,11 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
         rm -rf <node_ip>
         ```
 
-    2. Re-run the OIM cleanup playbook:
+    2. Re-run the Orchestrator cleanup workflow:
 
-        ```bash title="Run on: omnia_core container"
-        cd /omnia/utils
-        ansible-playbook oim_cleanup.yml
+        ```bash title="Run on: OIM"
+        cd <OMNIA_SOURCE_PATH>/src/main
+        ./omnia.sh --run orchestrator --tags cleanup
         ```
 
     !!! tip
@@ -293,19 +294,22 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
     export <OIM_HOSTNAME>_ACCESS_TOKEN=$(sudo bash -lc 'gen_access_token')
     ```
 
-### `provision.yml` Fails: prepare_oim Needs to Be Executed
+### Orchestrator Provisioning Fails Because OpenCHAMI Is Unavailable
 
 ???+ note "Symptom"
 
-    The `provision.yml` playbook fails with an error indicating that `prepare_oim` needs to be executed first.
+    The Orchestrator `provision` workflow fails because required OpenCHAMI
+    services are not available.
 
 ??? note "Cause"
 
-    The OpenCHAMI container is not up and running.
+    One or more services managed by `openchami.target` are not running.
 
 ??? note "Resolution"
 
-    Perform a cleanup using `oim_cleanup.yml` and re-run `prepare_oim.yml` to bring up the OpenCHAMI containers. After `prepare_oim.yml` completes successfully, re-deploy the cluster.
+    Diagnose and restore the OpenCHAMI services. If redeployment is required,
+    run `./omnia.sh --run orchestrator --tags deploy`, followed by
+    `./omnia.sh --run orchestrator --tags provision` from `src/main`.
 
 ## Cluster Not Recovering After Power Cycle
 
@@ -798,13 +802,15 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
 
 ??? note "Resolution"
 
-    Run the `provision.yml` playbook again with the same PXE mapping file. This ensures cloud-init files are properly recreated and compute nodes receive their correct configured hostnames from the PXE mapping file.
+    Run `./omnia.sh --run orchestrator --tags provision` again with the same
+    PXE mapping file. This recreates cloud-init files so compute nodes receive
+    their configured hostnames.
 
 ### PostgreSQL Container Deployment Fails After Cleanup
 
 ???+ note "Symptom"
 
-    PostgreSQL container deployment fails after running `oim_cleanup.yml`.
+    PostgreSQL deployment fails after Build Stream cleanup.
 
 ??? note "Cause"
 
@@ -812,14 +818,18 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
 
 ??? note "Resolution"
 
-    - To reuse existing PostgreSQL data at `postgres_data_dir`, re-run `prepare_oim.yml` using the same PostgreSQL database credentials from the previous deployment.
+    - To reuse existing PostgreSQL data at `postgres_data_dir`, rerun the Build
+      Stream `prepare` workflow using the same PostgreSQL credentials.
     - To delete existing data and create a new database:
 
-        ```bash title="Run on: omnia_core container"
-        ansible-playbook utils/oim_cleanup.yml -e postgres_backup=false
+        ```bash title="Run on: OIM"
+        cd <OMNIA_SOURCE_PATH>/src/main
+        ./omnia.sh --run build_stream --tags cleanup -e postgres_backup=false
         ```
 
-        After cleanup completes, re-run `prepare_oim.yml` to deploy a new `postgres_container_name` container.
+        After cleanup completes, run
+        `./omnia.sh --run build_stream --tags prepare` to deploy a new
+        PostgreSQL service.
 
 ## Playbook Fails Due to Hardware, Network, or Storage Issues
 
@@ -901,7 +911,6 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
     !!! tip
 
         Increase Ansible verbosity (`-vvv`) when re-running to capture detailed error output for root-cause analysis.
-
 
 
 

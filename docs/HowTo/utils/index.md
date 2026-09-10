@@ -27,12 +27,38 @@ The default data path is `/opt/omnia`, and the default project name is
 `project_default`. Network access, storage, credentials, and target-system
 requirements depend on the selected utility.
 
+## Workflow tags
+
+Run Utils workflows through the OIM domain launcher:
+
+```bash title="Run from: <omnia-repository>/src/main"
+./omnia.sh --run utils --tags <tag>
+```
+
+| Tag | Behavior |
+|---|---|
+| No tag or `setup` | Initialize Utils facts and project paths without running a utility workflow. |
+| `precheck` | Validate the installed OIM environment used by Utils. |
+| `collect` | Collect and bundle Kubernetes and Slurm logs. |
+| `install_os` | Build and deploy installation media through iDRAC Virtual Media. |
+| `cleanup_logs` | Remove log-collection artifacts. |
+| `cleanup_install_os` | Remove temporary OS-installation artifacts and optionally reset credentials. |
+| `cleanup` | Run both Utils cleanup workflows. |
+
+!!! note
+
+    Running `./omnia.sh --run utils` without a tag performs Utils setup only.
+    It does not collect logs or install an operating system. The `upgrade` and
+    `rollback` tags are placeholders in the current source and do not perform
+    lifecycle operations.
+
 ## Choose a task
 
 | Task | Use it to |
 |---|---|
 | [Install an OS unattended](install_os_unattended.md) | Build a Kickstart-enabled ISO, attach it through iDRAC Virtual Media, and install one `x86_64` or `aarch64` node. |
 | [Collect cluster logs](../../Operations/collect_cluster_logs.md) | Collect Kubernetes and Slurm logs from configured nodes and create a support archive with metadata. |
+| [Clean up Utils](cleanup_utils.md) | Remove log-collection or OS-installation artifacts by using the full or scoped cleanup tags. |
 | [Use the Slurm configuration roles](../../Operations/slurm_configuration_roles.md) | Integrate the standalone Slurm backup, cleanup, and rollback roles into an administrator-maintained playbook. |
 
 ## Contract reference
