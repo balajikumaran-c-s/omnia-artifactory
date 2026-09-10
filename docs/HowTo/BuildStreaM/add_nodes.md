@@ -50,4 +50,4 @@ After the deploy pipeline completes:
 
 ## Troubleshooting
 
-- For additional issues, see [BuildStreaM Troubleshooting](../../Troubleshooting/buildstream.md).
+- For additional issues, see [Build Stream Troubleshooting](../../Troubleshooting/build_stream/build_stream.md).

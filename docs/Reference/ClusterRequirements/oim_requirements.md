@@ -17,7 +17,8 @@ This section outlines the key requirements for the Omnia Infrastructure Manager 
 
 - All target bare-metal servers (cluster nodes) must be **reachable from the OIM**.
 - Make sure that the required ports are open on the OIM node for cluster deployment. For detailed information on the required ports, refer to [Ports Used by the OIM](../../GetStarted/prerequisites_checklist.md#ports-used-by-the-oim).
-- The `omnia_core` and `omnia_auth` container images are deployed on the OIM. For instructions to deploy containers, see [Deploy Omnia Core Container](https://github.com/dell/omnia).
+- Complete [Setup the OIM](../../HowTo/main/setup_oim.md) to install the shared
+  environment and initialize the deployment modules.
 
 ## aarch64 Node Prerequisites
 
@@ -27,8 +28,8 @@ This section outlines the key requirements for the Omnia Infrastructure Manager 
 
 !!! info
 
-    - [Deploy Omnia core](https://github.com/dell/omnia) -- Deploy Omnia container images on OIM.
-
+    See [Running Deployment Modules](../../Overview/domain_execution.md) for
+    the supported module setup and execution workflow.
 
 
 

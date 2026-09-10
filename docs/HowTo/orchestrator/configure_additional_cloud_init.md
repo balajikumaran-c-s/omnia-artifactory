@@ -228,9 +228,8 @@ In this case, Slurm compute nodes have both the common `runcmd` and the group-sp
 !!! info
 
     - [Provision Nodes](provision_nodes.md) -- Run Orchestrator provisioning to apply cloud-init configurations.
-    - [Orchestrator contract](../../Reference/domain_contracts/orchestrator_contract.md) -- Orchestrator input and output paths.
+    - [Orchestrator contract](../../Reference/domain_contracts/orchestrator_contract.md) -- Orchestrator output paths and runtime behavior.
     - [Additional Cloud Init Reference](../../Reference/Configuration/additional_cloud_init.md) -- Configuration file reference.
-
 
 
 

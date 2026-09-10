@@ -6,7 +6,6 @@ This page lists all software components that Omnia installs and configures acros
 
 | Component | Version | License | Purpose |
 | --- | --- | --- | --- |
-| Omnia Core | 2.2.0.0 | Apache License 2.0 | The omnia_core image is the foundational container for Dell's Omnia solution, which is an open-source toolkit designed to deploy and manage high-performance computing (HPC), AI, and data analytics clusters. This container runs on the Omnia Infrastructure Manager (OIM) and acts as the central service for cluster orchestration. |
 | OpenCHAMI | 0.1.7-1 | Apache-2.0 | Open Composable Heterogeneous Adaptable Management Infrastructure |
 | SMD | v2.20.6 | MIT | The State Management Database (SMD) is a robust service designed for monitoring, tracking, and managing hardware components in high-performance computing (HPC) environments. |
 | BSS | v1.32.4 | MIT | The Boot Script Service (BSS) provides boot arguments (initrd, kernel arguments, etc.) and Level 2 boot services for static images in HPE Shasta systems. |
@@ -191,7 +190,6 @@ This page lists all software components that Omnia installs and configures acros
 | python3.12 | 3.12.9 | Python Software Foundation License (PSF) | Python 3.12 is the core interpreter and standard library for the Python programming language, enabling execution of Python applications and scripts on the system. |
 | python3.14 | 3.14 (Fedora 44 default) | Python Software Foundation License (PSF) | Python 3.14 is the core interpreter and standard library for the Python programming language, enabling execution of Python applications and scripts on the system. |
 | uv | 0.12.3 | Apache-2.0 or MIT | An extremely fast Python package installer and resolver, written in Rust. |
-| uv (omnia_core) | 0.12.3 | Apache-2.0 or MIT | An extremely fast Python package installer and resolver, written in Rust. |
 | pip | 26.2.1 | MIT | The pip package installer is the standard package manager for Python. |
 | pip (ubuntu-ldms) | 26.1.2 | MIT | The pip package installer is the standard package manager for Python. |
 | wheel | 0.46.2 | MIT | A built-package format for Python. |
@@ -205,11 +203,8 @@ This page lists all software components that Omnia installs and configures acros
 
 !!! info
 
-    - [Software Config](../Configuration/software_config.md) -- How software packages are selected for installation via `software_config.json`.
+    - [Catalog JSON](../SampleFiles/catalog_json.md) -- Software and artifact selection through `catalog_rhel.json`.
     - [Local Repo Config](../Configuration/repo_manager_config.md) -- Repository mirror configuration for package sources.
-    - [Software Config Json](../SampleFiles/software_config_json.md) -- Sample `software_config.json` for different deployment scenarios.
-
-
 
 
 

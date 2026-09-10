@@ -4,7 +4,12 @@ Omnia supports telemetry collection to monitor and manage your HPC infrastructur
 
 !!! note
 
-    To enable any telemetry and log collections (iDRAC, LDMS, PowerScale, DCGM, UFM, VAST, or Vector), ensure that the `service_k8s` entry is mentioned in the `software_config.json` file and the corresponding telemetry source fields are set to `true` in the `telemetry_config.yml` file. For example, set `telemetry_sources > idrac > metrics_enabled = true` to enable iDRAC telemetry, or `telemetry_sources > powerscale > metrics_enabled = true` to enable PowerScale telemetry.
+    To enable telemetry and log collection, use a catalog that includes the
+    required service Kubernetes groups and enable the corresponding source in
+    `telemetry_config.yml`. For example, set
+    `telemetry_sources > idrac > metrics_enabled = true` for iDRAC telemetry or
+    `telemetry_sources > powerscale > metrics_enabled = true` for PowerScale
+    telemetry.
 
 
 ## Omnia Telemetry Architecture
@@ -117,7 +122,6 @@ OME → Kafka '*.inventory', '*.telemetry', '*.health', '*.alerts', '*.auditlogs
 PowerScale Nodes → CSM Metrics PowerScale → OTEL Collector → vmagent(shared) → VictoriaMetrics
 PowerScale Nodes forwards syslog → vlagent → VictoriaLogs
 ```
-
 
 
 

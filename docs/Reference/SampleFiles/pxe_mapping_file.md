@@ -23,10 +23,10 @@ FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_M
 
 | Column | Required | Description |
 | --- | --- | --- |
-| `FUNCTIONAL_GROUP_NAME` | Yes | Node role and architecture. The value must have a corresponding image and supported Orchestrator configuration. |
+| `FUNCTIONAL_GROUP_NAME` | Yes | Functional-layer name from the selected catalog. The value must exactly match the corresponding image name in Image Build Manager output. |
 | `GROUP_NAME` | Yes | Scalable Unit or logical group identifier. |
 | `SERVICE_TAG` | Yes | Unique Dell server service tag. |
-| `PARENT_SERVICE_TAG` | No | For Slurm compute-node roles, the service tag of the `service_kube_node_x86_64` in the same group. Leave empty for other roles. |
+| `PARENT_SERVICE_TAG` | No | For Slurm compute-node roles, the service tag of the service Kubernetes worker in the same group. Leave empty for other roles. |
 | `HOSTNAME` | Yes | Unique lowercase hostname without a domain suffix. |
 | `ADMIN_MAC` | Yes | Unique MAC address of the admin/PXE NIC. |
 | `ADMIN_IP` | Yes | Unique IPv4 address in a configured admin subnet. |
@@ -35,34 +35,33 @@ FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_M
 | `IB_NIC_NAME` | No | InfiniBand NIC FQDD, such as `InfiniBand.Slot.7-1` or `NIC.InfiniBand.1-3`. |
 | `IB_IP` | No | InfiniBand IPv4 address. |
 
-Discovery generates these exact, case-sensitive functional groups:
+For the default RHEL 10.0 catalog installed by Main, use these exact,
+case-sensitive functional-group names:
 
-- `service_kube_control_plane_x86_64`
-- `service_kube_node_x86_64`
-- `login_node_x86_64`
-- `login_node_aarch64`
-- `login_compiler_node_x86_64`
-- `login_compiler_node_aarch64`
-- `slurm_control_node_x86_64`
-- `slurm_node_x86_64`
-- `slurm_node_aarch64`
-- `os_x86_64`
-- `os_aarch64`
+- `os_rhel_10_0_x86_64`
+- `slurm_control_node_rhel_10_0_x86_64`
+- `login_node_rhel_10_0_x86_64`
+- `service_kube_control_plane_rhel_10_0_x86_64`
+- `service_kube_node_rhel_10_0_x86_64`
+- `os_rhel_10_0_aarch64`
+- `slurm_node_rhel_10_0_aarch64`
+- `login_compiler_node_rhel_10_0_aarch64`
 
-For a manually created file, ensure that each functional group is supported by
-the current catalog or image configuration and has a corresponding image in
-Image Build Manager output.
+Other catalog variants can define different functional layers. Use the exact
+`catalog.functionallayer[].name` value from the selected catalog. When using a
+Discovery-generated mapping, review and update `FUNCTIONAL_GROUP_NAME` before
+passing the file to Orchestrator.
 
 ## Sample file
 
 ```csv title="pxe_mapping_file.csv"
 FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
-slurm_control_node_x86_64,grp0,ABCD12,,nid001,02:00:00:00:01:01,172.16.107.52,02:00:00:00:02:01,172.17.107.52,InfiniBand.Slot.7-1,192.168.0.100
-service_kube_node_x86_64,grp1,ABFL82,,nid002,02:00:00:00:01:02,172.16.107.56,02:00:00:00:02:02,172.17.107.56,,
-slurm_node_x86_64,grp1,ABCD34,ABFL82,nid003,02:00:00:00:01:03,172.16.107.43,02:00:00:00:02:03,172.17.107.43,InfiniBand.Slot.7-2,192.168.0.101
-login_compiler_node_aarch64,grp8,ABCD78,,nid004,02:00:00:00:01:04,172.16.107.41,02:00:00:00:02:04,172.17.107.41,NIC.InfiniBand.1-1,192.168.0.103
-service_kube_control_plane_x86_64,grp3,ABFG79,,nid005,02:00:00:00:01:05,172.16.107.53,02:00:00:00:02:05,172.17.107.53,,
-os_aarch64,grp7,ABEF78,,nid006,02:00:00:00:01:06,172.16.107.61,02:00:00:00:02:06,172.17.107.61,,
+slurm_control_node_rhel_10_0_x86_64,grp0,ABCD12,,nid001,02:00:00:00:01:01,172.16.107.52,02:00:00:00:02:01,172.17.107.52,InfiniBand.Slot.7-1,192.168.0.100
+service_kube_node_rhel_10_0_x86_64,grp1,ABFL82,,nid002,02:00:00:00:01:02,172.16.107.56,02:00:00:00:02:02,172.17.107.56,,
+slurm_node_rhel_10_0_aarch64,grp1,ABCD34,ABFL82,nid003,02:00:00:00:01:03,172.16.107.43,02:00:00:00:02:03,172.17.107.43,InfiniBand.Slot.7-2,192.168.0.101
+login_compiler_node_rhel_10_0_aarch64,grp8,ABCD78,,nid004,02:00:00:00:01:04,172.16.107.41,02:00:00:00:02:04,172.17.107.41,NIC.InfiniBand.1-1,192.168.0.103
+service_kube_control_plane_rhel_10_0_x86_64,grp3,ABFG79,,nid005,02:00:00:00:01:05,172.16.107.53,02:00:00:00:02:05,172.17.107.53,,
+os_rhel_10_0_aarch64,grp7,ABEF78,,nid006,02:00:00:00:01:06,172.16.107.61,02:00:00:00:02:06,172.17.107.61,,
 ```
 
 `ABFL82` is a service Kubernetes worker in `grp1`; it is the parent service

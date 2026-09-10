@@ -34,8 +34,8 @@ through `additional_packages.json`.
 
 3. For first time deployment, do the following:
 
-   - Build images: [Build Cluster Images](../Setup/build_cluster_images.md)
-   - Discover nodes and PXE boot: [Discover Nodes](../Setup/discover_nodes.md)
+   - Build images: [Build Cluster Images](../image_build_manager/build_images.md)
+   - Discover nodes and PXE boot: [Discover Nodes](../discovery/discover_nodes.md)
 
 4. If you are deploying after cluster provisioning, refresh metadata and install packages on compute nodes.
 
@@ -62,5 +62,5 @@ dnf repolist
 ## Next Steps
 
 
-- [Deploy Additional Packages](deploy_additional_packages.md) -- Deploy additional software packages and container images on cluster nodes.
+- [Configure Catalog Content and Add Packages](../repo_manager/adding_additional_packages.md) -- Add software content for cluster nodes.
 - [Apptainer](../orchestrator/use_apptainer.md) -- Pull and run container images using Apptainer.

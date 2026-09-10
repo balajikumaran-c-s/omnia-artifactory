@@ -5,7 +5,8 @@ nav:
 
 # General Issues
 
-Issues that affect the OIM, core containers, OpenCHAMI services, SSH connectivity, system recovery, and Ansible Vault operations.
+Issues that affect the OIM, service containers, OpenCHAMI services, SSH
+connectivity, system recovery, and Ansible Vault operations.
 
 ## Common Container Debugging Tools
 
@@ -28,52 +29,6 @@ podman logs -n 200 <container>
 ```bash title="Run on: OIM host"
 podman exec -it <container> sh -lc 'curl -I https://example.com'
 ```
-
-## Omnia Core Container Fails to Deploy
-
-???+ note "Symptom"
-
-    - `omnia.sh` aborts early.
-    - `podman pull` fails.
-    - Container starts but cannot write to shared path.
-
-??? note "Cause"
-
-    - Podman pull or authentication issues.
-    - Time synchronization failure.
-    - Invalid OIM hostname.
-    - NFS or SELinux permission issues.
-
-??? note "Resolution"
-
-    1. Check container status:
-
-        ```bash title="Run on: OIM host"
-        podman ps --format 'table {{.Names}}\t{{.Status}}'
-        ```
-
-    2. Check container logs:
-
-        ```bash title="Run on: OIM host"
-        podman logs -n 200 omnia_core
-        ```
-
-    3. Check time synchronization:
-
-        ```bash title="Run on: OIM host"
-        timedatectl status
-        chronyc tracking || chronyc sources -v
-        ```
-
-    4. Validate OIM hostname (no dots, underscores, commas, uppercase, leading/trailing hyphens, or leading digits; FQDN must be 64 characters or fewer).
-
-    5. Validate NFS mount and SELinux labeling:
-
-        ```bash title="Run on: OIM host"
-        podman run --rm -v /shared:/mnt:z registry.access.redhat.com/ubi10/ubi sh -lc 'touch /mnt/.rw'
-        ```
-
-    6. Re-run `omnia.sh`.
 
 ## Prepare OIM Failures
 
@@ -122,13 +77,13 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
     2. Ensure the file has the correct permissions (readable by the user running the playbook).
     3. Re-run the playbook with the correct vault password file:
 
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         ansible-playbook playbooks/omnia.yml --vault-password-file /root/.vault_pass
         ```
 
     4. If the vault password is lost, recreate the credentials file:
 
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         cp input/credentials.yml input/credentials.yml.bak
         ansible-vault create input/credentials.yml
         ```
@@ -204,38 +159,6 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
         ```
 
     2. Retry login or reprovision the node.
-
-## SSH to omnia_core Container Fails After Switching to Root With Sudo
-
-???+ note "Symptom"
-
-    After successful execution of the `omnia.sh` script, a message is displayed indicating that you can log in to the `omnia_core` container using `ssh omnia_core`. However, this fails if you initially logged in to the OIM node as a non-root user and then switched to the root user using the `sudo` command.
-
-??? note "Cause"
-
-    SSH access to the `omnia_core` container depends on direct root login. When a user logs in as a non-root user and switches to root using the `sudo` command, the SSH session may not have the required permissions or environment configuration to access the container using `ssh omnia_core`.
-
-??? note "Resolution"
-
-    1. Edit the SSH configuration file and set `PermitRootLogin yes`:
-
-        ```bash title="File: /etc/ssh/sshd_config"
-        PermitRootLogin yes
-        ```
-
-    2. Restart the SSH service:
-
-        ```bash title="Run on: OIM host"
-        systemctl restart sshd
-        ```
-
-    3. Log out and re-login to the OIM node directly as the `root` user.
-
-    4. Restart the `omnia_core` container:
-
-        ```bash title="Run on: OIM host"
-        podman restart omnia_core
-        ```
 
 ## OpenCHAMI Issues
 
@@ -367,14 +290,15 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
 
     **2. Verify Omnia services on the OIM**
 
-    Check the Omnia core service and the services associated with omnia.target:
+    Check the services associated with `omnia.target`:
 
     ```bash title="Run on: OIM host"
-    systemctl status omnia_core.service --no-pager
     systemctl list-dependencies omnia.target
     ```
 
-    The Omnia deployment documentation identifies omnia_core.service, pulp.service, omnia_auth.service, and the OpenCHAMI services under openchami.target (smd, bss, cloud-init-server, hydra, acme-deploy) as dependencies that may be present under omnia.target. The exact set depends on the deployed configuration.
+    The deployed service set depends on the selected domains. It can include
+    Pulp and the OpenCHAMI services under `openchami.target`, such as SMD, BSS,
+    cloud-init-server, Hydra, and acme-deploy.
 
     List failed Omnia and OpenCHAMI-related services:
 
@@ -387,7 +311,6 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
     For each failed service, inspect its journal. For example:
 
     ```bash title="Run on: OIM host"
-    journalctl -u omnia_core.service -b --no-pager
     journalctl -u pulp.service -b --no-pager
     journalctl -u openchami.target -b --no-pager
     ```
@@ -911,7 +834,6 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
     !!! tip
 
         Increase Ansible verbosity (`-vvv`) when re-running to capture detailed error output for root-cause analysis.
-
 
 
 

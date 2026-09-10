@@ -1,46 +1,10 @@
-# Discovery Input/Output Contract
+# Discovery Domain Contract
 
 **Deployment module**: Discovery | **CLI identifier**: `discovery`
 
-## Input contract
+## Upstream domain contract
 
-Discovery reads project-scoped inputs from:
-
-```text
-$OMNIA_DATA_PATH/discovery/input/$OMNIA_PROJECT_NAME/
-```
-
-The defaults are `/opt/omnia` and `project_default`.
-
-| Input | Required | Purpose |
-|---|---|---|
-| `discovery_config.yml` | Yes | Enables or disables OME discovery and identifies the OME appliance. |
-| `network_spec.yml` | Yes during discovery execution | Supplies the admin and InfiniBand subnets used to derive node addresses. |
-| `discovery_credentials.yml` | When OME discovery is enabled | Ansible Vault-encrypted OME username and password, created by the credential workflow. |
-| `.discovery_credentials_key` | With the credential file | Vault password file used by the Discovery roles. |
-
-`network_spec.yml` is a Discovery-owned copy. The current execution flow reads
-only `Networks[].admin_network.subnet` and `Networks[].ib_network.subnet`. It
-combines each subnet's first two octets with the BMC IP's last two octets to
-derive `ADMIN_IP` and, when an InfiniBand NIC is detected, `IB_IP`.
-
-The Discovery validation tag validates `discovery_config.yml`; it does not
-validate `network_spec.yml`. Review both subnet values before execution.
-
-### `discovery_config.yml`
-
-The schema is
-`plugins/module_utils/discovery_validation/schema/discovery_config.json`.
-
-| Field | Type | Required | Purpose |
-|---|---|---|---|
-| `enable_bmc_discovery` | boolean | Yes | Set to `true` to run discovery through Dell OpenManage Enterprise (OME). |
-| `ome_ip` | IPv4 string | Yes | OME address. It must be a valid, non-loopback IPv4 address when discovery is enabled. |
-
-The current executable discovery flow supports OME. The Magellan section in
-the source template is reserved for future use; a manual inventory is supplied
-directly to Orchestrator as `pxe_mapping_file.csv` rather than executed as a
-Discovery mechanism.
+Discovery does not require another deployment domain's status output.
 
 ## Output contract
 
@@ -122,7 +86,7 @@ The operational tags are:
 | Tag | Behavior |
 |---|---|
 | *(none)* | Runs validation, credentials, and OME execution. |
-| `validate` | Validates `discovery_config.yml` without credential prompting. |
+| `validate` | Validates the Discovery domain settings without credential prompting. |
 | `credentials` | Creates or updates the encrypted OME credential file. |
 | `execute` | Runs the OME discovery flow. |
 | `discovery` | Alias of `execute`. |

@@ -23,11 +23,11 @@ instead of using this module input layout.
 
 ## Module Contracts
 
-Input/output contracts for each Omnia deployment module document the required
-input files, parameters, and expected outputs. These contracts define the
-interfaces between modules and ensure proper data flow during deployment.
+Domain contracts document upstream domain handoffs, produced artifacts, and
+runtime or lifecycle behavior. Domain-owned input configuration is documented
+separately in the configuration reference and how-to guides.
 
-- [Build Stream Contract](domain_contracts/build_stream_contract.md) - GitLab and BSM configuration, readiness status, and pipeline interfaces
+- [Build Stream Contract](domain_contracts/build_stream_contract.md) - GitLab and BSM readiness status and pipeline interfaces
 - [Discovery Contract](domain_contracts/discovery_contract.md) - BMC discovery and PXE mapping file generation
 - [Repo Manager Contract](domain_contracts/repo_manager_contract.md) - Local repository creation and package management
 - [Image Build Manager Contract](domain_contracts/image_build_manager_contract.md) - Diskless OS image building
@@ -39,12 +39,11 @@ interfaces between modules and ensure proper data flow during deployment.
 
 Curated and annotated examples of commonly used configuration and input files. These samples can be used as implementation references and customized to meet deployment-specific requirements.
 
-- [catalog.json](SampleFiles/catalog_json.md) - Build Stream catalog for CI/CD-driven deployments
+- [catalog_rhel.json](SampleFiles/catalog_json.md) - Shared software and image-content catalog
 - [pxe_boot_inventory.csv](SampleFiles/pxe_boot_inventory.md) - PXE boot inventory for node provisioning
 - [pxe_mapping_file.csv](SampleFiles/pxe_mapping_file.md) - PXE mapping file for network boot
 - [slurm.conf](SampleFiles/slurm_conf.md) - Slurm job scheduler configuration
 - [slurmdbd.conf](SampleFiles/slurmdbd_conf.md) - Slurm database daemon configuration
-- [software_config.json](SampleFiles/software_config_json.md) - Software package configuration
 
 ## Cluster Requirements
 
@@ -64,9 +63,6 @@ Complete catalog of telemetry metrics collected and exposed by Omnia. Metrics ar
 ## Appendices
 
 Supplementary reference information, including naming conventions, filesystem layouts, directory structures, configuration standards, and other supporting technical specifications.
-
-
-
 
 
 

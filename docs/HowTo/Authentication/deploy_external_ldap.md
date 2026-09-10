@@ -165,8 +165,7 @@ you configured in the LDIF file.
 
 ## Next Steps
 
-- [Configure OpenLDAP Proxy](configure_openldap_proxy.md) -- Set up an OpenLDAP proxy to relay queries to the external LDAP server.
-- [Set Up OpenLDAP](setup_openldap.md) -- Configure OpenLDAP for cluster authentication.
+- [Deploy OpenLDAP](../orchestrator/deploy_openldap.md) -- Configure OpenLDAP for cluster authentication.
 
 ## Troubleshooting
 

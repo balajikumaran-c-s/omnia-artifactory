@@ -200,7 +200,8 @@ Issues related to LDAP authentication, user login, OpenLDAP service, and TLS cer
         systemctl start omnia_auth.service
         ```
 
-        Alternatively, re-run prepare_oim.yml with OpenLDAP enabled in software_config.json.
+        Alternatively, select a catalog that includes `openldap_group` and
+        rerun Orchestrator.
 
     2. Verify SSSD status and configuration on the login or compute node:
 
@@ -245,13 +246,15 @@ Issues related to LDAP authentication, user login, OpenLDAP service, and TLS cer
 
     6. Check for stale SSH host keys:
 
-        If the actual failure is an SSH connection to the OIM or omnia_core container (not an OpenLDAP bind), the error may indicate a stale SSH host key:
+        If the actual failure is an SSH connection to the OIM (not an OpenLDAP
+        bind), the error may indicate a stale SSH host key:
 
         ```text title="Expected output"
         WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!
         ```
 
-        This occurs when the OIM or container was reprovisioned, leaving a stale entry in `~/.ssh/known_hosts`. Remove the stale key:
+        This occurs when the OIM was reprovisioned, leaving a stale entry in
+        `~/.ssh/known_hosts`. Remove the stale key:
 
         ```bash title="Run on: compute node"
         ssh-keygen -R <hostname>

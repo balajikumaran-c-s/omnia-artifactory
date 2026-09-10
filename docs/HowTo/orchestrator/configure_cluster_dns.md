@@ -202,5 +202,5 @@ If some nodes resolve via DNS while others use `/etc/hosts`, only some nodes wer
 !!! info "Related pages"
 
     - [Cluster DNS](../../Overview/cluster_dns.md) -- Architecture, DNS ownership boundaries, and failure scenarios.
-    - [Orchestrator contract](../../Reference/domain_contracts/orchestrator_contract.md) -- Reference for the `dns_enabled` parameter and input path.
+    - [Orchestrator configuration](../../Reference/Configuration/orchestrator_config.md) -- Reference for the `dns_enabled` parameter and input path.
     - [Known Limitations](../../Troubleshooting/known_limitations.md) -- Cluster DNS constraints.

@@ -1,93 +1,18 @@
-# Image Build Manager Input/Output Contract
+# Image Build Manager Domain Contract
 
 **Deployment module**: Image Build Manager | **CLI identifier**: `image_build_manager`
 
-## Input contract
+## Upstream domain contract
 
-Image Build Manager stages its project inputs under
-`<IMAGE_BUILD_MANAGER_DATA_PATH>/input/<project>/`. When
-`IMAGE_BUILD_MANAGER_DATA_PATH` is unset, the runtime root defaults to
-`<OMNIA_DATA_PATH>/image_build_manager`.
+Image Build Manager consumes `repo_status.yml`, the output contract produced
+by Repository Manager. Build-related flows require the file and validate it
+against the Repo Manager status schema before loading repository data.
 
-### `image_build_config.yml`
-
-**Purpose**: Configures the repository dependency, S3 provider, build engine,
-package source, build controls, and optional ARM host.
-
-**Schema**:
-`plugins/module_utils/input_validation/schema/image_build_config.json`
-
-| Field | Type | Required | Default | Purpose |
-|---|---|---|---|---|
-| `repo_manager_output_path` | string | Yes | Project-dependent | Full path to Repo Manager's `repo_status.yml`. |
-| `s3_configurations.provider` | string | Yes | `minio` | Selects local `minio` or external `powerscale`. |
-| `s3_configurations.endpoint_url` | string | Yes | Empty | Must be empty for MinIO and a valid HTTP(S) URL for PowerScale. |
-| `image_build_type` | string | Yes | `image-thrillhouse` | Selects `image-builder` or `image-thrillhouse`. |
-| `functional_groups_source` | string | Yes | `config` | Selects `package_groups.yml` or catalog JSON as the package source. |
-| `build_image.max_parallel` | integer | Yes | `0` | Maximum parallel image builds; `0` allows all groups concurrently. |
-| `build_image.build_timeout` | integer | Yes | `7200` | Per-build timeout from 600 through 86400 seconds. |
-| `build_image.force_rebuild` | boolean | Yes | `false` | Bypasses the package-hash cache. |
-| `build_image.backup_s3_images` | boolean | Yes | `false` | Copies existing compute artifacts to `*_prev` before rebuilding. |
-| `build_image.repo_ssl_verify` | boolean | Yes | `true` | Enables repository SSL verification and GPG checks. |
-| `aarch64_inventory_host_ip` | IPv4 string | No | Empty | Selects a remote ARM build host; empty skips `aarch64`. |
-| `aarch64_ssh_user` | string | Conditional | `root` | SSH user required when an ARM host is selected. |
-
-Unknown fields are rejected by the schema.
-
-### `image_build_credentials.yml`
-
-**Purpose**: Stores S3 and optional ARM-host credentials.
-
-**Schema**:
-`plugins/module_utils/input_validation/schema/image_build_credentials.json`
-
-The credential file is generated through interactive collection and encrypted
-with Ansible Vault. Its key is stored alongside it as
-`.image_build_credentials_key`.
-
-| Field | Required | Purpose |
-|---|---|---|
-| `s3_secret_key` | Yes | MinIO password or PowerScale S3 secret key. |
-| `s3_access_id` | For PowerScale | S3 access key ID. |
-| `aarch64_ssh_password` | When an ARM host is configured | Password used to establish SSH access. |
-
-### `repo_status.yml`
-
-**Purpose**: Provides RPM repository URLs, OS metadata, and certificate paths
-from Repo Manager.
-
-**Location**: The path configured by `repo_manager_output_path`.
-
-The consumer contract requires `overall_status: success`, an operating-system
-type, Repo Manager metadata, and versioned repository maps. A configured Repo
-Manager certificate must exist. Build-related flows require this file;
-validation, preparation, precheck, and cleanup flows do not.
-
-### `package_groups.yml`
-
-This file is used when `functional_groups_source` is `config`.
-
-| Field | Required | Purpose |
-|---|---|---|
-| `os` | No | Sets the build operating-system type. |
-| `os_version` | No | Sets the build operating-system version. |
-| `base_packages` | Yes | RPM packages installed in every image. |
-| `functional_groups.<name>.packages` | Yes | Additional RPM packages for a functional-group image. |
-
-Functional-group keys are filtered by the `_x86_64` or `_aarch64` suffix. The
-group list comes from the keys in this file; it is not duplicated in
-`image_build_config.yml`.
-
-### Catalog JSON
-
-Catalog JSON is used when `functional_groups_source` is `catalog` and is read
-from `CATALOG_FILE_PATH`. Image Build Manager consumes
-`catalog.identifier`, `catalog.functionallayer`, `catalog.groups`, and
-`catalog.packages`.
-
-Layer names beginning with `baseos` provide the base-image packages. Other
-layers matching the selected architecture provide functional-group images.
-The operating-system type and version come from the base OS group.
+The required contract includes a successful overall status, operating-system
+metadata, versioned repository mappings, and Repo Manager certificate data.
+When a certificate path is present, the certificate must also exist. The
+prepare, validation, precheck, and cleanup flows do not require this upstream
+output.
 
 ## Output contract
 
@@ -117,8 +42,8 @@ scheme, and ends with the object filename. Consumers construct a download URL
 as `<s3_configurations.endpoint_url>/<artifact-path>`.
 
 `image_build_type` records the engine that produced the manifest. Consumers
-use this value, rather than the current input configuration, to interpret the
-artifact layout.
+use this recorded value, rather than current runtime settings, to interpret
+the artifact layout.
 
 ### S3 artifact layouts
 

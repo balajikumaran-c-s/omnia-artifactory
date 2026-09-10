@@ -702,13 +702,13 @@ state problems, job submission errors, and GPU detection.
 
     1. Verify Munge is running on all nodes:
 
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         ansible slurm_cluster -m shell -a "systemctl status munge"
         ```
 
     2. Verify the Munge key is identical across all nodes:
 
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         ansible slurm_cluster -m shell -a "md5sum /etc/munge/munge.key"
         ```
 
@@ -771,12 +771,25 @@ state problems, job submission errors, and GPU detection.
 
 ??? note "Resolution"
 
-    1. Run cleanup and redeploy with `provision.yml`:
+    1. Validate the restored configuration and restart the Slurm controller
+       services:
 
-       ```bash title="Run on: omnia_core container"
-       ansible-playbook /opt/omnia/utils/slurm_config_util.yml --tags slurm_cleanup
-       ansible-playbook provision.yml
+       ```bash title="Run on: Slurm controller node"
+       systemctl status slurmdbd slurmctld --no-pager
+       journalctl -u slurmctld -n 50 --no-pager
        ```
+
+       Correct the restored files based on the journal output. Then restart the
+       services and verify the controller:
+
+       ```bash title="Run on: Slurm controller node"
+       systemctl restart slurmdbd slurmctld
+       scontrol ping
+       sinfo
+       ```
+
+       See [Slurm Configuration Roles](../../Operations/slurm_configuration_roles.md)
+       for the current source limitations and verification steps.
 
 ## New Nodes Show DOWN After Adding
 
@@ -1220,6 +1233,6 @@ state problems, job submission errors, and GPU detection.
 
 !!! info
 
-    - [Setup Slurm](../../HowTo/Slurm/setup_slurm.md) -- Slurm cluster setup guide.
+    - [Deploy Slurm](../../HowTo/orchestrator/deploy_slurm.md) -- Slurm cluster setup guide.
     - [Slurm With GPU](../../HowTo/orchestrator/slurm_with_gpu.md) -- GPU configuration for Slurm.
     - [Add Nodes](../../Operations/add_nodes.md) and [Remove Slurm Compute Nodes](../../Operations/remove_slurm_nodes.md) -- Supported Slurm node lifecycle procedures.

@@ -15,7 +15,7 @@ After booting the nodes, verify the following:
 ## Prerequisites
 
 - Nodes are booted and provisioned.
-- Slurm and/or Kubernetes have been deployed (see [Setup Slurm](../Slurm/setup_slurm.md) or [Setup Service K8S](../Kubernetes/setup_service_k8s.md)).
+- Slurm and/or Kubernetes have been deployed (see [Deploy Slurm](../orchestrator/deploy_slurm.md) or [Deploy Kubernetes](../orchestrator/deploy_kubernetes.md)).
 - For GPU verification: GPU-enabled Slurm nodes are configured (see [Slurm With Gpu](../orchestrator/slurm_with_gpu.md)).
 - For PAM verification: External LDAP is deployed (see [Deploy External LDAP](../Authentication/deploy_external_ldap.md)).
 

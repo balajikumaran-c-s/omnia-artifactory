@@ -45,7 +45,7 @@ cross-architecture builds are not supported.
 
 ## Contract reference
 
-See the [Image Build Manager Input/Output Contract](../../Reference/domain_contracts/image_build_manager_contract.md)
+See the [Image Build Manager Domain Contract](../../Reference/domain_contracts/image_build_manager_contract.md)
 for the configuration, credentials, upstream Repo Manager contract, package
 sources, generated `build_status.yml`, services, and S3 artifact layout.
 

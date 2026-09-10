@@ -1,87 +1,14 @@
-# Telemetry Input/Output Contract
+# Telemetry Domain Contract
 
 **Deployment module**: Telemetry | **CLI identifier**: `telemetry`
 
-## Input contract
+## Upstream domain contract
 
-Telemetry reads its project inputs from:
-
-```text
-$OMNIA_DATA_PATH/telemetry/input/$OMNIA_PROJECT_NAME/
-```
-
-`TELEMETRY_DATA_PATH` can replace
-`$OMNIA_DATA_PATH/telemetry`. The defaults resolve to
-`/opt/omnia/telemetry/input/project_default/`.
-
-The current deployment loader still reads the `project_default` input
-directory, regardless of the project selected during validation, and
-initialization and deployment do not consistently honor `TELEMETRY_DATA_PATH`.
-Use the default project and data root until these source limitations are
-corrected.
-
-| Input | Required | Purpose |
-|---|---|---|
-| `telemetry_config.yml` | Yes | Selects the cluster inventory, sources, routes, bridges, sinks, and source-specific settings. |
-| `telemetry_storage_config.yml` | Yes | Defines storage and resource settings for the selected telemetry components. |
-| `telemetry_packages.yml` | Yes | Defines online or offline package sources, cluster mounts, images, charts, Git repositories, and Python packages. |
-| `telemetry_credentials.yml` | Conditional | Ansible Vault-encrypted credentials collected for enabled sources and sinks. |
-| `.telemetry_credentials_key` | With the credential file | Vault password file for the encrypted credentials. |
-| Cluster inventory | Yes | File selected by `cluster_inventory`; supplies the service Kubernetes VIP and Slurm node groups. |
-
-The YAML inputs are validated against the schemas under
-`plugins/module_utils/input_validation/schema/` and by the corresponding
-cross-field validators.
-
-### `telemetry_config.yml`
-
-| Field | Requirement | Purpose |
-|---|---|---|
-| `cluster_inventory` | Required, non-empty path | Selects the Ansible inventory containing `kube_vip_group` and any Slurm nodes used by LDMS. |
-| `telemetry_sources.<source>.metrics_enabled` | Source-dependent | Enables metrics for `idrac`, `ldms`, `powerscale`, `ufm`, `vast`, or `ome`. |
-| `telemetry_sources.<source>.logs_enabled` | Where supported | Enables logs for PowerScale, UFM, VAST, or OME. |
-| `telemetry_sources.<source>.collection_targets` | Required for configured sources | Routes a source to its schema-supported sinks. |
-| `telemetry_bridges.vector_ldms` | Optional | Routes LDMS data from Kafka to VictoriaMetrics. |
-| `telemetry_bridges.vector_ome` | Optional | Routes OME metrics or logs from Kafka to VictoriaMetrics or VictoriaLogs. |
-| Source-specific configuration | Conditional | Supplies endpoints, ports, inventory paths, and other fields required by enabled sources. |
-
-For iDRAC metrics, `idrac_telemetry_configurations` supplies the following
-MySQL and inventory settings:
-
-| Field | Requirement | Purpose |
-|---|---|---|
-| `bmc_group_data_path` | Required when iDRAC metrics are enabled | Selects the BMC inventory CSV consumed by the iDRAC source. |
-| `mysqldb_storage` | Required, non-empty; default `1Gi` | Sets the requested capacity of the MySQL PVC. |
-| `oim_bmc_ips` | Optional | Adds OIM BMC addresses to the service inventory when configured. |
-
-The encrypted `telemetry_credentials.yml` contains `bmc_username`,
-`bmc_password`, `mysqldb_user`, `mysqldb_password`, and
-`mysqldb_root_password` when iDRAC metrics are enabled. The deployment renders
-the MySQL values into the `mysqldb-credentials` Kubernetes Secret.
-
-PowerScale, UFM, and VAST are imported by the root deployment only when their
-metrics channel is enabled. Logs for these external systems require manual
-configuration to forward syslog to VLAgent; a logs-only source configuration
-is not supported by the current root workflow. OME is an external Kafka
-producer, and SFM is an external VictoriaMetrics producer rather than a
-Telemetry source role.
-
-### `telemetry_storage_config.yml`
-
-Storage sections are required when their corresponding components are selected.
-They include Kafka, VictoriaMetrics, VictoriaLogs, Vector, iDRAC, LDMS,
-PowerScale, UFM, and VAST storage or resource settings as applicable.
-
-### `telemetry_packages.yml`
-
-| Field | Requirement | Purpose |
-|---|---|---|
-| `install_mode` | Optional; default `offline` | Selects `offline` or `online` package resolution. |
-| `repo_url` | Required in offline mode | Base Pulp content URL. |
-| `k8s_cluster_mount` | Required | Existing mount used to stage Telemetry content for Kubernetes nodes. |
-| `slurm_cluster_mount` | Required | Existing mount used for LDMS content on Slurm nodes. |
-| `container_registry` | Optional | Overrides the registry prefix for air-gapped deployment. |
-| Package maps | Required as consumed | Image, Helm chart, Git repository, and Python package definitions used by the selected components. |
+Telemetry consumes the Orchestrator inventory contract to resolve the service
+Kubernetes virtual IP and the Slurm node groups used by enabled collectors.
+The source currently expects an explicitly selected or staged inventory; it
+does not automatically transfer the Orchestrator output into the Telemetry
+project.
 
 ## Output contract
 
@@ -152,7 +79,7 @@ independent deployment domain.
 | Container | `mysqldb`, using the MySQL image selected by `images.idrac.mysql`; the current default is `docker.io/library/mysql:9.7.2`. |
 | Service | Internal headless service `idrac-telemetry-service`, with ports 3306 and 33060. It is not exported as a customer-facing MySQL endpoint. |
 | Database | `idrac_telemetrydb`; the `services` table stores the iDRAC service inventory consumed by the receiver. |
-| Secret | `mysqldb-credentials`, generated from the encrypted Telemetry credential file. |
+| Secret | `mysqldb-credentials`, generated by the Telemetry credential workflow. |
 | Persistent storage | `mysqldb-pvc-idrac-telemetry-0`, requested as ReadWriteOnce using `mysqldb_storage`. |
 | Recovery initialization | The `cleanup-mysql-locks` init container removes stale `.sock` and `.pid` files after an ungraceful shutdown. |
 

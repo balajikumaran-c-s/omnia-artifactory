@@ -15,7 +15,6 @@ Omnia configures the following ports for use by third-party tools installed by O
 | Port Number | Protocol | Service | Type of Node |
 |-------------|----------|---------|--------------|
 | 22 | TCP | SSH | All Nodes |
-| 2222 | TCP | SSH — Omnia Core Relay | Manager (OIM) |
 | 2049 | TCP/UDP | NFS Server | Manager (OIM) |
 | 111 | TCP/UDP | RPC Bind | Manager (OIM) |
 | 20048 | TCP/UDP | NFS mountd | Manager (OIM) |
@@ -34,7 +33,6 @@ Omnia configures the following ports for use by third-party tools installed by O
 
 | Port | Protocol | Service Name | Type of Node |
 |---|---|---|---|
-|2222|TCP|Omnia Core|Manager (OIM)|
 |2225|TCP|Pulp Content Service|Manager (OIM)|
 |5000|TCP|OCI Registry|Manager (OIM)|
 |9000|TCP|MinIO S3 API|Manager (OIM)|
@@ -165,29 +163,23 @@ For more information on the passwords used by Omnia, see [Login Security Setting
 
 !!! note
 
-    All log paths referenced in this section are on the OIM host filesystem, not inside the omnia_core container.
+    All log paths referenced in this section are on the OIM host filesystem.
 
-Omnia creates and stores log files related to containers at `<nfs_share_path>/omnia/log`.The events during the installation of Omnia are captured as logs. For different roles called by Omnia, separate log files are created as listed below:
+Omnia writes domain execution logs and service logs on the OIM. The primary
+locations are listed below.
 
 **Omnia Log File Locations**
 
 | Location | Purpose |
 |----------|---------|
 | `/var/log/omnia/discovery/discovery.log` | Discovery playbook log |
-| `/opt/omnia/log/core/playbooks/discovery_validation_<project>.log` | Discovery input-validation log |
-| `/opt/omnia/log/core/playbooks/local_repo.log` | Local Repository logs |
-| `/opt/omnia/log/core/playbooks/prepare_oim.log` | Prepare OIM logs |
-| `/opt/omnia/log/core/playbooks/provision.log` | Provision logs |
-| `/opt/omnia/log/core/playbooks/scheduler.log` | Scheduler logs |
-| `/opt/omnia/log/core/playbooks/telemetry.log` | Telemetry logs |
-| `/opt/omnia/log/core/playbooks/utils.log` | Utility logs |
-| `/opt/omnia/log/core/playbooks/credential_utility.log` | Credential utility logs |
-| `/opt/omnia/log/openchami/*.log` | OpenCHAMI playbook logs |
-| `/opt/omnia/log/pulp/*.log` | Pulp container logs |
-| `/opt/omnia/log/local_repo/*.log` | Local repository logs |
-| `/opt/omnia/log/core/container/*.log` | Core container logs |
-| `/opt/omnia/log/core/playbooks/validation_omnia_project_default.log` | Omnia input validation report logs |
-| `/opt/omnia/log/core/playbooks/input_validation.log` | Omnia input validation playbook logs |
+| `/var/log/omnia/repo_manager/repo_manager.log` | Repo Manager playbook log |
+| `/var/log/omnia/image_build_manager/image_build_manager.log` | Image Build Manager playbook log |
+| `/var/log/omnia/orchestrator/orchestrator.log` | Orchestrator playbook log |
+| `/var/log/omnia/telemetry/telemetry.log` | Telemetry playbook log |
+| `/var/log/omnia/utils/utils.log` | Utils playbook log |
+| `<OMNIA_DATA_PATH>/orchestrator/log/openchami/` | OpenCHAMI logs |
+| `<OMNIA_DATA_PATH>/repo_manager/log/` | Repository processing and Pulp logs |
 
 Additionally, an aggregate of the events taking place during storage, scheduler and network role installation called `omnia.log` is created in `/var/log`.
 
@@ -243,8 +235,6 @@ The format is described in the following table.
 Omnia performs network and application security scans on all modules of the product. Omnia additionally performs Blackduck scans on the open source softwares, which are installed by Omnia at runtime. However, Omnia is not responsible for the third-party software installed using Omnia. Review all third party software before using Omnia to install it.
 
 If you have any feedback about Omnia documentation, please reach out at [omnia.readme@dell.com](mailto:omnia.readme@dell.com).
-
-
 
 
 

@@ -132,7 +132,7 @@ success, and failure counts, plus each node's `pxe_boot` or
 
 Confirm the configured path, uppercase headers, unique identifiers, valid admin
 IPs, and lowercase hostnames. Review the generated validation log under
-`$OMNIA_DATA_PATH/log/core/playbooks/`.
+`/var/log/omnia/orchestrator/orchestrator.log`.
 
 **OpenCHAMI provisioning fails**
 

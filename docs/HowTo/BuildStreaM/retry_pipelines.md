@@ -61,4 +61,4 @@ Retry a BuildStreaM pipeline when one or more stages have failed. Before retryin
 ## Troubleshooting
 
 - **Retry button not displayed**: The Retry button may not appear in certain failed pipeline stages. Initiate a restart from the parent pipeline to resolve this issue. This restarts the entire pipeline from the beginning.
-- For additional issues, see [BuildStreaM Troubleshooting](../../Troubleshooting/buildstream.md).
+- For additional issues, see [Build Stream Troubleshooting](../../Troubleshooting/build_stream/build_stream.md).

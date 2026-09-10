@@ -3,33 +3,21 @@
 
 Omnia is a composition of purpose-built components, each addressing a specific aspect of cluster lifecycle management---from provisioning bare-metal servers to managing local software repositories to running authentication services. This page explains what each component does and how it fits into the broader Omnia architecture.
 
-## omnia_core Container
+## OIM control plane
 
-The `omnia_core` container is the control plane for Omnia. It is a Podman container that runs on the **OIM** and encapsulates the entire Ansible toolchain---playbooks, roles, collections, Python dependencies, and configuration templates.
+The Omnia Infrastructure Manager (OIM) is the control plane for Omnia.
+Administrators run `src/main/omnia.sh` directly on the OIM. The script installs
+the shared environment, creates the Python virtual environment, initializes
+the selected deployment modules, and invokes each module's Ansible entry
+playbook from the source tree.
 
-**Why a container?**
+The module playbooks run locally on the OIM and connect to managed nodes over
+SSH when remote configuration is required. Podman remains responsible for
+service containers such as Pulp, OpenCHAMI, MinIO, the OCI registry, and Build
+Stream components.
 
-Running Ansible inside a container solves several problems at once:
-
-- **Reproducibility** -- Every Omnia deployment uses the exact same Ansible version, Python libraries, and role dependencies, regardless of what is installed on the host OS.
-- **Isolation** -- The container's dependencies never conflict with system packages on the OIM.
-- **Portability** -- The same container image works across supported RHEL versions without modification.
-- **Upgradability** -- Upgrading Omnia is as simple as pulling a new container image; the previous image can be kept for rollback.
-
-**What runs inside omnia_core?**
-
-All Omnia playbooks execute from within this container, including:
-
-- `prepare_oim.yml` -- Prepares the OIM node with required services and containers.
-- `local_repo.yml` -- Synchronizes software repositories via Pulp.
-- `provision.yml` -- Provisions bare-metal nodes via cloud-init, configures Slurm, Kubernetes, storage, and telemetry.
-- `telemetry.yml` -- Deploys the telemetry and monitoring stack.
-
-The container mounts the Omnia configuration directory from the host so that administrators can edit input files (YAML/JSON) using their preferred editor before running playbooks.
-
-!!! note
-
-    The `omnia_core` container is deployed and managed via the `omnia.sh` script on the OIM host. It uses host networking to reach managed nodes over SSH and escalates privileges on remote nodes via `become` (sudo), not via container privileges.
+See [Running Deployment Modules](domain_execution.md) for the supported setup
+and execution commands.
 
 ## OpenCHAMI
 
@@ -138,12 +126,13 @@ BuildStream is an optional automation framework that provides a REST API and pla
 
 !!! tip
 
-    BuildStream is optional. Omnia works by running Ansible playbooks directly from the `omnia_core` container. BuildStream adds an automation layer for teams that want API-driven, catalog-based workflows.
+    BuildStream is optional. Omnia can run Ansible playbooks directly on the
+    OIM through `omnia.sh`. BuildStream adds an automation layer for teams that
+    want API-driven, catalog-based workflows.
 
 !!! info "Related Pages"
 
     - [Architecture](architecture.md) -- Visual diagram of how components are deployed across the OIM and cluster nodes.
-
 
 
 

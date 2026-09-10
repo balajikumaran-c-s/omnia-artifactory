@@ -284,12 +284,11 @@ nav:
       - Telemetry Contract: Reference/domain_contracts/telemetry_contract.md
       - Utils Contract: Reference/domain_contracts/utils_contract.md
     - Sample Files:
-      - catalog.json: Reference/SampleFiles/catalog_json.md
+      - catalog_rhel.json: Reference/SampleFiles/catalog_json.md
       - PXE Mapping File: Reference/SampleFiles/pxe_mapping_file.md
       - PXE Boot Inventory: Reference/SampleFiles/pxe_boot_inventory.md
       - slurm.conf: Reference/SampleFiles/slurm_conf.md
       - slurmdbd.conf: Reference/SampleFiles/slurmdbd_conf.md
-      - software_config.json: Reference/SampleFiles/software_config_json.md
     - Cluster Requirements:
       - Minimum Nodes: Reference/ClusterRequirements/minimum_nodes.md
       - Disk Space: Reference/ClusterRequirements/disk_space.md

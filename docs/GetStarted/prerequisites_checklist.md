@@ -65,7 +65,7 @@ cluster.
 | ☑ | Requirement | Details |
 | --- | --- | --- |
 | ☐ | Choose a server **outside** your intended cluster | The OIM must meet the required storage and system requirements. |
-| ☐ | 64 GB RAM minimum | Verify with `free -h`. The `omnia_core` and `omnia_auth` Podman containers, local repos, and image-building tasks are memory-intensive. |
+| ☐ | 64 GB RAM minimum | Verify with `free -h`. Local repositories, service containers, and image-building tasks are memory-intensive. |
 | ☐ | RHEL 10.0 with Server with GUI Base Environment | Minimal installs are not supported. The GUI group pulls in required libraries used by Ansible and Podman. See [supported operating systems](../Reference/SupportMatrix/operating_systems.md). |
 | ☐ | Podman container engine installed | Verify: `podman --version`. If missing, install via `dnf install -y podman`. |
 | ☐ | Two active NIC ports | **NIC 1 (public):** Internet-facing, for downloading packages and container images. **NIC 2 (internal/admin):** Connected to the admin switch for PXE provisioning and cluster management. |
@@ -73,7 +73,7 @@ cluster.
 | ☐ | Git installed | `dnf install git -y`. Needed to clone the Omnia repository. |
 | ☐ | 500 GB+ free disk on / | Local repos, container images, and node OS images consume significant space. Use `df -h /` to check. |
 | ☐ | Required ports open on OIM | See [Ports Used by the OIM](#ports-used-by-the-oim) below for the complete list of ports that must be available. |
-| ☐ | `omnia_core` and `omnia_auth` containers deployed | See [Deploy Omnia Core Container](https://github.com/dell/omnia) for instructions. |
+| ☐ | OIM setup completed | Complete [Setup the OIM](../HowTo/main/setup_oim.md) to install the shared environment and initialize the deployment modules. |
 | ☐ | All target bare-metal servers reachable from OIM | Ensure network connectivity from OIM to all cluster nodes. |
 
 ### Ports Used by the OIM
@@ -84,7 +84,6 @@ Omnia uses the following ports on the OIM. Ensure these ports are not assigned t
 
 | Container Name | Port |
 | --- | --- |
-| Core Container | 2222 |
 | Pulp Container | 2225 |
 
 **OpenCHAMI Ports**
@@ -367,7 +366,6 @@ dnf repolist
     deep in the Ansible playbook execution.
 
 You are now ready to choose your deployment path. Return to [Get Started Index](index.md).
-
 
 
 

@@ -42,7 +42,7 @@ collection.
 | Access | Root SSH access from the OIM to `kube_vip` |
 
 Source-specific requirements are listed in each configuration guide. Review
-the [Telemetry Input/Output Contract](../../Reference/domain_contracts/telemetry_contract.md)
+the [Telemetry Domain Contract](../../Reference/domain_contracts/telemetry_contract.md)
 before configuring the project inputs.
 
 ## Procedure
@@ -86,7 +86,7 @@ deployment must be inspected later: [iDRAC](verify_idrac.md),
 
 ### Contract reference
 
-See the [Telemetry Input/Output Contract](../../Reference/domain_contracts/telemetry_contract.md)
+See the [Telemetry Domain Contract](../../Reference/domain_contracts/telemetry_contract.md)
 for the complete validated input, status, cleanup, and connection-export
 contracts.
 

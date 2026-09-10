@@ -3,8 +3,8 @@
 ## Overview
 
 Orchestrator uses Dell iDRAC to set mapped servers to a PXE-compatible boot
-target, restart them, and optionally verify that each node registered after
-the current PXE operation. The workflow reads nodes from
+target, restart them, and optionally verify that each node completed a fresh
+boot and cloud-init after the current PXE operation. The workflow reads nodes from
 `pxe_mapping_file.csv`; it does not use a separate Ansible inventory.
 
 By default, `orchestrator_config.yml` enables PXE boot. The optional
@@ -27,6 +27,9 @@ override, and node-registration timing.
   `bmc_username` and `bmc_password`.
 - Ensure the OIM can reach each iDRAC address and each server can reach the OIM
   provisioning network.
+- Ensure passwordless root SSH is configured from the OIM to each target
+  node's admin IP.
+- Ensure `cloud-init` and `/proc/uptime` are available on each target node.
 - Enable PXE or UEFI HTTP boot in the server firmware and NIC firmware.
 
 ## Procedure
@@ -46,7 +49,6 @@ override, and node-registration timing.
     node_registration_pause_minutes: 3
     node_registration_retries: 120
     node_registration_delay: 15
-    node_registration_log_pattern: "phone-home"
     restart_host: true
     force_restart: true
     boot_source_override_enabled: continuous
@@ -81,12 +83,11 @@ override, and node-registration timing.
 - Review
   `$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/failed_nodes.json`.
   A successful run contains an empty `failed_nodes` list.
-- When node-registration verification is enabled, confirm the workflow reports
-  that every successfully restarted node is reachable on admin-network TCP
-  port 22 and has a boot epoch newer than the start of the PXE operation. The
-  workflow derives the boot epoch from `/proc/uptime`. A matching
-  metadata-service journal entry is supporting information, not the primary
-  success condition.
+- When node-registration verification is enabled, confirm that every
+  successfully restarted node is reachable through passwordless root SSH, has
+  a boot time newer than the start of the PXE operation, and reports `done`
+  from `cloud-init status --long`. The workflow derives the boot time from
+  `/proc/uptime`; it does not use a Metadata Service phone-home callback.
 
 ## Next steps
 
@@ -100,11 +101,13 @@ override, and node-registration timing.
   workflow, then retry `pxeboot`.
 - **No BMC hosts are found**: Confirm that `BMC_IP` is populated in the mapping
   CSV.
-- **Node registration times out**: Check admin-network TCP port 22, SSH access,
-  `/proc/uptime`, and the OpenCHAMI metadata-service journal. Increase
-  `node_registration_retries` or `node_registration_delay` when the hardware
-  needs more time to boot. Nodes that fail the iDRAC restart phase are excluded
-  from node-registration polling and remain listed in `failed_nodes.json`.
+- **Node registration times out**: Verify passwordless root SSH from the OIM to
+  the node's admin IP. Check `/proc/uptime` and run
+  `cloud-init status --long` on the node. Increase
+  `node_registration_retries` or `node_registration_delay` only when
+  cloud-init is still running. Nodes that fail the iDRAC restart phase are
+  excluded from node-registration polling and remain listed in
+  `failed_nodes.json`.
 - **iDRAC rejects the boot override**: Confirm the requested boot target is
   enabled in firmware and supported by the installed iDRAC firmware and
   license.

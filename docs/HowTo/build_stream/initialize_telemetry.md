@@ -32,7 +32,7 @@ status file.
 
 - Ensure the OIM can reach the service Kubernetes VIP over root SSH.
 - Review the
-  [Telemetry Input/Output Contract](../../Reference/domain_contracts/telemetry_contract.md).
+  [Telemetry Domain Contract](../../Reference/domain_contracts/telemetry_contract.md).
 
 ## Procedure
 

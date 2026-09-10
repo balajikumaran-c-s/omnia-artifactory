@@ -253,8 +253,7 @@ Orchestrator `provision` workflow.
 1. **Select the CSI driver catalog content.** Ensure that the catalog selected
    by `CATALOG_FILE_PATH` includes its PowerScale CSI group for `x86_64`, such
    as the source sample's `csi_powerscale_v2_17_0`. Orchestrator derives
-   feature support from catalog group names containing `csi` and `powerscale`;
-   it does not read `software_config.json`.
+   feature support from catalog group names containing `csi` and `powerscale`.
 
 2. **Synchronize the required artifacts** by following
    [Configure Repositories](../repo_manager/configure_repos.md). Repo Manager
@@ -605,7 +604,6 @@ state. Check the pod status and logs:
 ```bash title="Run on: kube_control_plane"
 kubectl logs -n isilon deployment/isilon-controller --all-containers
 ```
-
 
 
 

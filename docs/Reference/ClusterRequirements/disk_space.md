@@ -31,7 +31,7 @@ The OIM is the most storage-intensive node in the cluster. All software packages
 | --- | --- | --- |
 | RHEL OS | ~20 GB | Server installation profile. |
 | Pulp repository mirror | ~150 GB | Mirrors RHEL BaseOS, AppStream, EPEL, CUDA/ROCm, Kubernetes repos. Size varies with enabled repositories. |
-| Container images (Podman) | ~30 GB | OpenCHAMI, Pulp, omnia_core, and other OIM containers. |
+| Container images (Podman) | ~30 GB | OpenCHAMI, Pulp, and other OIM service containers. |
 | Boot images (S3) | ~10 GB | Built `rootfs.img`, `vmlinuz`, `initrd.img` per architecture and functional group. Stored in MinIO S3 (`s3://boot-images/`). |
 | ISO images | ~10 GB | RHEL ISO(s) used for image building. |
 | PostgreSQL (BuildStreaM) | ~30 GB | GitLab and BuildStreaM pipeline database. Required only when BuildStreaM is deployed. |
@@ -97,7 +97,6 @@ Since cluster nodes run diskless with the root filesystem in RAM, memory sizing 
     - [Storage Config](../Configuration/storage_config.md) -- NFS configuration.
     - [Local Repo Config](../Configuration/repo_manager_config.md) -- Pulp repository storage path.
     - [Configure Mounts](../../HowTo/orchestrator/configure_storage.md) -- Mount configuration for diskless nodes.
-
 
 
 

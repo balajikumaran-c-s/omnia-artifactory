@@ -18,10 +18,10 @@ Issues related to kernel version override functionality, including repository sy
 
 ??? note "Resolution"
 
-    1. Verify repository URLs are correct and accessible from the `omnia_core` container:
+    1. Verify repository URLs are correct and accessible from the OIM:
 
-        ```bash title="Run on: omnia_core container"
-        podman exec -it omnia_core curl -I <repository_url>
+        ```bash title="Run on: OIM host"
+        curl -I <repository_url>
         ```
 
     2. For RHEL subscription (EUS) repositories, verify that the entitlement certificates are valid and correctly placed:
@@ -32,7 +32,8 @@ Issues related to kernel version override functionality, including repository sy
 
     3. Validate kernel packages are available in the synced Pulp repository:
 
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
+        source /opt/omnia/activate-omnia.sh
         pulp rpm distribution list
         ```
 
@@ -56,14 +57,13 @@ Issues related to kernel version override functionality, including repository sy
     - The kernel image was not built or uploaded to S3 during the build image step
     - The kernel version specified in `orchestrator_config.yml` does not match any
       available kernel images in S3
-    - The build image playbook (`build_image_x86_64.yml` or
-      `build_image_aarch64.yml`) was not executed or failed
+    - The Image Build Manager build flow was not executed or failed
 
 ??? note "Resolution"
 
     1. Verify that the build image step completed successfully and uploaded images to S3:
 
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         s3cmd ls -Hr s3://boot-images
         ```
 
@@ -74,13 +74,17 @@ Issues related to kernel version override functionality, including repository sy
         s3://boot-images/efi-images/<functional_group>/rhel-<functional_group>_omnia_<version>/initramfs-<kernel_version>.img
         ```
 
-    3. If the expected kernel is missing, verify that the kernel packages were available in the Pulp repository before running `build_image_x86_64.yml`. The build process selects the latest kernel available across all configured repositories.
+    3. If the expected kernel is missing, verify that the kernel packages were
+       available in the Pulp repository before running the Image Build Manager.
+       The build process selects the latest kernel available across all
+       configured repositories.
 
     4. Re-run the build image playbook to rebuild with the correct kernel:
 
-        ```bash title="Run on: omnia_core container"
-        cd /omnia/build_image_x86_64
-        ansible-playbook build_image_x86_64.yml
+        ```bash title="Run on: OIM host"
+        source /opt/omnia/activate-omnia.sh
+        cd src/image_build_manager/playbooks
+        ansible-playbook image_build_manager.yml --tags build
         ```
 
     5. After the build completes, verify the new kernel image in S3 and re-run `provision.yml`.

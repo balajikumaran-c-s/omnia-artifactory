@@ -1,119 +1,97 @@
 # Cleanup Local Pulp Repositories
 
-
-The `pulp_cleanup.yml` playbook removes unused content from the Pulp container
-to free up disk space. This includes RPM repositories, files (tarball, git, pip,
-manifest), and container images. Active repositories and their associated
-content are preserved during the cleanup process.
-
-## When to Use Pulp Cleanup
-
-
-- Disk space on the NFS share or OIM is running low due to accumulated
-  repository content.
-- Old or unused RPM repositories, files, or container images need to be removed.
-- You want to clean up artifacts from a previous deployment before starting fresh.
-
-!!! caution
-
-    `pulp_cleanup.yml` permanently removes the specified content from the Pulp
-    container. This operation cannot be reversed. If deleted artifacts are
-    required by any software, you must rerun `local_repo.yml` to sync them
-    again. Subsequent playbooks with dependencies on missing artifacts may fail.
-
-## Prerequisites
-
-
-- You are logged in to the `omnia_core` container.
-- The Pulp container is running and accessible.
-- You have identified the specific repositories, files, or container images
-  to clean up (or intend to clean all content).
-
-## Tasks Performed by the Playbook
-
-
-The `pulp_cleanup.yml` playbook performs the following tasks:
-
-- Removes specified RPM repositories from the Pulp container.
-- Removes specified files (tarball, git, pip, manifest) from the Pulp container.
-- Removes specified container images from the Pulp container.
-- Preserves active repositories and their associated content.
-
-
-## Steps
-
-1. Enter the `omnia_core` container:
-```bash title="Run on: OIM host"
-ssh omnia_core
-```
-
-2. Navigate to the local repo directory:
-```bash title="Run on: omnia_core container"
-cd /omnia/local_repo
-```
-    
-3. Run one of the following cleanup commands based on your requirement:
-
-    Cleanup a specific RPM repository:
-    ```bash title="Run on: omnia_core container"
-    ansible-playbook pulp_cleanup.yml -e cleanup_repos=x86_64_rhel_10.0_appstream
-    ```
-
-    Cleanup a specific file:
-    ```bash title="Run on: omnia_core container"
-    ansible-playbook pulp_cleanup.yml -e cleanup_files=calico-v3.30.3
-    ```
-    Cleanup a specific container image (force cleanup):
-    ```bash title="Run on: omnia_core container"
-    ansible-playbook pulp_cleanup.yml -e cleanup_containers=docker.io/library/busybox -e force=true
-    ```
-
-    Cleanup all content:
-    ```bash title="Run on: omnia_core container"
-    ansible-playbook pulp_cleanup.yml -e cleanup_repos=all -e cleanup_files=all -e cleanup_containers=all
-    ```
+Use the Repo Manager cleanup flow to remove RPM repositories, file artifacts,
+or container images that are no longer required. The cleanup runs on the OIM
+and changes the Pulp content selected for the current catalog context.
 
 !!! warning
 
-    The `force=true` option forces the cleanup operation to proceed even if the
-    repository or content is currently referenced by older metadata or
-    publications. Use this option with caution, as the cleanup process
-    permanently removes the specified content and cannot be reversed.
+    Cleanup permanently removes the selected content. Confirm the exact names
+    before running the playbook. Removed content must be downloaded again if a
+    later workflow requires it.
 
-## Logs
+## Prerequisites
 
+- Complete [OIM setup](../HowTo/main/setup_oim.md).
+- Ensure the Pulp service is running and accessible from the OIM.
+- Identify the exact repository, file, or container names to remove.
+- Set `OMNIA_DATA_PATH` and `OMNIA_PROJECT_NAME` if you do not use their
+  defaults.
 
-Cleanup logs are generated in a version-aware directory structure under
-`/opt/omnia/log/local_repo/`.
+## Clean up selected content
 
+1. Activate the Omnia virtual environment and open the Repo Manager playbook
+   directory:
+
+    ```bash title="Run on: OIM host"
+    source /opt/omnia/activate-omnia.sh
+    cd src/repo_manager/playbooks
+    ```
+
+2. Run the command for the content type that you want to remove.
+
+    Remove one RPM repository:
+
+    ```bash title="Run on: OIM host"
+    ansible-playbook repo_manager.yml --tags cleanup_repos \
+      -e "cleanup_repos=x86_64_rhel_10.0_epel"
+    ```
+
+    Remove one file artifact:
+
+    ```bash title="Run on: OIM host"
+    ansible-playbook repo_manager.yml --tags cleanup_repos \
+      -e "cleanup_files=cffi==1.17.1"
+    ```
+
+    Remove one container image and all its tags:
+
+    ```bash title="Run on: OIM host"
+    ansible-playbook repo_manager.yml --tags cleanup_repos \
+      -e "cleanup_containers=docker.io/library/busybox"
+    ```
+
+    To remove only one container tag, include the tag in the value, for
+    example, `docker.io/library/busybox:1.36`.
+
+## Clean up all selected content categories
+
+Use `all` with `force=true` to remove every artifact in the specified
+categories:
+
+```bash title="Run on: OIM host"
+ansible-playbook repo_manager.yml --tags cleanup_repos \
+  -e "cleanup_repos=all" \
+  -e "cleanup_files=all" \
+  -e "cleanup_containers=all" \
+  -e "force=true"
 ```
-/opt/omnia/log/local_repo/
-└── rhel/
-    ├── 10.0/cleanup/
-    │   ├── standard.log
-    │   └── cleanup_status.csv
-    └── 10.1/cleanup/
-        ├── standard.log
-        └── cleanup_status.csv
+
+You can omit categories that you do not want to clean. `force=true` is required
+when a category is set to `all`.
+
+!!! note
+
+    Content cleanup does not remove the Pulp deployment. To remove Pulp itself,
+    use the separate `cleanup_pulp` tag only when you intend to decommission the
+    service.
+
+## Verify cleanup
+
+Review the Repo Manager log at:
+
+```text
+/var/log/omnia/repo_manager/repo_manager.log
 ```
 
-- `standard.log` -- Contains detailed execution logs of the cleanup operation.
-- `cleanup_status.csv` -- Provides a summary of cleanup actions and their status.
+Per-context cleanup results are written below:
 
+```text
+<OMNIA_DATA_PATH>/repo_manager/log/<os>/<version>/cleanup/
+├── standard.log
+└── cleanup_status.csv
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+For shared catalog contexts, the path can omit the version directory. Check
+`standard.log` for detailed actions and `cleanup_status.csv` for the result of
+each requested cleanup.

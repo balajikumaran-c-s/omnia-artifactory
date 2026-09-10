@@ -34,7 +34,7 @@ workflow. It does not build OS images.
 ## Prerequisites
 
 - Run Discovery on the OIM with permission to create files under the Omnia data
-  path, `/var/log/omnia/discovery/`, and `/opt/omnia/log/core/playbooks/`.
+  path and `/var/log/omnia/discovery/discovery.log`.
 - Complete [OIM setup](../main/setup_oim.md). The main setup runs the Discovery
   initialization script, installs its dependencies, creates its runtime and log
   directories, and stages its input templates.
@@ -441,7 +441,7 @@ accordingly when this relationship is required.
 - When BMC discovery is enabled, use a non-loopback OME IPv4 address.
 - Correct YAML parsing errors reported by the playbook.
 - Review
-  `/opt/omnia/log/core/playbooks/discovery_validation_<project>.log`, then rerun
+  `/var/log/omnia/discovery/discovery.log`, then rerun
   the `validate` tag.
 
 ### OME is unreachable

@@ -1,6 +1,6 @@
 # Slurm Configuration Roles
 
-The `omnia.utils` collection contains roles for backing up, removing, and
+The Utils source tree contains roles for backing up, removing, and
 restoring Slurm configuration stored on a shared filesystem.
 
 ## Overview
@@ -10,12 +10,12 @@ workflow. There is no shipped `slurm_config_util.yml` playbook, and
 `./omnia.sh --run utils` has no `config_backup`, `slurm_cleanup`, or
 `config_rollback` workflow tag.
 
-The collection contains the following reusable roles for integration into an
+The source tree contains the following reusable roles for integration into an
 administrator-maintained playbook:
 
-- `omnia.utils.slurm_config_backup`
-- `omnia.utils.slurm_cleanup`
-- `omnia.utils.slurm_config_rollback`
+- `slurm_config_backup` at `src/utils/roles/slurm_config_backup`
+- `slurm_cleanup` at `src/utils/roles/slurm_cleanup`
+- `slurm_config_rollback` at `src/utils/roles/slurm_config_rollback`
 
 !!! important
 
@@ -27,7 +27,8 @@ administrator-maintained playbook:
 
 Before integrating these roles, ensure that:
 
-- The `omnia.utils` collection and its dependencies are installed.
+- Use an Omnia source checkout and install the Ansible dependencies declared in
+  `src/utils/requirements.yml`.
 - The play has access to the shared path containing the `slurm/` directory.
 - `share_path` identifies that shared path.
 - `ctld_list` contains the Slurm controller name used below the shared path.

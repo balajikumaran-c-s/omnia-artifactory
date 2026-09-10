@@ -29,7 +29,7 @@ be initiated manually through the GitLab interface.
 - Build pipeline has completed successfully and images are available
 - Target nodes are powered on and accessible via BMC
 - `input/orchestrator/pxe_mapping_file.csv` follows the
-  [Orchestrator input contract](../../Reference/domain_contracts/orchestrator_contract.md#pxe-mapping-contract).
+  [PXE mapping file reference](../../Reference/SampleFiles/pxe_mapping_file.md).
 
 ## Procedure
 
@@ -183,7 +183,6 @@ After the deploy pipeline completes:
 - **Deploy stage failing**: Check the log path from the API response. Ensure the functional groups in the PXE mapping file match the `catalog_rhel.json`.
 - **Restart stage failing**: Verify iDRAC readiness and BMC network connectivity.
 - For additional issues, see [Build Stream Troubleshooting](../../Troubleshooting/build_stream/buildstream.md).
-
 
 
 

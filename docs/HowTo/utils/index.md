@@ -2,13 +2,13 @@
 
 ## Overview
 
-The `omnia.utils` collection provides optional utilities that run from the
+The Utils module provides optional utilities that run from the
 Omnia Infrastructure Manager (OIM). The current Utils entry point supports
 collecting Kubernetes and Slurm logs, installing RHEL on a bare-metal node
 through iDRAC Virtual Media, and cleaning up artifacts from those workflows.
 
-The OS installation workflow supports both `x86_64` and `aarch64`. The
-collection also contains reusable Slurm configuration backup, cleanup, and
+The OS installation workflow supports both `x86_64` and `aarch64`. The source
+tree also contains reusable Slurm configuration backup, cleanup, and
 rollback roles, but those roles are not exposed by the Utils entry-point
 playbook.
 
@@ -63,6 +63,6 @@ Run Utils workflows through the OIM domain launcher:
 
 ## Contract reference
 
-See the [Utils Input/Output Contract](../../Reference/domain_contracts/utils_contract.md)
+See the [Utils Domain Contract](../../Reference/domain_contracts/utils_contract.md)
 for the environment, input files, credentials, output paths, and generated
 status structures used by the current workflows.

@@ -34,7 +34,7 @@ PIPELINE_TYPE=cleanup
   minimums in `build_stream_config.yml`.
 - Ensure Podman and systemd are available on the OIM.
 - Review the
-  [Build Stream Input/Output Contract](../../Reference/domain_contracts/build_stream_contract.md)
+  [Build Stream Domain Contract](../../Reference/domain_contracts/build_stream_contract.md)
   before deployment.
 
 ## Procedure
