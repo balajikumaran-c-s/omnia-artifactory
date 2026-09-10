@@ -34,14 +34,12 @@ workflow. It does not build OS images.
 ## Prerequisites
 
 - Run Discovery on the OIM with permission to create files under the Omnia data
-  path, `/var/log/omnia/discovery/`, and `/opt/omnia/log/core/playbooks/`.
-- Before the first run, use the Discovery initialization script to prepare the
-  runtime directories, attempt installation of the module dependencies, and
-  stage the input templates. The playbook can stage its input templates when
-  the runtime input directory is absent, but it does not perform the other
-  initialization work.
-- Activate the shared Omnia virtual environment before running the
-  initialization script or Discovery playbook manually.
+  path and `/var/log/omnia/discovery/discovery.log`.
+- Complete [OIM setup](../main/setup_oim.md). The main setup runs the Discovery
+  initialization script, installs its dependencies, creates its runtime and log
+  directories, and stages its input templates.
+- If Discovery was skipped during main setup, initialize it with
+  `./omnia.sh --init discovery` from `src/main` before the first run.
 - Use the module-initialized environment. `requirements.txt` requests Ansible
   Core 2.20 or later, Jinja 3.0 or later, and PyYAML 6.0.3 or later;
   `requirements.yml` requests `ansible.posix` 2.0.0 and `community.general`
@@ -77,7 +75,6 @@ Prepare the following files in
 | `network_spec.yml` | Required during execution. Discovery reads the admin and InfiniBand subnet values from this file to derive node IP addresses. |
 | `discovery_credentials.yml` | Created automatically if absent. Contains `ome_username` and `ome_password` and is stored encrypted. |
 | `.discovery_credentials_key` | Created automatically with the credential file and stored with mode `0400`. |
-| `build_stream_config.yml` | Optional. When `enable_build_stream` is `true`, Discovery displays the BuildStream handoff after generating the report. If the file is absent, Discovery displays the direct Orchestrator handoff. |
 
 `discovery_config.yml` must retain both schema fields. For an OME discovery
 run, set `enable_bmc_discovery: true` and set `ome_ip` to a valid,
@@ -217,27 +214,22 @@ accordingly when this relationship is required.
    OME. For the version-specific device-discovery procedure, see the
    [Dell OpenManage Enterprise documentation](https://www.dell.com/support/product-details/en-us/product/dell-openmanage-enterprise/docs){target="_blank"}.
 
-2. Set the data path and project name in the shell used to initialize and run
-   Discovery. The following values select the standard runtime location:
+2. [Configure the Main environment](../main/configure_environment.md). The
+   examples on this page use `OMNIA_DATA_PATH=/opt/omnia` and
+   `OMNIA_PROJECT_NAME=project_default`.
+
+3. Complete OIM setup. If Discovery was skipped during setup, initialize only
+   this domain:
 
     ```bash title="Run on: OIM host"
-    export OMNIA_DATA_PATH=/opt/omnia
-    export OMNIA_PROJECT_NAME=project_default
+    cd src/main
+    ./omnia.sh --init discovery
     ```
 
-3. From the Omnia source tree, initialize the Discovery module:
-
-    ```bash title="Run on: OIM host"
-    cd src/discovery
-    ./domain-init.sh
-    ```
-
-    The script attempts to install the module dependencies, creates the runtime
-    and log directories, and copies `discovery_config.yml` and
-    `network_spec.yml` to
+    Initialization installs the declared dependencies, creates the runtime and
+    log directories, and copies `discovery_config.yml` and `network_spec.yml` to
     `<OMNIA_DATA_PATH>/discovery/input/<OMNIA_PROJECT_NAME>/`. Review its output
-    and confirm that the dependencies are available; dependency-install errors
-    are reported as warnings and do not stop initialization.
+    and confirm that the dependencies are available.
 
     !!! warning
 
@@ -280,12 +272,10 @@ accordingly when this relationship is required.
     was detected. The Discovery validator does not validate `network_spec.yml`,
     so review these subnet values before execution.
 
-7. Change to the Discovery playbook directory and validate
-   `discovery_config.yml` before contacting OME:
+7. From `src/main`, validate `discovery_config.yml` before contacting OME:
 
     ```bash title="Run on: OIM host"
-    cd playbooks
-    ansible-playbook discovery.yml --tags validate
+    ./omnia.sh --run discovery --tags validate
     ```
 
     A successful validation prints `Discovery configuration validation passed.`
@@ -295,7 +285,7 @@ accordingly when this relationship is required.
 8. Run the complete Discovery workflow:
 
     ```bash title="Run on: OIM host"
-    ansible-playbook discovery.yml
+    ./omnia.sh --run discovery
     ```
 
     When `discovery_credentials.yml` does not exist, Discovery creates it and
@@ -305,7 +295,10 @@ accordingly when this relationship is required.
 
     The default untagged run performs setup, validation, credential handling,
     and OME discovery. The `execute` and `discovery` tags route to the same OME
-    execution flow. Use only one tag in a command.
+    execution flow. The `credentials` tag updates credentials without running
+    discovery. Use only one tag in a command. See [Run
+    Discovery](index.md#run-discovery) for the complete tag table, including
+    the lifecycle placeholders that do not perform work in this release.
 
     A successful run without BuildStream prints a completion summary in this
     form:
@@ -329,8 +322,11 @@ accordingly when this relationship is required.
     ============================================================
     ```
 
-    When BuildStream is enabled, the generated-file and server-count lines are
-    the same, but the displayed next steps describe the GitLab handoff.
+    The current Discovery implementation may print a Build Stream-specific
+    completion message only when a `build_stream_config.yml` is present in the
+    Discovery input directory. That file is not part of the Discovery input
+    contract. Follow the Build Stream handoff in [Next steps](#next-steps)
+    instead of copying another domain's configuration into this directory.
 
 ## Verification
 
@@ -445,7 +441,7 @@ accordingly when this relationship is required.
 - When BMC discovery is enabled, use a non-loopback OME IPv4 address.
 - Correct YAML parsing errors reported by the playbook.
 - Review
-  `/opt/omnia/log/core/playbooks/discovery_validation_<project>.log`, then rerun
+  `/var/log/omnia/discovery/discovery.log`, then rerun
   the `validate` tag.
 
 ### OME is unreachable

@@ -1,38 +1,10 @@
-# Discovery Input/Output Contract
+# Discovery Domain Contract
 
-**Deployment module**: Discovery | **CLI identifier**: `discovery` | **Collection**: `omnia.discovery`
+**Deployment module**: Discovery | **CLI identifier**: `discovery`
 
-## Input contract
+## Upstream domain contract
 
-Discovery reads project-scoped inputs from:
-
-```text
-$OMNIA_DATA_PATH/discovery/input/$OMNIA_PROJECT_NAME/
-```
-
-The defaults are `/opt/omnia` and `project_default`.
-
-| Input | Required | Purpose |
-|---|---|---|
-| `discovery_config.yml` | Yes | Enables or disables OME discovery and identifies the OME appliance. |
-| `network_spec.yml` | Yes during discovery execution | Supplies the admin and InfiniBand subnets used to derive node addresses. |
-| `discovery_credentials.yml` | When OME discovery is enabled | Ansible Vault-encrypted OME username and password, created by the credential workflow. |
-| `.discovery_credentials_key` | With the credential file | Vault password file used by the Discovery roles. |
-
-### `discovery_config.yml`
-
-The schema is
-`plugins/module_utils/discovery_validation/schema/discovery_config.json`.
-
-| Field | Type | Required | Purpose |
-|---|---|---|---|
-| `enable_bmc_discovery` | boolean | Yes | Set to `true` to run discovery through Dell OpenManage Enterprise (OME). |
-| `ome_ip` | IPv4 string | Yes | OME address. It must be a valid, non-loopback IPv4 address when discovery is enabled. |
-
-The current executable discovery flow supports OME. The Magellan section in
-the source template is reserved for future use; a manual inventory is supplied
-directly to Orchestrator as `pxe_mapping_file.csv` rather than executed as a
-Discovery mechanism.
+Discovery does not require another deployment domain's status output.
 
 ## Output contract
 
@@ -81,6 +53,12 @@ Review and correct the generated values before copying the file to:
 $OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv
 ```
 
+For `slurm_node_x86_64` and `slurm_node_aarch64`, Discovery sets
+`PARENT_SERVICE_TAG` to the service tag of a
+`service_kube_node_x86_64` in the same `GROUP_NAME`. It leaves this field empty
+for other functional groups or when a matching service Kubernetes worker is
+not present.
+
 ### `discovery_status.yml`
 
 | Field | Purpose |
@@ -92,6 +70,30 @@ $OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv
 | `timestamp` | Execution timestamp. |
 | `failed_task` | Present after a failed execution. |
 | `failure_reason` | Present after a failed execution. |
+
+The status file is written only after the OME discovery role starts. Setup,
+input-validation, and credential failures can leave it absent or unchanged
+from an earlier run.
+
+## Execution contract
+
+Run the domain from `src/main` with `./omnia.sh --run discovery`. The supported
+tags are `precheck`, `validate`, `credentials`, `prepare`, `execute`,
+`discovery`, `cleanup`, `upgrade`, and `rollback`. Tags are mutually exclusive.
+
+The operational tags are:
+
+| Tag | Behavior |
+|---|---|
+| *(none)* | Runs validation, credentials, and OME execution. |
+| `validate` | Validates the Discovery domain settings without credential prompting. |
+| `credentials` | Creates or updates the encrypted OME credential file. |
+| `execute` | Runs the OME discovery flow. |
+| `discovery` | Alias of `execute`. |
+
+`precheck`, `prepare`, `cleanup`, `upgrade`, and `rollback` are accepted
+placeholders in the current source. They do not perform the named lifecycle
+operation. In particular, `cleanup` does not remove Discovery artifacts.
 
 ## Related documentation
 

@@ -1,7 +1,7 @@
 # set_pxe_boot_config.yml
 
-This file controls iDRAC PXE boot behavior and how long Orchestrator waits for
-stateless nodes to register after boot.
+This file controls iDRAC PXE boot behavior and optional verification of a
+fresh operating-system boot and cloud-init completion.
 
 ## Location
 
@@ -13,11 +13,10 @@ $OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/set_pxe_boot_config.yml
 
 | Parameter | Type | Source value | Description |
 |---|---|---|---|
-| `enable_node_registration` | boolean | `true` | Wait for cloud-init node-registration callbacks after PXE boot. |
+| `enable_node_registration` | boolean | `true` | Verify passwordless root SSH, boot freshness, and cloud-init completion after PXE boot. |
 | `node_registration_pause_minutes` | integer | `3` | Initial wait before polling begins. |
 | `node_registration_retries` | integer | `120` | Maximum number of registration polling attempts. |
 | `node_registration_delay` | integer | `15` | Delay between polling attempts, in seconds. |
-| `node_registration_log_pattern` | string | `phone-home` | Pattern searched in the metadata-service journal. |
 | `restart_host` | boolean | `true` | Restart the host after setting its boot source. |
 | `force_restart` | boolean | `true` | Use `ForceRestart`; `false` selects `GracefulRestart`. |
 | `boot_source_override_enabled` | string | `continuous` | `once`, `continuous`, or `disabled`. |
@@ -33,7 +32,6 @@ enable_node_registration: true
 node_registration_pause_minutes: 3
 node_registration_retries: 120
 node_registration_delay: 15
-node_registration_log_pattern: "phone-home"
 restart_host: true
 force_restart: true
 boot_source_override_enabled: continuous

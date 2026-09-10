@@ -15,6 +15,12 @@ $OMNIA_DATA_PATH/discovery/input/$OMNIA_PROJECT_NAME/network_spec.yml
 The default paths are under `/opt/omnia`. Configure the Discovery copy for
 node discovery and the Orchestrator copy for provisioning.
 
+Discovery currently reads only `admin_network.subnet` and
+`ib_network.subnet`. It uses their first two octets with the last two octets of
+each server's BMC address to derive `ADMIN_IP` and `IB_IP`. The Discovery
+`validate` tag does not validate this file. Orchestrator consumes and validates
+the remaining network fields from its own copy.
+
 ## Top-level structure
 
 `network_spec.yml` contains a single top-level key, `Networks`, which is a
@@ -82,7 +88,6 @@ Networks:
     - [Network Topologies](../SupportMatrix/network_topologies.md) -- How topologies
       affect NIC and VLAN assignments.
     - [Nics](../SupportMatrix/nics.md) -- Supported NIC models.
-
 
 
 

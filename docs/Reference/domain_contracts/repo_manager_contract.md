@@ -1,95 +1,11 @@
-# Repository Manager Input/Output Contract
+# Repository Manager Domain Contract
 
-**Deployment module**: Repository Manager | **CLI identifier**: `repo_manager` | **Collection**: `omnia.repo_manager`
+**Deployment module**: Repository Manager | **CLI identifier**: `repo_manager`
 
-## Input contract
+## Upstream domain contract
 
-### Environment
-
-| Variable | Required | Default | Purpose |
-|---|---|---|---|
-| `SYSTEM_ADMIN_NIC_IPV4` | Yes | None | OIM admin-network IPv4 used by Pulp. |
-| `CATALOG_FILE_PATH` | Yes | None | Absolute path to an existing catalog file with a `.json` extension. |
-| `OMNIA_DATA_PATH` | No | `/opt/omnia` | Root Omnia runtime data directory. |
-| `REPO_MANAGER_DATA_PATH` | No | `<OMNIA_DATA_PATH>/repo_manager` | Repo Manager runtime root. |
-| `OMNIA_PROJECT_NAME` | No | `project_default` | Active input and output project. |
-
-### Files
-
-`domain-init.sh` stages the two source YAML inputs under
-`<REPO_MANAGER_DATA_PATH>/input/<project>/`. The catalog remains at the exact
-path specified by `CATALOG_FILE_PATH`.
-
-| Input | Required | Purpose |
-|---|---|---|
-| `repo_manager_config.yml` | Yes | Defines RPM repositories, container registries, and synchronization policies. |
-| `repo_manager_endpoint_config.yml` | Yes | Defines the host-facing Pulp HTTPS endpoint. |
-| Catalog JSON | Yes | Selects functional layers, groups, packages, OS versions, architectures, and sources to synchronize. |
-| `repo_manager_config_credentials.yml` | After `prepare` | Ansible Vault-protected Pulp and registry credentials. |
-| `.repo_manager_config_credentials_key` | After `prepare` | Key for the encrypted credential file. |
-
-The generated credential files are root-owned and use mode `0600`.
-
-### `repo_manager_config.yml`
-
-Schema:
-`plugins/module_utils/input_validation/schema/repo_manager_config.json`
-
-| Field | Type | Required | Default | Purpose |
-|---|---|---|---|---|
-| `catalog_config` | object | No | None | Compatibility catalog reference; runtime selection uses `CATALOG_FILE_PATH`. |
-| `repo_config` | string | Yes | None | Global RPM policy: `always` or `partial`. |
-| `caching_policy` | boolean | No | `true` | Global RPM caching behavior. |
-| `registries` | object or null | No | `null` | Custom container registries keyed by catalog registry name. |
-| `repositories` | object | Yes | None | Repository definitions organized by OS version and architecture. |
-
-Repository definitions are resolved independently for `x86_64` and `aarch64`.
-Each catalog RPM source is matched by OS version, architecture, and
-`reponame`. A referenced repository requires an explicit URL unless it is
-`baseos`, `appstream`, or `codeready-builder` and usable RHEL subscription
-content is available.
-
-Repository entries support `url`, `gpgkey`, `policy`, `caching`, `priority`,
-`sslcacert`, `sslclientkey`, and `sslclientcert`. A repository priority must be
-from 1 through 100. Unknown configuration fields are rejected.
-
-Configured private registries use `base_url`, `port`, `auth`, and `tls`. Basic
-authentication refers to a credential through `auth.credentials.vault_path`;
-credentials do not belong in the catalog or main configuration.
-
-### `repo_manager_endpoint_config.yml`
-
-Schema:
-`plugins/module_utils/input_validation/schema/repo_manager_endpoint_config.json`
-
-| Field | Type | Required | Default | Purpose |
-|---|---|---|---|---|
-| `pulp_server_port` | integer | Yes | `2225` | Host HTTPS port from 1 through 65535. |
-| `pulp_server_ip` | IPv4 string | No | `SYSTEM_ADMIN_NIC_IPV4` | Host IP advertised to consumers. |
-
-HTTPS is mandatory. Certificate paths are derived from
-`REPO_MANAGER_DATA_PATH` and are not endpoint inputs.
-
-### Catalog JSON
-
-The catalog must contain `name`, `version`, `identifier`, `description`,
-`functionallayer`, `groups`, and `packages` under its `catalog` object. Repo
-Manager consumes these package fields:
-
-| Field | Purpose |
-|---|---|
-| `name` | Upstream package, image, or artifact name. |
-| `packagetype` | Selects the Repo Manager processing path. |
-| `version` or `tag` | Package version or OCI image tag. |
-| `sources[].architecture` | Selects `x86_64` or `aarch64`. |
-| `sources[].version` | Selects one or more OS versions. |
-| `sources[].reponame` | Maps RPM content to `repositories`. |
-| `sources[].registry` | Maps an OCI image to a configured registry key. |
-| `url` or `sources[].url` | Supplies the HTTP(S) URL for a direct artifact. |
-
-Only packages reachable through selected functional layers and groups are
-processed. Every referenced repository and non-public registry must resolve
-before synchronization starts.
+Repository Manager does not require another deployment domain's status
+output.
 
 ## Output contract
 

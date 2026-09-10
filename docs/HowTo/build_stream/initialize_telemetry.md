@@ -32,7 +32,7 @@ status file.
 
 - Ensure the OIM can reach the service Kubernetes VIP over root SSH.
 - Review the
-  [Telemetry Input/Output Contract](../../Reference/domain_contracts/telemetry_contract.md).
+  [Telemetry Domain Contract](../../Reference/domain_contracts/telemetry_contract.md).
 
 ## Procedure
 
@@ -87,6 +87,10 @@ Confirm that:
 
 Then run the source-specific checks linked from the
 [Telemetry landing page](../Telemetry/index.md).
+
+For iDRAC deployments, use [Verify iDRAC Telemetry](../Telemetry/verify_idrac.md)
+to check the MySQL service inventory and persistent volume. MySQL remains owned
+by the Telemetry domain; Build Stream does not deploy or manage it directly.
 
 ## Next steps
 

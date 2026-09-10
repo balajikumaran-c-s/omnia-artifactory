@@ -1,136 +1,148 @@
-
 # OIM Cleanup
 
+Use the domain cleanup workflows to remove services and artifacts owned by
+each Omnia domain. After all required domain cleanups complete, use the main
+cleanup command to remove the shared Omnia execution environment.
 
-The `oim_cleanup.yml` playbook tears down the Omnia Infrastructure Manager
-(OIM) configuration, removing containers, services, and state so you can start
-fresh. This is a **destructive operation** --- use it only when you need to
-completely reset the OIM.
+Cleanup is performed directly on the OIM. In the domain-based architecture,
+each domain owns and exposes its cleanup workflow.
+
+!!! danger
+
+    Cleanup is destructive. Depending on the selected domain and options, it
+    can remove containers, repositories, images, credentials, cluster
+    configuration, telemetry workloads, persistent data, and shared-storage
+    content. Back up all required data before continuing.
 
 ## When to Use OIM Cleanup
 
-
-- **Fresh start** -- You want to redeploy Omnia from scratch after a failed or
-  experimental deployment.
-- **Version upgrade** -- You are upgrading to a new major version of Omnia that
-  requires a clean OIM.
-- **Environment reset** -- Lab or test environments where the OIM is frequently
-  rebuilt.
-
-!!! caution
-
-    `oim_cleanup.yml` removes Podman containers, configuration files, and
-    state data from the OIM. **This operation cannot be undone.** Ensure you
-    have backed up any critical data (mapping files, custom configurations,
-    credentials) before proceeding.
+- To reset a failed or experimental deployment.
+- To remove selected Omnia domains before redeployment.
+- To return a lab or test OIM to a clean state.
+- To remove the shared Omnia environment after domain services are removed.
 
 ## Prerequisites
 
+- Log in to the OIM as a user with the privileges required by the selected
+  cleanup workflows.
+- Use the same `OMNIA_DATA_PATH` and `OMNIA_PROJECT_NAME` that were used for
+  deployment.
+- Stop or drain workloads that use the services being removed.
+- Back up project inputs, credentials, repository content, images, telemetry
+  data, databases, and shared-storage data that must be retained.
+- Confirm that the Omnia virtual environment is available. Run the main
+  cleanup command only after the domain cleanup commands complete.
 
-- You are logged in as `root` on the OIM host (not inside the `omnia_core`
-  container).
-- All cluster workloads have been drained or stopped.
-- Critical data has been backed up:
-  - `/opt/omnia/input/project_default/` (mapping files, configuration files)
+## Cleanup Scope by Domain
 
-## Tasks Performed by the Playbook
-
-
-The `oim_cleanup.yml` playbook performs the following tasks:
-
-- Clean up all containers, log files, and metadata on the OIM node.
-- Clean up any PostgreSQL database deployed as part of BuildStreaM on the OIM.
-- Rollback the firewall ports on the OIM node to its default setting.
-
+| Domain | Cleanup scope |
+|---|---|
+| `build_stream` | Removes GitLab and Build Stream services, the watcher, PostgreSQL service, NFS artifacts, and Build Stream credentials. PostgreSQL data is preserved by default. |
+| `telemetry` | Removes enabled telemetry sources and sinks. Persistent volumes, including the iDRAC MySQL PVC, are preserved by default. |
+| `orchestrator` | Removes enabled OpenCHAMI, OpenLDAP, Slurm, Kubernetes, storage-mount, and generated Orchestrator resources. Credentials are preserved by default. |
+| `discovery` | Runs the reserved cleanup entry point. The current source implementation is a placeholder and does not remove Discovery artifacts. |
+| `image_build_manager` | Removes MinIO, the registry, build output, domain data, logs, and Image Build Manager credentials. |
+| `repo_manager` | Removes the Pulp deployment, Pulp data, CLI configuration, repository integration, and logs. Credential removal is selected interactively unless explicitly configured. |
+| `utils` | Removes log-collection run directories and temporary unattended-OS-installation artifacts. Credential removal is selected interactively when applicable. |
 
 ## Steps
 
+### 1. Clean up deployed domains
 
-1. To clean up the OIM and the PostgreSQL database which is deployed as part
-   of BuildStreaM, perform one of the following:
+Run cleanup in reverse dependency order. Run only the domains that were
+initialized or deployed in the environment.
 
-   - **If the BuildStreaM PostgreSQL database is not deployed on the OIM node**,
-     and you want to clean up the OIM, run the following command:
+```bash title="Run on: OIM"
+cd <OMNIA_SOURCE_PATH>/src/main
 
-      ```bash title="Run on: omnia_core container"
-      ssh omnia_core
-      cd /omnia/utils
-      ansible-playbook oim_cleanup.yml
-      ```
+./omnia.sh --run build_stream --tags cleanup
+./omnia.sh --run telemetry --tags cleanup
+./omnia.sh --run orchestrator --tags cleanup
+./omnia.sh --run discovery --tags cleanup
+./omnia.sh --run image_build_manager --tags cleanup
+./omnia.sh --run repo_manager --tags cleanup
+./omnia.sh --run utils --tags cleanup
+```
 
-   - **If the BuildStreaM PostgreSQL database is deployed on the OIM node**,
-     and you want to clean up the OIM and the PostgreSQL database, run the
-     following command:
+See [Clean Up Utils](../HowTo/utils/cleanup_utils.md) before running the Utils
+command; its log cleanup removes every collection run directory after checking
+archive age.
 
-      ```bash title="Run on: omnia_core container"
-      ssh omnia_core
-      cd /omnia/utils
-      ansible-playbook oim_cleanup.yml -e postgres_backup=false
-      ```
-
-!!! note
-
-    The `postgres_backup` parameter determines whether the PostgreSQL
-    database should be backed up before cleanup.
-
-    - If `postgres_backup` is set to `true`, the database will be backed
-      up before cleanup.
-    - If `postgres_backup` is set to `false`, the database will not be
-      backed up before cleanup.
-
-   - **If the BuildStreaM PostgreSQL database is deployed on the OIM node**,
-     and you want to clean up the OIM but **retain** the PostgreSQL database,
-     run the following command:
-
-      ```bash title="Run on: omnia_core container"
-      ssh omnia_core
-      cd /omnia/utils
-      ansible-playbook oim_cleanup.yml -e postgres_backup=true
-      ```
-
-!!! important
-
-    When prompted to back up the PostgreSQL database that you want to
-    retain, record the database credentials. These credentials are
-    required to restore the database when running the `prepare_oim.yml`
-    playbook.
-
-2. After running the `oim_cleanup.yml` playbook, do the following:
-
-   - Reboot the OIM node to ensure all changes take effect.
-   - The `omnia_core` container is **not** removed by `oim_cleanup.yml`.
-     To delete it, log in to the OIM node and run:
-
-      ```bash title="Run on: OIM host"
-      omnia.sh --uninstall
-      ```
+Stop and resolve any failure before continuing to the next domain. Do not run
+the main cleanup while domain playbooks still need the shared virtual
+environment.
 
 !!! warning
 
-    - On subsequent runs of `provision.yml`, if users are unable to log into
-      the server, refresh the SSH key manually and retry:
+    The current Build Stream entry point contains an unresolved static import
+    for its upgrade placeholder. Until that source issue is corrected, the
+    top-level Build Stream playbook can fail during parsing before the
+    `cleanup` tag runs.
 
-      ```bash
-      ssh-keygen -R <node IP>
-      ```
-!!! info
+!!! note
 
-    - [Pulp Cleanup](pulp_cleanup.md) -- Clean up Pulp repositories, files, and container images.
+    Discovery currently reports that cleanup is reserved for a future
+    release. Running the command does not remove Discovery artifacts.
 
+### 2. Select optional destructive behavior
 
+Telemetry preserves persistent volumes by default. Delete them only when a
+complete telemetry data reset is intended:
 
+```bash title="Run on: OIM"
+./omnia.sh --run telemetry --tags cleanup -e Delete_volume=true
+```
 
+To remove only iDRAC Telemetry resources, use `--tags cleanup_idrac`. Its MySQL
+PVC `mysqldb-pvc-idrac-telemetry-0` is also preserved unless
+`Delete_volume=true` is supplied.
 
+Orchestrator preserves its encrypted credentials and Vault key during normal
+cleanup. To remove them with the components, run:
 
+```bash title="Run on: OIM"
+./omnia.sh --run orchestrator --tags cleanup,cleanup_credentials
+```
 
+Repository Manager and Utils can prompt before removing credentials. Review
+each prompt carefully and select the option that matches the redeployment
+plan.
 
+### 3. Remove the shared Omnia environment
 
+After all required domain cleanups succeed, remove the virtual environment,
+installed environment files, CLI, activation script, and dependency cache:
 
+```bash title="Run on: OIM"
+./omnia.sh --cleanup
+```
 
+This command preserves domain input, output, and log data under
+`$OMNIA_DATA_PATH`.
 
+For an explicitly approved full reset, remove the shared environment and the
+complete Omnia data root:
 
+```bash title="Run on: OIM"
+./omnia.sh --cleanup --all
+```
 
+Type exactly `yes` when prompted. This operation removes all data under
+`$OMNIA_DATA_PATH` and cannot be undone.
 
+## Verification
 
+- Confirm that every selected domain cleanup has a successful Ansible recap.
+- Verify that the intended services and containers are absent.
+- Confirm whether credentials and persistent data were preserved or removed
+  as selected.
+- After main cleanup, confirm that the shared virtual environment and installed
+  Omnia environment files are absent.
 
+## Next Steps
 
+- Run `./omnia.sh --setup-venv` to recreate the shared environment.
+- Initialize and deploy only the required domains in dependency order.
+- See [Clean Up Orchestrator](../HowTo/orchestrator/cleanup_orchestrator.md) for
+  component-level Orchestrator cleanup.
+- See [Pulp Cleanup](pulp_cleanup.md) for selective repository cleanup.

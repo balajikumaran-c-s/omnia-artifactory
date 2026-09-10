@@ -131,11 +131,11 @@ user_repo_url_aarch64:
 
 !!! important
     The repository `name` must be `slurm_custom` to match the
-    `software_config.json` entry.
+    repository reference in the selected catalog.
 
 ## Next Steps
 
-- [Set Up Slurm](setup_slurm.md) -- Deploy Slurm using the hosted RPMs
+- [Deploy Slurm](../orchestrator/deploy_slurm.md) -- Deploy Slurm using the hosted RPMs
 
 ## Troubleshooting
 

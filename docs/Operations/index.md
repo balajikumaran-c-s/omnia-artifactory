@@ -3,9 +3,8 @@
 
 Day-2 operations for managing a running Omnia cluster. These guides cover
 common administrative tasks you will perform after the initial deployment is
-complete---scaling the cluster, re-provisioning nodes, upgrading to a new
-Omnia version, rolling back a failed upgrade, managing logs, hardening
-security, and cleaning up the OIM when a fresh start is needed.
+complete---scaling or re-provisioning the cluster, managing repositories and
+logs, and cleaning up domains or the OIM environment.
 
 !!! tip
 
@@ -17,6 +16,8 @@ security, and cleaning up the OIM when a fresh start is needed.
 
 - [Maintain the Main environment](maintain_main_environment.md) to audit
   dependency declarations or remove the installed OIM environment.
+- [Clean up the OIM](oim_cleanup.md) by removing deployed domains in reverse
+  dependency order before removing the shared execution environment.
 - [Update repositories after catalog changes](repo_manager/updating_local_repositories.md)
   to synchronize revised catalog content and regenerate `repo_status.yml`.
 - [Resynchronize local RPM repositories](repo_manager/local_repository_resync.md)
@@ -46,7 +47,6 @@ security, and cleaning up the OIM when a fresh start is needed.
 - Review the [Slurm configuration roles](slurm_configuration_roles.md) before
   integrating the source roles into an administrator-maintained playbook.
 - Use [Log Management](log_management.md) for general log inspection.
-
 
 
 

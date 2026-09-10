@@ -1,174 +1,95 @@
+# PXE mapping file
 
-# PXE Mapping File
+The PXE mapping file is the node-inventory contract consumed by Orchestrator.
+It assigns each physical server to a group and functional role and supplies
+the hostname and network identities used during provisioning.
 
-The PXE mapping file is a CSV that assigns each physical server to a
-functional group, hostname, and admin network addresses via mac addresses. Omnia reads this file during `provision.yml` to determine which role eachserver plays and how it is addressed on the network.
+The default project-scoped location is:
+
+```text
+/opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv
+```
+
+Set `pxe_mapping_file_path` in `orchestrator_config.yml` to select another
+absolute path.
 
 ## Column reference
 
+Retain every column in this header, including optional columns:
+
+```text
+FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
+```
+
 | Column | Required | Description |
 | --- | --- | --- |
-| `FUNCTIONAL_GROUP_NAME` | Yes | The role and architecture this node plays in the cluster. Must match a group name in `software_config.json`. Values: `slurm_control_node_x86_64`, `slurm_node_x86_64`, `slurm_node_aarch64`, `login_node_x86_64`, `login_node_aarch64`, `login_compiler_node_aarch64`, `service_kube_control_plane_x86_64`, `service_kube_node_x86_64`, `os_x86_64`, `os_aarch64`. |
-| `GROUP_NAME` | Yes | A logical sub-group for organizing nodes (e.g., `grp0`, `grp1`, `grp2`, `grp3`, `grp4`, `grp5`, `grp6`, `grp7`, `grp8`, `grp9`). Used for rack inventory grouping. |
-| `SERVICE_TAG` | Yes | Dell service tag of the server (7-character alphanumeric string found on the server chassis or in iDRAC). Used for unique node identification. |
-| `PARENT_SERVICE_TAG` | No | Service tag of the parent service_kube_node. Applicable only to slurm_node_x86_64 and slurm_node_aarch64 functional groups. |
-| `HOSTNAME` | Yes | Hostname to assign to the node. Must comply with hostname rules (see [Hostname Requirements](../Appendices/hostname_requirements.md)). |
-| `ADMIN_MAC` | Yes | MAC address of the admin network NIC (used for PXE boot). Format: `xx:yy:zz:aa:bb:cc`. |
-| `ADMIN_IP` | Yes | Static IP address on the admin network. Must be within the admin subnet defined in `network_spec.yml` and outside the `dynamic_range`. |
-| `BMC_MAC` | No | MAC address of the BMC/iDRAC interface. Used for BMC discovery and address assignment. |
-| `BMC_IP` | No | Static IP address for the BMC/iDRAC interface. Must be within the BMC subnet. |
-| `IB_NIC_NAME` | No | InfiniBand NIC identifier (e.g., `InfiniBand.Slot.7-1`, `NIC.InfiniBand.1-3`). Used for InfiniBand network configuration. Leave blank if node does not have InfiniBand. |
-| `IB_IP` | No | Static IP address on the InfiniBand network (e.g., `192.168.0.100`). Must be within the InfiniBand subnet defined in `network_spec.yml`. Leave blank if node does not have InfiniBand. |
+| `FUNCTIONAL_GROUP_NAME` | Yes | Functional-layer name from the selected catalog. The value must exactly match the corresponding image name in Image Build Manager output. |
+| `GROUP_NAME` | Yes | Scalable Unit or logical group identifier. |
+| `SERVICE_TAG` | Yes | Unique Dell server service tag. |
+| `PARENT_SERVICE_TAG` | No | For Slurm compute-node roles, the service tag of the service Kubernetes worker in the same group. Leave empty for other roles. |
+| `HOSTNAME` | Yes | Unique lowercase hostname without a domain suffix. |
+| `ADMIN_MAC` | Yes | Unique MAC address of the admin/PXE NIC. |
+| `ADMIN_IP` | Yes | Unique IPv4 address in a configured admin subnet. |
+| `BMC_MAC` | No | BMC/iDRAC MAC address. |
+| `BMC_IP` | No | BMC/iDRAC IPv4 address. |
+| `IB_NIC_NAME` | No | InfiniBand NIC FQDD, such as `InfiniBand.Slot.7-1` or `NIC.InfiniBand.1-3`. |
+| `IB_IP` | No | InfiniBand IPv4 address. |
 
-## Sample csv files
+For the default RHEL 10.0 catalog installed by Main, use these exact,
+case-sensitive functional-group names:
 
-### Single subnet DHCP
-```csv title="pxe_mapping_file_single_subnet.csv"
+- `os_rhel_10_0_x86_64`
+- `slurm_control_node_rhel_10_0_x86_64`
+- `login_node_rhel_10_0_x86_64`
+- `service_kube_control_plane_rhel_10_0_x86_64`
+- `service_kube_node_rhel_10_0_x86_64`
+- `os_rhel_10_0_aarch64`
+- `slurm_node_rhel_10_0_aarch64`
+- `login_compiler_node_rhel_10_0_aarch64`
+
+Other catalog variants can define different functional layers. Use the exact
+`catalog.functionallayer[].name` value from the selected catalog. When using a
+Discovery-generated mapping, review and update `FUNCTIONAL_GROUP_NAME` before
+passing the file to Orchestrator.
+
+## Sample file
+
+```csv title="pxe_mapping_file.csv"
 FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
-slurm_control_node_x86_64,grp0,ABCD12,,nid001,xx:yy:zz:aa:bb:cc,172.16.107.52,xx:yy:zz:aa:bb:dd,172.17.107.52,InfiniBand.Slot.7-1,192.168.0.100
-slurm_node_x86_64,grp2,ABCD34,ABFL82,nid002,aa:bb:cc:dd:ee:ff,172.16.107.43,aa:bb:cc:dd:ee:aa,172.17.107.43,InfiniBand.Slot.7-2,192.168.0.101
-slurm_node_x86_64,grp1,ABFG34,ABKD88,nid003,aa:bb:cc:dd:ee:gg,172.16.107.44,aa:bb:cc:dd:ff:bb,172.17.107.44,InfiniBand.Slot.7-3,192.168.0.102
-slurm_node_x86_64,grp1,BBFG35,ABKD88,nid004,aa:bb:cc:dd:ee:hh,172.16.107.46,aa:bb:cc:dd:ff:cc,172.17.107.46,InfiniBand.Slot.8-1,192.168.0.103
-login_node_x86_64,grp8,ABCD78,,nid005,aa:bb:cc:dd:ee:gg,172.16.107.41,aa:bb:cc:dd:ee:bb,172.17.107.41,InfiniBand.Slot.8-2,192.168.0.104
-login_compiler_node_x86_64,grp9,ABFG78,,nid006,aa:bb:cc:dd:ee:gg,172.16.107.42,aa:bb:cc:dd:ee:bb,172.17.107.42,InfiniBand.Slot.8-3,192.168.0.105
-service_kube_control_plane_x86_64,grp3,ABFG79,,nid007,aa:bb:cc:dd:ee:ff,172.16.107.53,xx:yy:zz:aa:bb:ff,172.17.107.53,InfiniBand.Slot.9-1,192.168.0.106
-service_kube_control_plane_x86_64,grp4,ABFH78,,nid008,aa:bb:cc:dd:ee:hh,172.16.107.54,xx:yy:zz:aa:bb:hh,172.17.107.54,InfiniBand.Slot.9-2,192.168.0.107
-service_kube_control_plane_x86_64,grp4,ABFH80,,nid009,aa:bb:cc:dd:ee:ii,172.16.107.55,xx:yy:zz:aa:bb:ii,172.17.107.55,InfiniBand.Slot.9-3,192.168.0.108
-service_kube_node_x86_64,grp5,ABFL82,,nid010,aa:bb:cc:dd:ee:jj,172.16.107.56,xx:yy:zz:aa:bb:jj,172.17.107.56,InfiniBand.Slot.7-4,192.168.0.109
-service_kube_node_x86_64,grp5,ABKD88,,nid011,aa:bb:cc:dd:ee:kk,172.16.107.57,xx:yy:zz:aa:bb:ff,172.17.107.57,InfiniBand.Slot.7-5,192.168.0.110
-os_x86_64,grp7,EFG123,,nid012,aa:bb:cc:dd:ee:21,10.41.0.12,aa:bb:cc:dd:ee:22,10.40.0.12,InfiniBand.Slot.7-11,10.42.0.12
-os_aarch_64,grp8,EFG123,,nid013,aa:bb:cc:dd:ee:21,10.41.0.12,aa:bb:cc:dd:ee:22,10.40.0.12,InfiniBand.Slot.7-12,10.42.0.12
+slurm_control_node_rhel_10_0_x86_64,grp0,ABCD12,,nid001,02:00:00:00:01:01,172.16.107.52,02:00:00:00:02:01,172.17.107.52,InfiniBand.Slot.7-1,192.168.0.100
+service_kube_node_rhel_10_0_x86_64,grp1,ABFL82,,nid002,02:00:00:00:01:02,172.16.107.56,02:00:00:00:02:02,172.17.107.56,,
+slurm_node_rhel_10_0_aarch64,grp1,ABCD34,ABFL82,nid003,02:00:00:00:01:03,172.16.107.43,02:00:00:00:02:03,172.17.107.43,InfiniBand.Slot.7-2,192.168.0.101
+login_compiler_node_rhel_10_0_aarch64,grp8,ABCD78,,nid004,02:00:00:00:01:04,172.16.107.41,02:00:00:00:02:04,172.17.107.41,NIC.InfiniBand.1-1,192.168.0.103
+service_kube_control_plane_rhel_10_0_x86_64,grp3,ABFG79,,nid005,02:00:00:00:01:05,172.16.107.53,02:00:00:00:02:05,172.17.107.53,,
+os_rhel_10_0_aarch64,grp7,ABEF78,,nid006,02:00:00:00:01:06,172.16.107.61,02:00:00:00:02:06,172.17.107.61,,
 ```
 
-### Multi-subnet DHCP
-
-```csv title="pxe_mapping_file_multiple_subnet.csv"
-FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
-service_kube_control_plane_x86_64,grp1,DEF456,,nid001,aa:bb:cc:dd:ee:03,10.41.1.15,aa:bb:cc:dd:ee:04,10.40.1.15,InfiniBand.Slot.7-2,10.42.1.15
-service_kube_control_plane_x86_64,grp1,GHI789,,nid002,aa:bb:cc:dd:ee:05,10.41.1.16,aa:bb:cc:dd:ee:06,10.40.1.16,InfiniBand.Slot.7-3,10.42.1.16
-service_kube_control_plane_x86_64,grp1,JKL012,,nid003,aa:bb:cc:dd:ee:07,10.41.1.17,aa:bb:cc:dd:ee:08,10.40.1.17,InfiniBand.Slot.7-4,10.42.1.17
-service_kube_node_x86_64,grp2,MNO345,,nid004,aa:bb:cc:dd:ee:09,10.41.1.18,aa:bb:cc:dd:ee:10,10.40.1.18,InfiniBand.Slot.7-5,10.42.1.18
-service_kube_node_x86_64,grp2,PQR678,,nid005,aa:bb:cc:dd:ee:11,10.41.1.19,aa:bb:cc:dd:ee:12,10.40.1.19,InfiniBand.Slot.7-6,10.42.1.19
-slurm_control_node_x86_64,grp3,ABC123,,nid006,aa:bb:cc:dd:ee:01,10.41.0.10,aa:bb:cc:dd:ee:02,10.40.0.10,InfiniBand.Slot.7-1,10.42.0.10
-slurm_node_x86_64,grp4,STU901,MNO345,nid007,aa:bb:cc:dd:ee:13,10.41.2.22,aa:bb:cc:dd:ee:14,10.40.2.22,InfiniBand.Slot.7-7,10.42.2.22
-slurm_node_x86_64,grp4,VWX234,PQR678,nid008,aa:bb:cc:dd:ee:15,10.41.2.23,aa:bb:cc:dd:ee:16,10.40.2.23,InfiniBand.Slot.7-8,10.42.2.23
-login_compiler_node_x86_64,grp5,YZA567,,nid009,aa:bb:cc:dd:ee:17,10.41.2.24,aa:bb:cc:dd:ee:18,10.40.2.24,InfiniBand.Slot.7-9,10.42.2.24
-login_node_x86_64,grp6,BCD890,,nid010,aa:bb:cc:dd:ee:19,10.41.0.11,aa:bb:cc:dd:ee:20,10.40.0.11,InfiniBand.Slot.7-10,10.42.0.11
-os_x86_64,grp7,EFG123,,nid011,aa:bb:cc:dd:ee:21,10.41.0.12,aa:bb:cc:dd:ee:22,10.40.0.12,InfiniBand.Slot.7-11,10.42.0.12
-os_aarch_64,grp8,EFG123,,nid012,aa:bb:cc:dd:ee:21,10.41.0.12,aa:bb:cc:dd:ee:22,10.40.0.12,InfiniBand.Slot.7-12,10.42.0.12
-```
-
-### Node Role Examples
-
-**Slurm control node (x86_64)**
-
-```csv title="Example: Slurm control node"
-FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
-slurm_control_node_x86_64,grp0,ABCD12,,slurm-control-node1,xx:yy:zz:aa:bb:cc,172.16.107.52,xx:yy:zz:aa:bb:dd,172.17.107.52,InfiniBand.Slot.7-1,192.168.0.100
-```
-
-- Runs `slurmctld` and `slurmdbd`.
-- Exactly one node should have this functional group per Slurm cluster.
-- `PARENT_SERVICE_TAG` is empty (standalone server).
-- Includes InfiniBand NIC for high-speed cluster communication.
-
-**Slurm compute nodes (aarch64)**
-
-```text title="Example: Slurm compute nodes with parent chassis"
-FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
-slurm_node_aarch64,grp1,ABCD34,ABFL82,slurm-node1,aa:bb:cc:dd:ee:ff,172.16.107.43,aa:bb:cc:dd:ee:gg,172.17.107.43,InfiniBand.Slot.7-2,192.168.0.101
-slurm_node_aarch64,grp2,ABFG34,ABKD88,slurm-node2,aa:bb:cc:dd:ee:ff,172.16.107.44,aa:bb:cc:dd:ff:gg,172.17.107.44,NIC.InfiniBand.1-3,192.168.0.102
-```
-
-- Runs `slurmd`.
-- `PARENT_SERVICE_TAG` identifies the shared chassis (multi-node systems like C6620).
-- Each node has its own service tag, hostname, and network addresses.
-- Includes InfiniBand NIC for high-speed cluster communication.
-
-**Login node (aarch64)**
-
-```csv title="Example: Login node"
-FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
-login_node_aarch64,grp9,ABFG78,,login-node1,aa:bb:cc:dd:ee:gg,172.16.107.42,aa:bb:cc:dd:ee:bb,172.17.107.42,NIC.InfiniBand.1-1,192.168.0.104
-```
-
-- Provides interactive SSH access for users to submit jobs.
-- Does not run `slurmd`; configured as a Slurm client only.
-- Includes InfiniBand for cluster communication.
-
-**Kubernetes control plane (x86_64)**
-
-```csv title="Example: Kubernetes control plane"
-FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
-service_kube_control_plane_x86_64,grp3,ABFG79,,service-kube-control-plane1,aa:bb:cc:dd:ee:ff,172.16.107.53,xx:yy:zz:aa:bb:ff,172.17.107.53,,
-```
-
-- Runs the Kubernetes API server, etcd, scheduler, and controller-manager.
-- For HA, use 3 control plane nodes (see [HA Config](../Configuration/high_availability_config.md)).
-- InfiniBand is optional for control plane nodes.
-
-**Kubernetes worker nodes (x86_64)**
-
-```csv title="Example: Kubernetes worker nodes"
-FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
-service_kube_node_x86_64,grp5,ABFL82,,service-kube-node1,aa:bb:cc:dd:ee:jj,172.16.107.56,xx:yy:zz:aa:bb:jj,172.17.107.56,,
-```
-
-- Runs `kubelet` and `kube-proxy`; hosts application pods.
-- InfiniBand is optional for worker nodes.
-
-**Generic OS nodes (x86_64 and aarch64)**
-
-```csv title="Example: Generic OS nodes"
-FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
-os_x86_64,grp6,ABEF56,,os-node1,xx:yy:zz:aa:bb:ll,172.16.107.60,xx:yy:zz:aa:bb:ee,172.17.107.60,,
-os_aarch64,grp7,ABEF78,,os-node2,xx:yy:zz:aa:bb:ab,172.16.107.61,xx:yy:zz:aa:bb:ac,172.17.107.61,,
-```
-
-- Generic nodes with no specific cluster role.
-- Useful for standalone compute, storage, or utility nodes.
-- InfiniBand is optional.
+`ABFL82` is a service Kubernetes worker in `grp1`; it is the parent service
+tag for the Slurm compute node in that same group.
 
 ## Validation rules
 
-| Rule | Description |
-| --- | --- |
-| Unique `SERVICE_TAG` | No two rows may share the same service tag. |
-| Unique `HOSTNAME` | Each hostname must be unique across the entire file. |
-| Unique `ADMIN_IP` | Admin IP addresses must not overlap with each other or with the OIM's admin IP. |
-| Unique `ADMIN_MAC` | Each admin MAC address must be unique. |
-| Valid `FUNCTIONAL_GROUP_NAME` | Must be one of the recognized group names listed above. |
-| Hostname format | Lowercase, no domain suffix, RFC 952/1123 compliant. See [Hostname Requirements](../Appendices/hostname_requirements.md). |
-| IP within subnet | `ADMIN_IP` must fall within the admin network subnet and outside the `dynamic_range`. `BMC_IP` must fall within the BMC subnet. |
+The current Orchestrator input validator checks:
 
-!!! important
+- Presence of the nine required headers from `FUNCTIONAL_GROUP_NAME` through
+  `BMC_IP`. Keep the optional InfiniBand columns as part of the full contract.
+- Uniqueness of nonempty `SERVICE_TAG`, `HOSTNAME`, and `ADMIN_IP` values.
+- IPv4 syntax for nonempty `ADMIN_IP` values.
+- Membership of `ADMIN_IP` values in the primary or additional admin subnets
+  from the Orchestrator `network_spec.yml`.
 
-    When `dns_enabled` is `false` in `orchestrator_config.yml` (the source default), `HOSTNAME` values can be customized. When `dns_enabled` is `true`, `HOSTNAME` values must use the `nidxxx` format (e.g., `nid001`). See
-    [Cluster DNS](../../Overview/cluster_dns.md) for details.
+Provisioning also consumes the remaining values. Verify service tags, MAC
+addresses, BMC addresses, functional groups, parent relationships, and
+InfiniBand information against the physical inventory even when initial
+validation passes.
 
-!!! note
+When `dns_enabled` is `true`, use the `nidxxx` hostname format, such as
+`nid001`. When it is `false`, custom lowercase hostnames are supported. In
+both cases, do not include a domain suffix.
 
-    - The default PXE mapping file location is `/opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv`.
+## Related documentation
 
-!!! info
-
-    - [Orchestrator Config](../Configuration/orchestrator_config.md) -- Where the mapping
-      file path is specified.
-    - [Hostname Requirements](../Appendices/hostname_requirements.md) -- Hostname rules.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- [Create a mapping file](../../HowTo/discovery/create_mapping_file.md)
+- [Discover nodes using OME](../../HowTo/discovery/discover_nodes.md)
+- [Orchestrator contract](../domain_contracts/orchestrator_contract.md)
+- [Hostname requirements](../Appendices/hostname_requirements.md)

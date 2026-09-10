@@ -24,13 +24,19 @@ before the archive is created.
 
 ## Procedure
 
-1. Edit the staged inventory:
+1. Initialize the Utils domain so that its inputs and dependencies are staged:
+
+    ```bash title="Run from: <omnia-repository>/src/main"
+    ./omnia.sh -i utils
+    ```
+
+2. Edit the staged inventory:
 
     ```bash title="Run on: OIM"
     vi "$OMNIA_DATA_PATH/utils/input/$OMNIA_PROJECT_NAME/collect_pxe.yml"
     ```
 
-2. Add administrative IP addresses under the applicable functional groups:
+3. Add administrative IP addresses under the applicable functional groups:
 
     ```yaml title="collect_pxe.yml"
     service_kube_control_plane_x86_64:
@@ -51,10 +57,10 @@ before the archive is created.
 
     Remove the example addresses and enter only nodes in the active cluster.
 
-3. From the Utils collection, run the log-collection workflow:
+4. Run the log-collection workflow through the OIM domain launcher:
 
-    ```bash title="Run from: <omnia-repository>/src/utils"
-    ansible-playbook playbooks/utils.yml --tags collect
+    ```bash title="Run from: <omnia-repository>/src/main"
+    ./omnia.sh --run utils --tags collect
     ```
 
 The workflow collects the source-defined Kubernetes or Slurm log paths for
@@ -93,8 +99,8 @@ warnings.
   missing-source warnings.
 - To clean the collection workspace, run:
 
-    ```bash title="Run from: <omnia-repository>/src/utils"
-    ansible-playbook playbooks/utils.yml --tags cleanup_logs
+    ```bash title="Run from: <omnia-repository>/src/main"
+    ./omnia.sh --run utils --tags cleanup_logs
     ```
 
     The cleanup flow searches for archives older than seven days and then
@@ -104,8 +110,8 @@ warnings.
 
 ## Troubleshooting
 
-- **`collect_pxe.yml` is missing**: Run `./domain-init.sh` from `src/utils` and
-  edit the staged file in the active project input directory.
+- **`collect_pxe.yml` is missing**: Run `./omnia.sh -i utils` from `src/main`
+  and edit the staged file in the active project input directory.
 - **A node is marked unreachable**: Verify its administrative IP and SSH
   access from the OIM. Collection continues for other nodes and records the
   failure in the archive metadata.

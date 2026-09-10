@@ -32,7 +32,7 @@ The build pipeline is automatically triggered when you update the `catalog_rhel.
 ## Prerequisites
 
 - BuildStreaM container is deployed on the OIM node
-- GitLab deployment for BuildStreaM is completed (see [Deploy GitLab](deploy_gitlab.md))
+- GitLab deployment for Build Stream is completed (see [Deploy GitLab](../build_stream/deploy_gitlab.md))
 - You can access the GitLab project repository
 - **200 GB free disk space** on the OIM **/ partition** before triggering the build pipeline
   - This requirement applies to the OIM root partition before pipeline execution
@@ -138,4 +138,4 @@ After the pipeline completes:
 - **Parse-Catalog stage failing**: Ensure the JSON is aligned with the expected schema. See catalog examples at [https://github.com/dell/omnia/tree/pub/build_stream/examples/catalog](https://github.com/dell/omnia/tree/pub/build_stream/examples/catalog).
 - **Create-Local-Repo stage failing**: Check the log path from the API response and verify `local_repo_config.yml` settings.
 - **Build-Image stage failing**: Ensure the catalog has valid functional groups.
-- For additional issues, see [BuildStreaM Troubleshooting](../../Troubleshooting/buildstream.md).
+- For additional issues, see [Build Stream Troubleshooting](../../Troubleshooting/build_stream/build_stream.md).

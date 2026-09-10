@@ -1,161 +1,151 @@
-# Create a Mapping File
+# Create a mapping file
 
 ## Overview
 
-Nodes in Omnia are discovered and provisioned based on the **groups** and **functional groups** defined in a PXE mapping file. By combining both, Omnia provides a flexible approach to managing large-scale node infrastructures, ensuring both logical organization and physical optimization of resources.
+Orchestrator provisions nodes from `pxe_mapping_file.csv`. Each row identifies
+a node, its physical group, functional role, hostname, and network interfaces.
 
-- A **group** is based on the physical characteristics of nodes. Nodes in the same rack or Scalable Unit (SU) are grouped together with a shared `GROUP_NAME`. Groups help with physical organization and management.
+The mapping is an Orchestrator-owned input. Create it in either of these ways:
 
-- A **functional group** defines what a node does in the cluster. It categorizes nodes by their role, such as:
-    - `service_kube_control_plane`
-    - `service_kube_node`
-    - `slurm_control_node`
-    - `slurm_node`
-    - `login_node`
-    - `login_compiler_node`
-    - `os` (Minimal OS)
+- Run Discovery against OME, review its generated
+  `bmc_pxe_mapping_file.csv`, and copy the reviewed file to Orchestrator.
+- Collect the node information and create the Orchestrator input directly.
+  This manual method does not run Discovery.
 
 ## Prerequisites
 
-- The [Deploy Omnia Core](https://github.com/dell/omnia) procedure is complete.
-- PXE NIC MAC addresses and BMC IP addresses are available for each target node.
-- You have planned the functional group assignments for each node.
+- Complete [OIM setup](../main/setup_oim.md).
+- Collect the service tag, admin/PXE NIC MAC and IP, and any BMC and
+  InfiniBand information required for each target node.
+- Plan the functional-group and physical-group assignments.
+- Ensure that an image exists for every functional group that Orchestrator
+  will provision.
 
-## Procedure
+## Create the file manually
 
-Omnia supports two ways to obtain a PXE mapping file:
+Create the file at the project-scoped Orchestrator input path:
 
-- **Manual PXE mapping** -- Collect the node information and create the
-  Orchestrator input file directly. This does not execute the Discovery module.
-- **OME-based generation** -- Run the Discovery module to query OpenManage
-  Enterprise and generate a mapping for review.
+```text
+$OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv
+```
 
-### Create PXE file manually
+The default is
+`/opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv`. To use
+another absolute path, set `pxe_mapping_file_path` in the project-scoped
+`orchestrator_config.yml`.
 
-Manually collect PXE NIC information for each node and create the file at
-`/opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv`. To use a
-different absolute path, set `pxe_mapping_file_path` in
-`/opt/omnia/orchestrator/input/project_default/orchestrator_config.yml`.
+Use the following header and retain all columns, including optional columns:
 
-Each node entry requires the following fields: `FUNCTIONAL_GROUP_NAME`, `GROUP_NAME`, `SERVICE_TAG`, `PARENT_SERVICE_TAG`, `HOSTNAME`, `ADMIN_MAC`, `ADMIN_IP`, `BMC_MAC`, `BMC_IP`, `IB_NIC_NAME`, and `IB_IP`.
-
-### Column reference
+```text
+FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
+```
 
 | Column | Required | Description |
 | --- | --- | --- |
-| `FUNCTIONAL_GROUP_NAME` | Yes | Node role with architecture suffix (e.g., `slurm_node_x86_64`, `login_node_aarch64`). |
-| `GROUP_NAME` | Yes | Physical grouping identifier (e.g., `grp0`, `grp1`). Nodes in the same group must share the same parent. |
-| `SERVICE_TAG` | Yes | Dell service tag of the server. |
-| `PARENT_SERVICE_TAG` | No | Service tag of the parent chassis for blade servers. Leave empty for rack servers. |
-| `HOSTNAME` | Yes | Custom hostname for the node. Do not include the domain name. |
-| `ADMIN_MAC` | Yes | MAC address of the PXE NIC on the admin network. |
-| `ADMIN_IP` | Yes | Static IP address on the admin network. |
-| `BMC_MAC` | Yes | MAC address of the BMC/iDRAC interface. |
-| `BMC_IP` | Yes | Static IP address on the BMC network. |
-| `IB_NIC_NAME` | No | FQDD of the InfiniBand NIC port (e.g., `InfiniBand.Slot.7-1`). Leave empty if no IB NIC is present. |
-| `IB_IP` | No | Static IP address on the InfiniBand network. Leave empty if no IB NIC is present. |
+| `FUNCTIONAL_GROUP_NAME` | Yes | Node role with architecture suffix. The value must have a corresponding image and supported configuration. |
+| `GROUP_NAME` | Yes | Scalable Unit or logical group identifier. |
+| `SERVICE_TAG` | Yes | Unique Dell server service tag. |
+| `PARENT_SERVICE_TAG` | No | For `slurm_node_x86_64` and `slurm_node_aarch64`, the service tag of the `service_kube_node_x86_64` in the same group. Leave empty for other roles. |
+| `HOSTNAME` | Yes | Unique node hostname without a domain suffix. |
+| `ADMIN_MAC` | Yes | Unique MAC address of the PXE NIC on the admin network. |
+| `ADMIN_IP` | Yes | Unique static IPv4 address in a configured admin subnet. |
+| `BMC_MAC` | No | MAC address of the BMC/iDRAC interface. |
+| `BMC_IP` | No | Static IPv4 address of the BMC/iDRAC interface. |
+| `IB_NIC_NAME` | No | InfiniBand NIC FQDD, such as `InfiniBand.Slot.7-1`. |
+| `IB_IP` | No | Static InfiniBand IPv4 address. Leave empty when no InfiniBand NIC is used. |
 
-### Sample mapping file (x86_64 cluster)
+The functional groups generated by Discovery are:
 
-```text title="File: /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv"
+- `service_kube_control_plane_x86_64`
+- `service_kube_node_x86_64`
+- `login_node_x86_64`
+- `login_node_aarch64`
+- `login_compiler_node_x86_64`
+- `login_compiler_node_aarch64`
+- `slurm_control_node_x86_64`
+- `slurm_node_x86_64`
+- `slurm_node_aarch64`
+- `os_x86_64`
+- `os_aarch64`
+
+## Sample x86_64 mapping
+
+```csv title="File: /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv"
 FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
-slurm_control_node_x86_64,grp0,ABCD12,,nid001,a1:b2:c3:d4:e5:f6,172.16.107.52,a2:b3:c4:d5:e6:f7,172.17.107.52,InfiniBand.Slot.7-1,192.168.0.100
-slurm_node_x86_64,grp1,ABCD34,ABFL82,nid002,b1:c2:d3:e4:f5:a6,172.16.107.43,b2:c3:d4:e5:f6:a7,172.17.107.43,InfiniBand.Slot.7-1,192.168.0.101
-slurm_node_x86_64,grp1,ABFG34,ABKD88,nid003,c1:d2:e3:f4:a5:b6,172.16.107.44,c2:d3:e4:f5:a6:b7,172.17.107.44,InfiniBand.Slot.7-1,192.168.0.102
-login_compiler_node_x86_64,grp8,ABCD78,,nid004,d1:e2:f3:a4:b5:c6,172.16.107.41,d2:e3:f4:a5:b6:c7,172.17.107.41,InfiniBand.Slot.7-1,192.168.0.103
-service_kube_control_plane_x86_64,grp3,ABFG79,,nid005,f1:a2:b3:c4:d5:e6,172.16.107.53,f2:a3:b4:c5:d6:e7,172.17.107.53,,
-service_kube_node_x86_64,grp5,ABFL82,,nid006,33:44:55:66:77:88,172.16.107.56,34:45:56:67:78:89,172.17.107.56,InfiniBand.Slot.7-1,192.168.0.108
-os_x86_64,grp6,ABEF56,,nid007,77:88:99:aa:bb:cc,172.16.107.60,78:89:aa:bb:cc:dd,172.17.107.60,,
+slurm_control_node_x86_64,grp0,ABCD12,,nid001,02:00:00:00:01:01,172.16.107.52,02:00:00:00:02:01,172.17.107.52,InfiniBand.Slot.7-1,192.168.0.100
+service_kube_node_x86_64,grp1,ABFL82,,nid002,02:00:00:00:01:02,172.16.107.56,02:00:00:00:02:02,172.17.107.56,,
+slurm_node_x86_64,grp1,ABCD34,ABFL82,nid003,02:00:00:00:01:03,172.16.107.43,02:00:00:00:02:03,172.17.107.43,InfiniBand.Slot.7-1,192.168.0.101
+login_compiler_node_x86_64,grp8,ABCD78,,nid004,02:00:00:00:01:04,172.16.107.41,02:00:00:00:02:04,172.17.107.41,InfiniBand.Slot.7-1,192.168.0.103
+service_kube_control_plane_x86_64,grp3,ABFG79,,nid005,02:00:00:00:01:05,172.16.107.53,02:00:00:00:02:05,172.17.107.53,,
+os_x86_64,grp6,ABEF56,,nid006,02:00:00:00:01:06,172.16.107.60,02:00:00:00:02:06,172.17.107.60,,
 ```
 
-### Sample mapping file (mixed x86_64 and aarch64 cluster)
+In this example, `ABFL82` is the service Kubernetes worker in `grp1` and is
+therefore the parent service tag for the Slurm node in the same group.
 
-```text title="File: /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv"
+## Sample mixed-architecture mapping
+
+```csv title="File: /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv"
 FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
-slurm_control_node_x86_64,grp0,ABCD12,,nid001,a1:b2:c3:d4:e5:f6,172.16.107.52,a2:b3:c4:d5:e6:f7,172.17.107.52,InfiniBand.Slot.7-1,192.168.0.100
-slurm_node_aarch64,grp1,ABCD34,ABFL82,nid002,b1:c2:d3:e4:f5:a6,172.16.107.43,b2:c3:d4:e5:f6:a7,172.17.107.43,InfiniBand.Slot.7-2,192.168.0.101
-login_compiler_node_aarch64,grp8,ABCD78,,nid003,d1:e2:f3:a4:b5:c6,172.16.107.41,d2:e3:f4:a5:b6:c7,172.17.107.41,InfiniBand.PCIe.Slot.8-1,192.168.0.103
-login_node_aarch64,grp9,ABFG78,,nid004,e1:f2:a3:b4:c5:d6,172.16.107.42,e2:f3:a4:b5:c6:d7,172.17.107.42,NIC.InfiniBand.1-1,192.168.0.104
-service_kube_control_plane_x86_64,grp3,ABFG79,,nid005,f1:a2:b3:c4:d5:e6,172.16.107.53,f2:a3:b4:c5:d6:e7,172.17.107.53,,
-os_aarch64,grp7,ABEF78,,nid006,99:aa:bb:cc:dd:ee,172.16.107.61,9a:ab:bc:cd:de:ef,172.17.107.61,,
+service_kube_node_x86_64,grp1,ABFL82,,nid001,02:00:00:00:11:01,172.16.107.56,02:00:00:00:12:01,172.17.107.56,,
+slurm_node_aarch64,grp1,ABCD34,ABFL82,nid002,02:00:00:00:11:02,172.16.107.43,02:00:00:00:12:02,172.17.107.43,InfiniBand.Slot.7-2,192.168.0.101
+login_compiler_node_aarch64,grp8,ABCD78,,nid003,02:00:00:00:11:03,172.16.107.41,02:00:00:00:12:03,172.17.107.41,InfiniBand.PCIe.Slot.8-1,192.168.0.103
+login_node_aarch64,grp9,ABFG78,,nid004,02:00:00:00:11:04,172.16.107.42,02:00:00:00:12:04,172.17.107.42,NIC.InfiniBand.1-1,192.168.0.104
+service_kube_control_plane_x86_64,grp3,ABFG79,,nid005,02:00:00:00:11:05,172.16.107.53,02:00:00:00:12:05,172.17.107.53,,
+os_aarch64,grp7,ABEF78,,nid006,02:00:00:00:11:06,172.16.107.61,02:00:00:00:12:06,172.17.107.61,,
 ```
 
-!!! note "Hostname format"
+## Mapping rules
 
-    - When `dns_enabled` is `false` in `orchestrator_config.yml`, `HOSTNAME` values can be customized (e.g., `slurm-control-node1`).
-    - When `dns_enabled` is `true` (the default for fresh installations), `HOSTNAME` values must follow the `nidxxx` format (e.g., `nid001`, `nid002`).
+- Retain the exact uppercase header names and column order shown above.
+- Keep `SERVICE_TAG`, `HOSTNAME`, `ADMIN_MAC`, and `ADMIN_IP` unique.
+- When `dns_enabled` is `true`, use the three-digit `nidxxx` format, such as
+  `nid001`. When it is `false`, custom lowercase hostnames are supported.
+- Do not include a domain suffix in `HOSTNAME`.
+- Leave an optional value empty by using consecutive commas; do not remove its
+  column.
+- Keep every `ADMIN_IP` within the primary or additional admin subnets in the
+  Orchestrator `network_spec.yml`.
+- Verify BMC addresses, service tags, parent relationships, and InfiniBand
+  values manually. Validation does not prove that those values match the
+  physical server.
+- Configure each target to boot from the NIC identified by `ADMIN_MAC`.
 
-!!! warning
+Orchestrator validation checks for the required headers, duplicate service
+tags, hostnames and admin IPs, valid admin IPv4 syntax, and membership of admin
+IPs in configured admin subnets. Later provisioning steps also consume the
+other values, so a file can pass initial validation and still fail when its
+physical inventory is incorrect.
 
-    - Header fields are **case-sensitive**. Use uppercase exactly as shown.
-    - IP addresses in the mapping file are **not validated** by Omnia. Incorrect IPs cause unexpected failures.
-    - Service tags are **not validated** by Omnia. Verify correctness before discovery.
-    - Hostnames must **not** include the domain name.
-    - All fields are mandatory. Use an empty value (two consecutive commas) where a value is not applicable.
-    - `ADMIN_MAC` and `BMC_MAC` must refer to the PXE NIC and BMC NIC on the target nodes respectively.
-    - Target servers must be configured to boot in PXE mode with the appropriate NIC as the first boot device.
-    - Nodes in the same group must have the same parent (`PARENT_SERVICE_TAG`).
+## Generate the file with OME
 
-!!! note "Minimal OS functional groups"
+For OME-based generation, follow [Discover nodes using
+OME](discover_nodes.md). Discovery assigns functional groups from supported
+OME static groups, derives `GROUP_NAME` from the OME-reported iDRAC hostname,
+generates `nid` hostnames with three digits, and selects admin and InfiniBand
+interfaces from OME inventory.
 
-    The `os_x86_64` and `os_aarch64` functional groups provide a clean operating system baseline with only essential OS packages and LDMS telemetry packages -- no schedulers, container runtimes, or orchestration software. Administrators can optionally include additional packages by creating `additional_packages.json` files in `input/config/{arch}/rhel/10.0/`.
-
-### Create PXE file using OME
-
-OME-based BMC discovery is the recommended method for discovering target nodes. This method leverages OpenManage Enterprise to automatically discover servers through their BMC/iDRAC interfaces, reducing manual configuration effort.
-
-!!! note
-
-    In Dell Omnia deployments integrated with OME, server identification during PXE boot relies on information retrieved from OME and iDRAC inventory. Depending on the DNS environment, the `DnsName` value may not align with naming conventions required for cluster configuration. Users must explicitly define `GROUP_NAME` and `PARENT_SERVICE_TAG` in the `pxe_mapping_file` to ensure accurate PXE provisioning.
-
-### Prerequisites
-
-- OpenManage Enterprise is installed and accessible.
-- All target servers have iDRAC configured with network connectivity.
-- OME has discovered the devices (servers are visible in OME inventory).
-- You have administrative access to OME.
-- Servers have the correct NIC order and configuration. Verify NIC ordering in the server BIOS or iDRAC settings before discovery. Omnia uses the following NIC selection logic:
-    - **Admin NIC**: Priority 1: First NIC that is active/UP. Priority 2: Second NIC if UP. Priority 3: First NIC regardless of link state (fallback).
-    - **InfiniBand NIC**: If detected, IB NIC Name is captured and `IB_IP` is assigned. If absent, IB fields are left empty.
-- For a deployment with N Scalable Units, ensure one dedicated `service_kube_node` per Scalable Unit.
-- Plan the iDRAC hostnames before OME discovery. Discovery derives
-  `GROUP_NAME` from the iDRAC hostname reported by OME. See [Plan iDRAC
-  hostnames](discover_nodes.md#plan-idrac-hostnames) for the recommended
-  convention, component ranges, examples, parser behavior, and fallback.
+Always review the generated mapping. In particular, confirm its functional
+groups, group names, parent service tags, selected NICs, and derived IP
+addresses before copying it to Orchestrator.
 
 ## Verification
 
-Verify the mapping file is correctly formatted and contains all required entries:
+Run the Orchestrator input-validation flow:
+
+```bash title="Run on: OIM host"
+cd src/main
+./omnia.sh --run orchestrator --tags validate
+```
+
+Resolve validation errors before provisioning. Then inspect the final file:
 
 ```bash title="Run on: OIM host"
 cat /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv
 ```
 
-Confirm that each node entry has a valid `FUNCTIONAL_GROUP_NAME`, `GROUP_NAME`, `SERVICE_TAG`, `HOSTNAME`, `ADMIN_MAC`, `ADMIN_IP`, `BMC_MAC`, and `BMC_IP`.
+## Next steps
 
-## Next Steps
-
-- [Provision Nodes](../orchestrator/provision_nodes.md) -- Validate and consume the manually created mapping file.
-
-## Troubleshooting
-
-- **Provisioning fails with "invalid mapping file"**: Verify that the CSV header fields are uppercase and match the expected column names exactly.
-- **Nodes assigned to wrong functional group**: Review the `FUNCTIONAL_GROUP_NAME` column and correct the entries. Re-run the provisioning playbook after updating the file.
-
-!!! info "Related References"
-
-    - [Provision Nodes](../orchestrator/provision_nodes.md) -- Run the Orchestrator provisioning workflow.
-    - [Orchestrator contract](../../Reference/domain_contracts/orchestrator_contract.md) -- Review the mapping input and generated outputs.
-
-
-
-
-
-
-
-
-
-
-
-
-
+- [Provision nodes](../orchestrator/provision_nodes.md)
+- [Orchestrator contract](../../Reference/domain_contracts/orchestrator_contract.md)
+- [PXE mapping file reference](../../Reference/SampleFiles/pxe_mapping_file.md)

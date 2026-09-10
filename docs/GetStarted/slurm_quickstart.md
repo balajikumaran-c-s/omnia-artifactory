@@ -233,7 +233,7 @@ For the complete mapping schema and OME procedure, see
     | `security_config.yml` | Configure this file when the selected catalog enables OpenLDAP. |
 
     Orchestrator derives Slurm support and the cluster OS metadata from the
-    catalog. It does not require `software_config.json`.
+    catalog.
 
 2. Run the complete standard Orchestrator flow:
 

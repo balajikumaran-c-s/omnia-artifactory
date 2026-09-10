@@ -11,7 +11,7 @@ The `catalog_rhel.json` file defines your build requirements, including function
 
 Complete the following before you update the BuildStreaM catalog:
 
-- **Deploy GitLab for BuildStreaM** -- GitLab must be deployed and configured for BuildStreaM. See [Deploy GitLab](deploy_gitlab.md).
+- **Deploy GitLab for Build Stream** -- GitLab must be deployed and configured for Build Stream. See [Deploy GitLab](../build_stream/deploy_gitlab.md).
 
 - **No active build pipelines** -- Ensure that no build pipeline is currently running. If a build pipeline is in progress when you update the catalog, the existing pipeline will be cancelled and a new one will be triggered automatically. Wait for the current pipeline to complete before modifying the catalog.
 

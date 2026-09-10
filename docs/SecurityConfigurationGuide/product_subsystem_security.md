@@ -56,15 +56,19 @@ A password-less channel is created between the management station and compute no
 
 ## Login Security Settings
 
-User needs to provide the following credentials during cluster configuration. Once these credentials are provided, Omnia stores them in an encrypted Ansible Vault in `input/omnia_config_credetials.yml`.
-They are hidden from external visibility and access.
+Users provide credentials to the domain that owns the corresponding service.
+The domain stores them in an encrypted Ansible Vault under its project input
+directory. For iDRAC Telemetry, the credentials are stored in
+`<OMNIA_DATA_PATH>/telemetry/input/<project>/telemetry_credentials.yml` and the
+Vault key is stored in `.telemetry_credentials_key`. The MySQL credentials are
+requested only when iDRAC metrics are enabled.
 
 1. iDRAC/BMC (Username / Password)
 2. Provisioning OS (Password)
 3. slurmdb_password (Password)
 4. DockerHub (Username / Password)
 5. OpenLDAP (`openldap_db_username`, `openldap_db_password`, `openldap_config_username`, `openldap_config_password`, `openldap_monitor_password`)
-6. Telemetry (`mysql_user`, `mysql_password`, `mysql_root_password`)
+6. Telemetry (`mysqldb_user`, `mysqldb_password`, `mysqldb_root_password`)
 7. Minio S3 bucket (Password)
 8. Pulp (Password)
 9. CSI PowerScale credentials (Username / Password)
@@ -74,7 +78,6 @@ They are hidden from external visibility and access.
 13. OME Discovery (`ome_username`, `ome_password`)
 14. UFM Telemetry (`ufm_username`, `ufm_password`)
 15. VAST Telemetry (`vast_username`, `vast_password`)
-
 
 
 

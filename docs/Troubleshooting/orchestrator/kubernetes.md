@@ -344,27 +344,24 @@ Issues related to the Kubernetes service cluster, including image pulls, pod sch
 
 ??? note "Cause"
 
-    Driver not listed in `software_config.json`.
+    The selected catalog does not include the PowerScale CSI group, or
+    `enable_powerscale_csi` is disabled for the service Kubernetes cluster.
 
     For more information on deploying the Dell CSI-PowerScale driver, see [Deploy PowerScale CSI](../../HowTo/orchestrator/deploy_powerscale_csi.md).
 
 ??? note "Resolution"
 
-    1. Add the required entry to `software_config.json`:
-
-        ```json title="Example"
-        {
-          "name": "csi_driver_powerscale",
-          "version": "v2.17.0",
-          "arch": ["x86_64"]
-        }
-        ```
-
-    2. Re-run the playbook.
+    1. Ensure that the catalog selected by `CATALOG_FILE_PATH` includes its
+       PowerScale CSI group for `x86_64`, such as
+       `csi_powerscale_v2_17_0`.
+    2. Set `enable_powerscale_csi: true` for the target
+       `service_k8s_cluster` entry in `omnia_config.yml` and provide the
+       required driver configuration files.
+    3. Rerun Orchestrator.
 
 !!! info
 
-    - [Setup Service K8S](../../HowTo/Kubernetes/setup_service_k8s.md) -- Kubernetes cluster setup.
+    - [Deploy Kubernetes](../../HowTo/orchestrator/deploy_kubernetes.md) -- Kubernetes cluster setup.
     - [Configure HA](../../HowTo/orchestrator/configure_kubernetes_ha.md) -- High availability configuration.
     - [Deploy PowerScale CSI](../../HowTo/orchestrator/deploy_powerscale_csi.md) -- PowerScale CSI driver deployment.
     - [Add Nodes](../../Operations/add_nodes.md) -- Adding worker nodes.

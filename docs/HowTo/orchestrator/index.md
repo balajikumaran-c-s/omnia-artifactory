@@ -44,7 +44,7 @@ repo_status.yml + catalog JSON       build_status.yml       pxe_mapping_file.csv
   `OMNIA_PROJECT_NAME`. Orchestrator defaults the last two values to
   `/opt/omnia` and `project_default`.
 - Review the
-  [Orchestrator input contract](../../Reference/domain_contracts/orchestrator_contract.md#input-contract)
+  [Orchestrator configuration reference](../../Reference/Configuration/orchestrator_config.md)
   and provide the required Orchestrator, Discovery, Image Build Manager, Repo
   Manager, credential, and shared project inputs before running validation.
 

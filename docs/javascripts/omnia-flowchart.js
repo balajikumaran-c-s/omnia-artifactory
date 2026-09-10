@@ -125,13 +125,11 @@
     add('mode', 'mode', {});
     add('connector', 'c0b', {});
 
-    add('step', 's-build', { title: 'Build Omnia Images', desc: '<code>omnia-containers</code> repo' });
-    add('connector', 'c1', {});
-    add('step', 's-create', { title: 'Create Omnia Core Container', desc: '<code>omnia.sh</code>' });
+    add('step', 's-create', { title: 'Set Up the OIM', desc: '<code>./omnia.sh --setup-venv</code>' });
     add('connector', 'c2', {});
-    add('step', 's-login', { title: 'Log in to Core Container', desc: '<code>ssh omnia_core</code>' });
+    add('step', 's-login', { title: 'Activate the Omnia Environment', desc: '<code>source /opt/omnia/activate-omnia.sh</code>' });
     add('connector', 'c3', {});
-    add('step', 's-input', { title: 'Update Input Files', desc: '<code>/opt/omnia/input/project_default</code>' });
+    add('step', 's-input', { title: 'Configure Domain Inputs', desc: '<code>&lt;OMNIA_DATA_PATH&gt;/&lt;domain&gt;/input/&lt;project&gt;</code>' });
     add('connector', 'c4', {});
 
     add('decision', 'd-ome', {
@@ -142,19 +140,19 @@
     add('connector', 'c5', {});
 
     if (S.ome === 'yes') {
-      add('step', 's-ome-y', { title: 'Generate PXE Mapping File via OME', desc: '<code>discovery.yml</code>' });
+      add('step', 's-ome-y', { title: 'Generate PXE Mapping File via OME', desc: '<code>./omnia.sh --run discovery</code>' });
     } else {
       add('step', 's-ome-n', { title: 'Create PXE Mapping File Manually', desc: '<code>&lt;pxe_mapping_file_path.csv&gt;</code>' });
     }
     add('connector', 'c6', {});
 
     if (S.mode === 'standard') {
-      add('step', 'ss-oim', { title: 'Deploy Containers on OIM', desc: '<code>prepare_oim.yml</code>' });
+      add('step', 'ss-oim', { title: 'Prepare Base Services', desc: '<code>./omnia.sh --prepare-base</code>' });
       add('connector', 'cs1', {});
 
-      add('step', 'ss-pulp', { title: 'Download Packages to Pulp Repo', desc: '<code>local_repo.yml</code>' });
+      add('step', 'ss-pulp', { title: 'Synchronize Catalog Content', desc: '<code>./omnia.sh --run repo_manager</code>' });
       add('connector', 'cs2', {});
-      add('step', 'ss-img', { title: 'Build x86_64 Diskless Images', desc: '<code>build_image_x86_64.yml</code>' });
+      add('step', 'ss-img', { title: 'Build Diskless Images', desc: '<code>./omnia.sh --run image_build_manager</code>' });
       add('connector', 'cs3', {});
 
       add('decision', 'd-arch-s', {
@@ -165,15 +163,15 @@
       add('connector', 'cs4', {});
 
       if (S.aarch64 === 'yes') {
-        add('step', 'ss-rhel', { title: 'Install RHEL10 on aarch64 Node', desc: '' });
+        add('step', 'ss-rhel', { title: 'Install RHEL on an aarch64 Node', desc: '<code>./omnia.sh --run utils --tags install_os</code>' });
         add('connector', 'cs5', {});
-        add('step', 'ss-abuild', { title: 'Build aarch64 Diskless Images', desc: '<code>build_image_aarch64.yml</code>' });
+        add('step', 'ss-abuild', { title: 'Build aarch64 Diskless Images', desc: '<code>./omnia.sh --run image_build_manager</code>' });
         add('connector', 'cs6', {});
       }
 
-      add('step', 'ss-prov', { title: 'Provision Nodes', desc: '<code>provision.yml</code>' });
+      add('step', 'ss-prov', { title: 'Provision Nodes', desc: '<code>./omnia.sh --run orchestrator --tags provision</code>' });
       add('connector', 'cs7', {});
-      add('step', 'ss-pxe', { title: 'PXE Boot Nodes', desc: '<code>set_pxe_boot.yml</code>' });
+      add('step', 'ss-pxe', { title: 'PXE Boot Nodes', desc: '<code>./omnia.sh --run orchestrator --tags pxeboot</code>' });
     }
 
     if (S.mode === 'buildstream') {
@@ -189,7 +187,7 @@
         add('connector', 'cb2', {});
       }
 
-      add('step', 'sb-oim', { title: 'Deploy BuildStreaM on OIM', desc: '<code>prepare_oim.yml</code>' });
+      add('step', 'sb-oim', { title: 'Deploy Build Stream on OIM', desc: '<code>./omnia.sh --run build_stream</code>' });
       add('connector', 'cb3', {});
 
       add('step', 'sb-git', { title: 'Deploy GitLab', desc: '<code>gitlab.yml</code>' });

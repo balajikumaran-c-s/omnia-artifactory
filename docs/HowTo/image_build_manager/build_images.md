@@ -4,10 +4,9 @@ Build customized OS images for diskless HPC cluster provisioning with Omnia's Im
 
 ## Overview
 
-The Image Build Manager (`omnia.image_build`) builds RHEL or Rocky Linux 10.x
-boot images for diskless HPC cluster nodes. It runs on the Omnia Infrastructure
-Manager (OIM) and can build images with either OpenCHAMI `image-builder` or
-`image-thrillhouse`.
+The Image Build Manager builds RHEL 10.x boot images for diskless HPC cluster
+nodes. It runs on the Omnia Infrastructure Manager (OIM) and can build images
+with either OpenCHAMI `image-builder` or `image-thrillhouse`.
 
 The workflow:
 
@@ -24,16 +23,15 @@ are not supported.
 
 ## Prerequisites
 
-- The OIM runs RHEL 10.x or Rocky Linux 10.x and has at least 50 GB of free
-  disk space.
+- The OIM runs RHEL 10.x and has at least 50 GB of free disk space.
 - Python 3.12 or later, `ansible-core` 2.20 or later, and Podman 5.0 or later
   are installed. Module initialization installs the Python and Ansible Galaxy
   dependencies declared by the Image Build Manager.
 - The Repo Manager completed successfully and its repository URLs are
   reachable from the OIM.
 - Run the playbooks on the OIM with privileges sufficient to create files
-  under `/opt/omnia` and `/var/log/omnia`, manage systemd services and firewall
-  rules, and run Podman.
+  under the path configured by `OMNIA_DATA_PATH` and under `/var/log/omnia`,
+  manage systemd services and firewall rules, and run Podman.
 
 Export the following environment variables in the shell used to run the
 playbooks:
@@ -52,9 +50,9 @@ playbooks:
 For aarch64 images, also provide one network-reachable ARM64 host with:
 
 - `uname -m` reporting `aarch64`.
-- RHEL 10.x or Rocky Linux 10.x and Podman 5.0 or later.
+- RHEL 10.x and Podman 5.0 or later.
 - SSH port 22 reachable from the OIM.
-- At least 30 GB free under `/opt/omnia/image_build_manager/`.
+- At least 30 GB free under `<IMAGE_BUILD_MANAGER_DATA_PATH>`.
 - Access to the OIM Repo Manager, or internet access for the builder-image and
   `regctl` download fallbacks.
 
@@ -63,16 +61,24 @@ user's password when a key has not already been installed.
 
 ### Input contract
 
-With the standard runtime root and project name, inputs are stored in
-`/opt/omnia/image_build_manager/input/project_default/`.
+Image Build Manager reads its domain-owned inputs from
+`<IMAGE_BUILD_MANAGER_DATA_PATH>/input/<OMNIA_PROJECT_NAME>/`. When
+`IMAGE_BUILD_MANAGER_DATA_PATH` is unset, it resolves to
+`<OMNIA_DATA_PATH>/image_build_manager`.
 
-| Input | When required | Contract |
-|-------|---------------|----------|
+| Domain input | When required | Contract |
+|--------------|---------------|----------|
 | `image_build_config.yml` | Always | Defines the Repo Manager output path, S3 provider, build engine, package source, build controls, and optional aarch64 host. |
-| `repo_status.yml` | Build, execute, or the default untagged flow | Located at `repo_manager_output_path`. `overall_status` must be `success`; `repositories` must contain at least one non-empty x86_64 repository URL; and any configured Repo Manager certificate must exist. |
 | `package_groups.yml` | `functional_groups_source: "config"` | Defines `os`, `os_version`, `base_packages`, and `functional_groups.<name>.packages`. Group names must end in `_x86_64` or `_aarch64` to be selected for that architecture. |
-| Catalog JSON | `functional_groups_source: "catalog"` | Located through `CATALOG_FILE_PATH`. Packages are resolved through `catalog.functionallayer`, `catalog.groups`, and `catalog.packages`. Layer names beginning with `baseos` provide the base packages; other matching architecture layers become functional-group images. |
 | `image_build_credentials.yml` | Prepare, credentials, build, execute, or the default untagged flow | Created and encrypted automatically with Ansible Vault. `s3_secret_key` is mandatory, `s3_access_id` is required for PowerScale, and `aarch64_ssh_password` is required when an aarch64 host is configured. |
+
+The workflow also consumes the following upstream or external inputs. These
+files are not stored in the Image Build Manager input directory.
+
+| Upstream or external input | When required | Contract |
+|----------------------------|---------------|----------|
+| `repo_status.yml` | Build, execute, or the default untagged flow | Read from `repo_manager_output_path`. The default path is `<OMNIA_DATA_PATH>/repo_manager/output/<OMNIA_PROJECT_NAME>/repo_status.yml`. `overall_status` must be `success`; `repositories` must contain at least one non-empty x86_64 repository URL; and any configured Repo Manager certificate must exist. |
+| Catalog JSON | `functional_groups_source: "catalog"` | Read from the absolute path set in `CATALOG_FILE_PATH`. Packages are resolved through `catalog.functionallayer`, `catalog.groups`, and `catalog.packages`. Layer names beginning with `baseos` provide the base packages; other matching architecture layers become functional-group images. |
 
 For MinIO, leave `s3_configurations.endpoint_url` empty; the endpoint is set to
 `http://<SYSTEM_ADMIN_NIC_IPV4>:9000`. For PowerScale, set the provider to
@@ -187,9 +193,13 @@ used by the workflow are fixed.
     === "Using ansible-playbook"
 
         ```bash title="Run on: OIM host"
+        source /opt/omnia/activate-omnia.sh
         cd src/image_build_manager/playbooks
         ansible-playbook image_build_manager.yml --tags precheck
         ```
+
+        If `OMNIA_DATA_PATH` uses a nondefault value, activate
+        `<OMNIA_DATA_PATH>/activate-omnia.sh` instead.
 
     The precheck verifies that the environment matches the OIM hostname,
     domain, administrative IP, and data path. It also reports whether the
@@ -207,6 +217,7 @@ used by the workflow are fixed.
     === "Using ansible-playbook"
 
         ```bash title="Run on: OIM host"
+        source /opt/omnia/activate-omnia.sh
         cd src/image_build_manager/playbooks
         ansible-playbook image_build_manager.yml --tags validate
         ```
@@ -227,6 +238,7 @@ used by the workflow are fixed.
     === "Using ansible-playbook"
 
         ```bash title="Run on: OIM host"
+        source /opt/omnia/activate-omnia.sh
         cd src/image_build_manager/playbooks
         ansible-playbook image_build_manager.yml --tags prepare
         ```
@@ -253,6 +265,7 @@ used by the workflow are fixed.
     === "Using ansible-playbook"
 
         ```bash title="Run on: OIM host"
+        source /opt/omnia/activate-omnia.sh
         cd src/image_build_manager/playbooks
         ansible-playbook image_build_manager.yml --tags build
         ```
@@ -273,6 +286,7 @@ used by the workflow are fixed.
     === "Using ansible-playbook"
 
         ```bash title="Run on: OIM host"
+        source /opt/omnia/activate-omnia.sh
         cd src/image_build_manager/playbooks
         ansible-playbook image_build_manager.yml
         ```

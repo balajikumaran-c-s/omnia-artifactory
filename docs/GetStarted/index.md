@@ -44,7 +44,7 @@ documented input/output contracts and can be invoked separately using the
 | --- | --- |
 | [Repository Manager](../HowTo/repo_manager/index.md) (`repo_manager`) | Local repository creation and package management for air-gapped deployments |
 | [Image Build Manager](../HowTo/image_build_manager/index.md) (`image_build_manager`) | Diskless OS image building for each functional group |
-| [Discovery](../HowTo/discovery/index.md) (`discovery`) | BMC discovery and PXE mapping file generation using OME or manual methods |
+| [Discovery](../HowTo/discovery/index.md) (`discovery`) | BMC discovery and PXE mapping generation through OME; manual mappings are supplied directly to Orchestrator |
 | [Orchestrator](../HowTo/orchestrator/index.md) (`orchestrator`) | Node provisioning, boot configuration, and cluster setup |
 | [Telemetry](../HowTo/Telemetry/index.md) (`telemetry`) | Telemetry pipeline deployment (iDRAC, LDMS, Kafka, VictoriaMetrics, VictoriaLogs) |
 | [Build Stream](../HowTo/build_stream/index.md) (`build_stream`) | GitLab CI/CD automation for catalog-driven build and deployment pipelines |

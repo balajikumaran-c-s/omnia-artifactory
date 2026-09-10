@@ -1,6 +1,7 @@
 # Local Repository and Pulp Issues
 
-Issues related to the `local_repo.yml` playbook, Pulp container operations, and repository synchronization.
+Issues related to Repo Manager, Pulp service operations, and repository
+synchronization.
 
 ## Package Download Failure Due to Slow NFS Write Operations
 
@@ -51,7 +52,7 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
 
     !!! note
 
-        All log paths referenced in this section are on the OIM host filesystem, not inside the omnia_core container.
+        All log paths referenced in this section are on the OIM host filesystem.
 
     - Overall download status:
 
@@ -61,7 +62,7 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
 
         Example: `/opt/omnia/log/local_repo/rhel/10.0/x86_64/software.csv`
 
-    ![troubleshooting_local_repo_updated_2](../../../../assets/images/troubleshooting_local_repo_updated_2.png)
+    ![troubleshooting_local_repo_updated_2](../../assets/images/troubleshooting_local_repo_updated_2.png)
 
     - Per-software task results:
 
@@ -71,7 +72,7 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
 
         Example for OpenLDAP: `/opt/omnia/log/local_repo/rhel/10.0/x86_64/openldap_task_results.log`
 
-    ![troubleshooting_local_repo_updated_3](../../../../assets/images/troubleshooting_local_repo_updated_3.png)
+    ![troubleshooting_local_repo_updated_3](../../assets/images/troubleshooting_local_repo_updated_3.png)
 
     - Package-level status:
 
@@ -81,7 +82,7 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
 
         Example: `/opt/omnia/log/local_repo/rhel/10.0/x86_64/openldap/status.csv`
 
-    ![troubleshooting_local_repo_updated_4](../../../../assets/images/troubleshooting_local_repo_updated_4.png)
+    ![troubleshooting_local_repo_updated_4](../../assets/images/troubleshooting_local_repo_updated_4.png)
 
     - Detailed failure information. View the reason a job was unsuccessful in the `package_status_<pid>.log` file referenced in the `<sw>_task_results.log`:
 
@@ -91,13 +92,13 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
 
         Example: `/opt/omnia/log/local_repo/rhel/10.0/x86_64/openldap/logs/package_status_858667.log`
 
-    ![troubleshooting_local_repo_updated_5](../../../../assets/images/troubleshooting_local_repo_updated_5.png)
+    ![troubleshooting_local_repo_updated_5](../../assets/images/troubleshooting_local_repo_updated_5.png)
 
     !!! note
 
         If `local_repo.yml` completes without any package download failures, a `Successful` message is displayed.
 
-    ![local_repo_success](../../../../assets/images/local_repo_success.png)
+    ![local_repo_success](../../assets/images/local_repo_success.png)
 
 ## Playbook Fails When Re-Run Multiple Times
 
@@ -169,7 +170,7 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
     3. Identify the failed EPEL package in the Omnia logs:
 
         ```bash title="Run on: OIM host"
-        grep -i "epel" /opt/omnia/log/core/playbooks/local_repo.log
+        grep -i "epel" /var/log/omnia/repo_manager/repo_manager.log
         grep -RiE "epel|failed|timeout|error" /opt/omnia/log/local_repo/rhel/10.0/x86_64/default_packages/logs/
         grep -RiE "epel|failed|timeout|error" /opt/omnia/log/local_repo/rhel/10.0/x86_64/admin_debug_packages/logs/
         grep -RiE "epel|failed|timeout|error" /opt/omnia/log/local_repo/rhel/10.0/x86_64/openldap/logs/
@@ -182,14 +183,20 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
         - If EPEL is temporarily unavailable, retry after service recovery by rerunning `local_repo.yml`.
         - To force re-sync of only the EPEL repository without resyncing all repos:
 
-            ```bash title="Run on: omnia_core container"
-            ansible-playbook local_repo.yml -e "resync_repos=['x86_64_rhel_10.0_epel']"
+            ```bash title="Run on: OIM host"
+            source /opt/omnia/activate-omnia.sh
+            cd src/repo_manager/playbooks
+            ansible-playbook repo_manager.yml --tags download \
+              -e "resync_repos=x86_64_rhel_10.0_epel"
             ```
 
         - If the EPEL repository is corrupted in Pulp, clean it up and rerun:
 
-            ```bash title="Run on: omnia_core container"
-            ansible-playbook local_repo/pulp_cleanup.yml -e "cleanup_repos=x86_64_rhel_10.0_epel,aarch64_rhel_10.0_epel"
+            ```bash title="Run on: OIM host"
+            source /opt/omnia/activate-omnia.sh
+            cd src/repo_manager/playbooks
+            ansible-playbook repo_manager.yml --tags cleanup_repos \
+              -e "cleanup_repos=x86_64_rhel_10.0_epel,aarch64_rhel_10.0_epel"
             ```
 
     5. If the default EPEL mirror (`dl.fedoraproject.org`) is slow or unreliable, switch to a faster mirror:
@@ -268,7 +275,11 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
 
     !!! note
 
-        For repeatable or air-gapped deployments, host the required EPEL packages locally instead of relying on the external EPEL service during deployment. Set `repo_config: "always"` in `software_config.json` and `caching: "False"` in `omnia_repo_url_rhel_<arch>` to ensure Omnia syncs the full EPEL content into the local Pulp repository and downloads all RPMs for offline use.
+        For repeatable or air-gapped deployments, host the required EPEL
+        packages locally instead of relying on the external EPEL service
+        during deployment. In `repo_manager_config.yml`, set `repo_config` to
+        `always` and set `caching` to `false` for the EPEL repository so that
+        Pulp synchronizes its content for offline use.
 
 ## Intermittent Local Repository Sync Failure Due to Non-Persistent Iptables Rules
 
@@ -411,7 +422,7 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
     4. Check the logs for specific error messages:
 
         ```bash title="Run on: OIM host"
-        grep -i "unreachable" /opt/omnia/log/core/playbooks/local_repo.log
+        grep -i "unreachable" /var/log/omnia/repo_manager/repo_manager.log
         grep -RiE "unreachable|timeout|connection|failed|SSL" /opt/omnia/log/local_repo/standard.log
         grep -RiE "Download interrupted|Max retries exceeded|HTTP error" /opt/omnia/log/local_repo/rhel/10.0/x86_64/*/logs/
         ```
@@ -548,10 +559,12 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
     2. Verify the container image exists in Pulp. From the OIM:
 
         ```bash title="Run on: OIM host"
-        podman exec -it omnia_core pulp container repository list
+        source /opt/omnia/activate-omnia.sh
+        pulp container repository list
         ```
 
-    3. If the image is missing in Pulp, ensure it is listed in `software_config.json` and re-run `local_repo.yml`.
+    3. If the image is missing in Pulp, ensure that it is included in the
+       catalog selected by `CATALOG_FILE_PATH`, and rerun Repo Manager.
 
     4. If the image exists in Pulp but the pull fails, verify certificate trust (see [Pulp certificate trust failure](#pulp-certificate-trust-failure-on-compute-nodes)) and re-run the download script:
 
@@ -609,7 +622,8 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
 
     1. List the available Pulp repository names to identify the correct `repoid` for the affected repository:
 
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
+        source /opt/omnia/activate-omnia.sh
         pulp rpm repository list --field name
         ```
 
@@ -617,8 +631,11 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
 
     2. Clean up the affected repositories in Pulp before re-syncing. This removes any corrupted or partially synced content from previous failed attempts. Run this for both x86_64 and aarch64 repositories:
 
-        ```bash title="Run on: omnia_core container"
-        ansible-playbook local_repo/pulp_cleanup.yml -e "cleanup_repos=x86_64_rhel_10.0_cuda,aarch64_rhel_10.0_cuda"
+        ```bash title="Run on: OIM host"
+        source /opt/omnia/activate-omnia.sh
+        cd src/repo_manager/playbooks
+        ansible-playbook repo_manager.yml --tags cleanup_repos \
+          -e "cleanup_repos=x86_64_rhel_10.0_cuda,aarch64_rhel_10.0_cuda"
         ```
 
     3. Add `caching: true` to the affected repository entry in `/opt/omnia/input/project_default/local_repo_config.yml` and run `local_repo.yml`:
@@ -634,15 +651,17 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
               name: "cuda", caching: true }
         ```
 
-        ```bash title="Run on: omnia_core container"
-        ansible-playbook local_repo.yml
+        ```bash title="Run on: OIM host"
+        source /opt/omnia/activate-omnia.sh
+        cd src/repo_manager/playbooks
+        ansible-playbook repo_manager.yml --tags download
         ```
 
         Refer to the **Policy and Caching Behavior** table in the [local_repo_config.yml](../../Reference/Configuration/repo_manager_config.md) parameter reference for the full mapping of policy and caching combinations to Pulp download policies.
 
     4. After `local_repo.yml` completes with `partial`, sync the entire repository content from Pulp to a local directory. Run this for both x86_64 and aarch64 repositories:
 
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         dnf reposync --repoid=x86_64_rhel_10.0_cuda \
           --download-path=/path/to/download/directory \
           --download-metadata \
@@ -653,7 +672,7 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
 
         **Single package:**
 
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         dnf download --destdir /path/to/download/directory \
           --repo x86_64_rhel_10.0_cuda \
           package-name
@@ -661,7 +680,7 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
 
         **Multiple specific packages:**
 
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         dnf download --destdir /path/to/download/directory \
           --repo x86_64_rhel_10.0_cuda \
           package1 package2 package3
@@ -671,13 +690,9 @@ Issues related to the `local_repo.yml` playbook, Pulp container operations, and 
 
 !!! info
 
-    - [Create Local Repos](../../../../HowTo/repo_manager/configure_repos.md) -- Local repository setup guide.
-    - [Log Management](../../../../Operations/log_management.md) -- Where to find logs for deeper diagnosis.
-    - [Pulp Cleanup](../../../../Operations/pulp_cleanup.md) -- Pulp cleanup procedures.
-
-
-
-
+    - [Create Local Repositories](../../HowTo/repo_manager/configure_repos.md) -- Local repository setup guide.
+    - [Log Management](../../Operations/log_management.md) -- Where to find logs for deeper diagnosis.
+    - [Pulp Cleanup](../../Operations/pulp_cleanup.md) -- Pulp cleanup procedures.
 
 
 

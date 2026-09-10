@@ -46,7 +46,7 @@ At minimum, the environment must contain:
 
 ```bash
 SYSTEM_ADMIN_NIC_IPV4=<OIM-admin-network-IPv4>
-CATALOG_FILE_PATH=/absolute/path/to/catalog.json
+CATALOG_FILE_PATH=/absolute/path/to/catalog_rhel.json
 ```
 
 `OMNIA_DATA_PATH` defaults to `/opt/omnia`, and `OMNIA_PROJECT_NAME` defaults

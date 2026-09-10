@@ -7,43 +7,34 @@ Omnia maintains logs across playbook executions, container operations, and clust
 
     Do not delete log files or the directories they reside in.
 
-!!! tip
-
-    To generate log files for a specific playbook, use the `cd` command to move into the playbook directory before running it. For example, run `cd local_repo` before executing the playbook to get dedicated local repo logs. If the directory is not changed, all playbook execution logs are consolidated under `/opt/omnia/log/core/playbooks`.
-
 ## Log locations
 
 !!! note
 
-    All log paths referenced in this section are on the OIM host filesystem, not inside the omnia_core container.
+    All log paths referenced in this section are on the OIM host filesystem.
 
 ### Playbook logs
 
-All Ansible playbook execution logs are written to the OIM host filesystem under `/opt/omnia/log/core/playbooks/`:
+Each domain writes its Ansible execution log to the OIM host under
+`/var/log/omnia/<domain>/`:
 
 | Log File | Purpose | Playbook |
 | --- | --- | --- |
-| `discovery.log` | Discovery logs | `discovery/discovery.yml` |
-| `local_repo.log` | Local repository logs | `local_repo/local_repo.yml` |
-| `prepare_oim.log` | Prepare OIM logs | `prepare_oim/prepare_oim.yml` |
-| `provision.log` | Provision logs | `provision/provision.yml` |
-| `telemetry.log` | Telemetry logs | `telemetry/telemetry.yml` |
-| `utils.log` | Utility logs | `utils/*.yml` |
-| `credential_utility.log` | Credential utility logs | `credential_utility/get_config_credentials.yml` |
-| `validation_omnia_project_default.log` | Input validation report logs | |
-| `input_validation.log` | Input validation playbook logs | `input_validation/validate_config.yml` |
-| `gitlab_build_stream.log` | GitLab BuildStreaM logs | |
-| `build_image_<arch>.log` | Build image logs | `build_image_<arch>/build_image_<arch>.yml` |
+| `/var/log/omnia/discovery/discovery.log` | Discovery | `discovery.yml` |
+| `/var/log/omnia/repo_manager/repo_manager.log` | Repo Manager | `repo_manager.yml` |
+| `/var/log/omnia/image_build_manager/image_build_manager.log` | Image Build Manager | `image_build_manager.yml` |
+| `/var/log/omnia/orchestrator/orchestrator.log` | Orchestrator | `orchestrator.yml` |
+| `/var/log/omnia/telemetry/telemetry.log` | Telemetry | `telemetry.yml` |
+| `/var/log/omnia/utils/utils.log` | Utils | `utils.yml` |
 
-### Core and container logs
+### Domain and service logs
 
 | Location | Purpose |
 | --- | --- |
-| `/opt/omnia/log/openchami/*log` | OpenCHAMI playbook logs |
-| `/opt/omnia/log/pulp/*log` | Pulp container logs |
-| `/opt/omnia/log/local_repo/*log` | Local repo logs |
-| `/opt/omnia/log/core/container/*log` | Core container logs |
-| `/opt/omnia/log/build_stream/` | BuildStreaM pipeline logs |
+| `<OMNIA_DATA_PATH>/orchestrator/log/openchami/` | OpenCHAMI logs |
+| `<OMNIA_DATA_PATH>/repo_manager/log/` | Repository processing and Pulp logs |
+| `<OMNIA_DATA_PATH>/image_build_manager/log/<OMNIA_PROJECT_NAME>/` | Image build logs |
+| `<OMNIA_DATA_PATH>/build_stream_root/artifacts/<job_id>/` | Build Stream job artifacts and results |
 
 !!! note
 
@@ -70,7 +61,6 @@ On Slurm cluster nodes, logs are stored in standard Slurm log directories:
     ```text title="Expected output"
     CONTAINER ID   IMAGE                                                        COMMAND                  CREATED        STATUS        PORTS                                        NAMES
     222d8d96554b   localhost/omnia_auth:1.0                                     /bin/sh -c mkdi…         2 days ago     Up 2 days     0.0.0.0:389->389/tcp, 0.0.0.0:636->636/tcp   omnia_auth
-    0640a9adfce3   localhost/omnia_core:2.2                                                              2 days ago     Up 2 days     2222/tcp                                     omnia_core
     42515184e9ba   docker.io/pgsty/minio:RELEASE.2026-04-17T00-00-00Z           server /data –co…        2 days ago     Up 2 days     0.0.0.0:9000-9001->9000-9001/tcp             minio-server
     5bbce8efdc27   docker.io/pulp/pulp:3.80                                     /init                    2 days ago     Up 2 days     0.0.0.0:2225->2225/tcp, 80/tcp               pulp
     d0b76ac340c7   docker.io/library/postgres:16                                postgres                 2 days ago     Up 2 days     5432/tcp                                     omnia_postgres
@@ -137,8 +127,6 @@ procedure.
 
     - [General Troubleshooting](../Troubleshooting/general.md) -- Uses logs as a primary diagnostic tool.
     - [Best Practices Checklist](best_practices_checklist.md) -- Storage and maintenance best practices.
-
-
 
 
 

@@ -127,9 +127,8 @@ During node boot, cloud-init automatically executes the DOCA-OFED
 installation and IB network configuration.
 
 !!! note
-    The `doca-ofed` package is included as a `FunctionalPackage` in the
-    Omnia catalog. You do **not** need to add it to `software_config.json`
-    manually.
+    The `doca-ofed` package is provided through the selected Omnia catalog;
+    no separate software-selection entry is required.
 
 ### Configure OpenSM (Manual)
 
@@ -302,7 +301,6 @@ Only devices with `Link layer: InfiniBand` are used by Omnia.
     ```bash title="Run on: compute node"
     perfquery
     ```
-
 
 
 

@@ -220,8 +220,8 @@ instructions on setting up Apache to serve the repository.
 
 ## Next Steps
 
-- [Set Up Slurm](setup_slurm.md) -- Deploy Slurm using the built RPMs
-- [Create Local Repos](../Setup/create_local_repos.md) -- Integrate the
+- [Deploy Slurm](../orchestrator/deploy_slurm.md) -- Deploy Slurm using the built RPMs
+- [Create Local Repositories](../repo_manager/configure_repos.md) -- Integrate the
   custom repo with Omnia's repo management
 
 ## Troubleshooting
@@ -245,4 +245,4 @@ instructions on setting up Apache to serve the repository.
    ls /usr/local/cuda/lib64/stubs/libnvidia-ml.so
    ```
 
-For the complete list, see [Slurm Issues](../../Troubleshooting/slurm.md).
+For the complete list, see [Slurm Issues](../../Troubleshooting/orchestrator/slurm.md).

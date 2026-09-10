@@ -15,7 +15,7 @@ compilation scripts.
 
 - Select `ucx` and `openmpi` through the catalog used by Repo Manager.
   Orchestrator derives the corresponding support flags from catalog group
-  names; it does not consume `software_config.json`.
+  names.
 - Complete Repo Manager and confirm that `repo_status.yml` reports
   `overall_status: success`.
 - Include a `login_compiler_node_x86_64` or

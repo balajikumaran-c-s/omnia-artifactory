@@ -23,7 +23,7 @@ This page summarizes the features, enhancements, and changes introduced in each 
 | **Vast Repo and Vast Client Installation** | Vast NFS client installation streamlined by building Vast repository from source, hosting RPMs on HTTP server, configuring repository, and automatic installation during provisioning when InfiniBand NIC is present. For more details, see [Configure VAST Storage](../HowTo/Telemetry/configure_vast.md). |
 | **One-Shot Combined Log Extraction for Debugging** | One-shot log collection playbook for gathering cluster logs from Kubernetes and Slurm nodes with full and curated support collection modes, log collection from all node types, and timestamped tar.gz bundle output. For more details, see [Log Management](../Operations/log_management.md). |
 | **ETCD on Local Disk Support for Kubernetes Service Cluster** | ETCD deployment on local disk instead of NFS for Kubernetes service cluster with configurable `etcd_on_local_disk` setting in `omnia_config.yml`, automatic disk selection prioritizing BOSS cards (BOSS-N1/N2) with fallback to SSD/SATA disks, `/var/lib/etcd` mount point, support for pre-configured RAID 1 or RAID 10 on BOSS cards, and minimum 20 GB disk space recommendation. For more details, see [Configure Kubernetes HA](../HowTo/orchestrator/configure_kubernetes_ha.md). |
-| **Unattended OS Installation via iDRAC Virtual Media** | Automated bare-metal OS installation using iDRAC Virtual Media with NFS-based Kickstart, one server at a time. Supports aarch64 nodes via `install_os_arm_node.yml` orchestrator and generic x86_64 nodes via `install_os.yml`. For more details, see [Unattended OS Installation via iDRAC](../HowTo/utils/install_os_unattended.md). |
+| **Unattended OS Installation via iDRAC Virtual Media** | Automated bare-metal OS installation using the unified Utils `install_os.yml` workflow with embedded or NFS-based Kickstart, one server at a time. The same workflow supports `x86_64` and `aarch64`. For more details, see [Unattended OS Installation via iDRAC](../HowTo/utils/install_os_unattended.md). |
 
 ### Known Issues
 
@@ -47,7 +47,7 @@ This page summarizes the features, enhancements, and changes introduced in each 
 
 | Feature | Description |
 | --- | --- |
-| **Support for Podman Containers** | Enables deployment of the following Omnia core services as Podman containers, ensuring secure, lightweight, and OCI-compliant environments for HPC clusters: Omnia Core, Omnia Auth, OpenCHAMI, and Pulp Repository Service. This simplifies lifecycle management, accelerates updates, and improves isolation for critical services. For more details, see [Deploy Omnia Core](https://github.com/dell/omnia). |
+| **Support for Podman Services** | Enables deployment of supporting services such as OpenCHAMI, Pulp, MinIO, the OCI registry, and Build Stream components as Podman containers. The Omnia deployment modules themselves run directly on the OIM through `omnia.sh`. |
 | **Repository Management** | Provides a Pulp-based local repository service deployed as a Podman container, enabling secure and efficient package distribution in air-gapped HPC environments. This reduces dependency on external networks and accelerates provisioning workflows. For more details, see [Create Local Repositories](../HowTo/repo_manager/configure_repos.md). |
 | **Authentication Service** | Integrates an LDAP server within the Omnia Auth Podman container for centralized authentication and directory services. This enhances security and simplifies identity management across HPC clusters. For more details, see [Deploy OpenLDAP](../HowTo/orchestrator/deploy_openldap.md). |
 | **Telemetry Collection and Monitoring** | Automates the configuration of Kubernetes Service Clusters to host essential monitoring components for telemetry collection and monitoring. Supported capabilities include iDRAC Telemetry for out-of-band system metrics, LDMS Telemetry for in-band performance metrics, and air-gapped telemetry support for offline environments. For more details, see [Deploy Telemetry](../HowTo/Telemetry/deploy_telemetry.md). |
@@ -58,8 +58,6 @@ This page summarizes the features, enhancements, and changes introduced in each 
 | **Security Enhancements** | Credentials are now encrypted using industry-standard algorithms (for example, AES-256), improving compliance with security best practices and reducing the risk of data exposure. For more details, see [Product and Subsystem Security](../SecurityConfigurationGuide/product_subsystem_security.md). |
 | **Platform Support** | Supports `x86_64` and `aarch64` architectures, enabling deployment on both traditional and ARM-based HPC nodes for improved flexibility and energy efficiency. For more details, see [Software Requirements](../Reference/../Reference/../Reference/ClusterRequirements/software_requirements.md). |
 | **Input Template and Validator** | Provides predefined configuration templates and early input validation to reduce configuration errors and accelerate HPC cluster provisioning. This improves deployment reliability and overall user experience. For current task-specific procedures, see the [module how-to guides](../HowTo/index.md). |
-
-
 
 
 

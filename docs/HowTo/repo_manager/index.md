@@ -49,7 +49,7 @@ catalog JSON + repository configuration + endpoint configuration
 
 ## Contract reference
 
-See the [Repository Manager Input/Output Contract](../../Reference/domain_contracts/repo_manager_contract.md)
+See the [Repository Manager Domain Contract](../../Reference/domain_contracts/repo_manager_contract.md)
 for the required environment and input files, their schemas, the generated
 `repo_status.yml` structure, managed Pulp resources, and runtime state.
 

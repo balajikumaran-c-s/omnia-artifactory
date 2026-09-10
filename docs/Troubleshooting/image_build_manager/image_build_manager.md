@@ -24,7 +24,7 @@ storage, and architecture-specific build failures.
  
     1. Verify MinIO is running and accessible:
  
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         s3cmd ls
         ```
  
@@ -38,7 +38,7 @@ storage, and architecture-specific build failures.
  
     3. Verify the `boot-images` bucket exists:
  
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         s3cmd ls s3://boot-images
         ```
  
@@ -63,7 +63,7 @@ storage, and architecture-specific build failures.
     1. Verify that the build image step completed successfully and uploaded
        images to S3:
  
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         s3cmd ls -Hr s3://boot-images
         ```
  
@@ -77,15 +77,16 @@ storage, and architecture-specific build failures.
  
  
     3. If the expected kernel is missing, verify that the kernel packages were
-       available in the Pulp repository before running `build_image_x86_64.yml`.
+       available in the Pulp repository before running the Image Build Manager.
        The build process selects the latest kernel available across all
        configured repositories.
  
     4. Re-run the build image playbook to rebuild with the correct kernel:
  
-        ```bash title="Run on: omnia_core container"
-        cd /omnia/build_image_x86_64
-        ansible-playbook build_image_x86_64.yml
+        ```bash title="Run on: OIM host"
+        source /opt/omnia/activate-omnia.sh
+        cd src/image_build_manager/playbooks
+        ansible-playbook image_build_manager.yml --tags build
         ```
  
  
@@ -97,7 +98,7 @@ storage, and architecture-specific build failures.
  
 ???+ note "Symptom"
  
-    The `build_image_aarch64.yml` playbook fails with:
+    The Image Build Manager fails with:
     *"aarch64 functional groups detected in pxe_mapping_file but no hosts
     found in 'admin_aarch64' inventory group"* or *"The inventory group
     'admin_aarch64' does not exist or has no hosts."*
@@ -120,9 +121,10 @@ storage, and architecture-specific build failures.
  
     2. Re-run the build image playbook with the inventory file:
  
-        ```bash title="Run on: omnia_core container"
-        cd /omnia/build_image_aarch64
-        ansible-playbook build_image_aarch64.yml -i inventory
+        ```bash title="Run on: OIM host"
+        source /opt/omnia/activate-omnia.sh
+        cd src/image_build_manager/playbooks
+        ansible-playbook image_build_manager.yml --tags build -i inventory
         ```
  
  
@@ -149,26 +151,27 @@ storage, and architecture-specific build failures.
 ??? note "Resolution"
  
     1. Verify repository URLs are correct and accessible from the
-       `omnia_core` container:
+       OIM host:
  
         ```bash title="Run on: OIM host"
-        podman exec -it omnia_core curl -I <repository_url>
+        curl -I <repository_url>
         ```
  
  
     2. For RHEL subscription (EUS) repositories, verify that the
        entitlement certificates are valid and correctly placed:
  
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         ls -la /opt/omnia/rhel_repo_certs/
         ```
  
  
     3. Validate kernel packages are available in the synced Pulp
-       repository. From within the `omnia_core` container, list the
-       repository distributions:
+       repository. On the OIM, activate the Omnia virtual environment and
+       list the repository distributions:
  
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
+        source /opt/omnia/activate-omnia.sh
         pulp rpm distribution list
         ```
  
@@ -177,7 +180,7 @@ storage, and architecture-specific build failures.
        Replace `<oim_admin_ip>` with the OIM admin IP and `<repo_name>`
        with the distribution name from the previous step:
  
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         curl -k https://<oim_admin_ip>:2225/pulp/content/opt/omnia/offline_repo/cluster/x86_64/rhel/10.0/rpms/<repo_name>/Packages/k/ | grep kernel
         ```
  
@@ -205,18 +208,18 @@ storage, and architecture-specific build failures.
  
     1. Verify which functional groups are defined in the mapping file:
  
-        ```bash title="Run on: omnia_core container"
-        cat /opt/omnia/input/project_default/pxe_mapping_file.csv
+        ```bash title="Run on: OIM host"
+        cat "${OMNIA_DATA_PATH:-/opt/omnia}/orchestrator/input/${OMNIA_PROJECT_NAME:-project_default}/pxe_mapping_file.csv"
         ```
  
  
-    2. Ensure `local_repo.yml` was executed with `software_config.json`
-       that includes software for all required architectures and functional
-       groups.
+    2. Ensure Repo Manager completed with a catalog that includes software for
+       all required architectures and functional groups, and verify that
+       `repo_status.yml` reports usable repositories for them.
  
     3. Re-run the appropriate build image playbook and verify images:
  
-        ```bash title="Run on: omnia_core container"
+        ```bash title="Run on: OIM host"
         s3cmd ls -Hr s3://boot-images
         ```
  
@@ -224,10 +227,8 @@ storage, and architecture-specific build failures.
 !!! info
  
     - [Build Cluster Node Images](../../HowTo/image_build_manager/build_images.md) -- Full image build procedure.
-    - [Create Local Repos](../../HowTo/repo_manager/configure_repos.md) -- Local repository setup.
+    - [Create Local Repositories](../../HowTo/repo_manager/configure_repos.md) -- Local repository setup.
     - [Create Mapping File](../../HowTo/discovery/create_mapping_file.md) -- Mapping file configuration.
-
-
 
 
 

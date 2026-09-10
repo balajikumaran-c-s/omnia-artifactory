@@ -68,4 +68,4 @@ BuildStreaM supports a maximum of 50 build images. When the build image count ex
 
 ## Troubleshooting
 
-- **Cleanup pipeline failing**: Verify that the BuildStreaM API server and PostgreSQL database are running. See [BuildStreaM Troubleshooting](../../Troubleshooting/buildstream.md).
+- **Cleanup pipeline failing**: Verify that the Build Stream API server and PostgreSQL database are running. See [Build Stream Troubleshooting](../../Troubleshooting/build_stream/build_stream.md).

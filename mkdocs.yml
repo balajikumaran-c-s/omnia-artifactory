@@ -185,6 +185,7 @@ nav:
     - discovery:
       - HowTo/discovery/index.md
       - Discover Nodes: HowTo/discovery/discover_nodes.md
+      - Create a Mapping File: HowTo/discovery/create_mapping_file.md
     - orchestrator:
       - HowTo/orchestrator/index.md
       - Deploy OpenCHAMI: HowTo/orchestrator/deploy_openchami.md
@@ -241,7 +242,7 @@ nav:
     - utils:
       - HowTo/utils/index.md
       - Install OS Unattended: HowTo/utils/install_os_unattended.md
-      - Prepare aarch64 Node: HowTo/utils/prepare_aarch64_node.md
+      - Clean Up Utils: HowTo/utils/cleanup_utils.md
   
   - Reference:
     - Reference/index.md
@@ -283,12 +284,11 @@ nav:
       - Telemetry Contract: Reference/domain_contracts/telemetry_contract.md
       - Utils Contract: Reference/domain_contracts/utils_contract.md
     - Sample Files:
-      - catalog.json: Reference/SampleFiles/catalog_json.md
+      - catalog_rhel.json: Reference/SampleFiles/catalog_json.md
       - PXE Mapping File: Reference/SampleFiles/pxe_mapping_file.md
       - PXE Boot Inventory: Reference/SampleFiles/pxe_boot_inventory.md
       - slurm.conf: Reference/SampleFiles/slurm_conf.md
       - slurmdbd.conf: Reference/SampleFiles/slurmdbd_conf.md
-      - software_config.json: Reference/SampleFiles/software_config_json.md
     - Cluster Requirements:
       - Minimum Nodes: Reference/ClusterRequirements/minimum_nodes.md
       - Disk Space: Reference/ClusterRequirements/disk_space.md
@@ -313,8 +313,6 @@ nav:
     - Operations/index.md
     - Platform Lifecycle:
       - Maintain the Main Environment: Operations/maintain_main_environment.md
-      - Upgrade Omnia: Operations/upgrade_omnia.md
-      - Rollback Omnia: Operations/rollback_omnia.md
       - OIM Cleanup: Operations/oim_cleanup.md
     - Node Lifecycle:
       - Add Nodes: Operations/add_nodes.md
@@ -339,8 +337,6 @@ nav:
     - Troubleshooting/index.md
     - Cross-Module Issues:
       - General: Troubleshooting/general.md
-      - General Troubleshooting Steps: Troubleshooting/general_troubleshooting.md
-      - Upgrade and Rollback: Troubleshooting/upgrade_rollback.md
       - Known Limitations: Troubleshooting/known_limitations.md
     - repo_manager:
       - Troubleshooting/repo_manager/index.md

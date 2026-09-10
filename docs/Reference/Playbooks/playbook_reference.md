@@ -45,8 +45,8 @@ for `execute`.
 | Telemetry | `src/telemetry/playbooks/telemetry.yml` | `precheck`, `validate`, `validation`, `execute`, `deploy`, `cleanup`, component cleanup tags, `external_kafka`, `external_victoria` | [How-to guide](../../HowTo/Telemetry/index.md) · [Contract](../domain_contracts/telemetry_contract.md) |
 | Utils | `src/utils/playbooks/utils.yml` | `precheck`, `collect`, `install_os`, `cleanup`, `cleanup_logs`, `cleanup_install_os` | [How-to guide](../../HowTo/utils/index.md) · [Contract](../domain_contracts/utils_contract.md) |
 
-Discovery's `precheck`, `prepare`, and cleanup lifecycle files currently contain
-placeholders. Build Stream's upgrade and rollback files, Image Build Manager's
+Discovery's `precheck`, `prepare`, `cleanup`, `upgrade`, and `rollback`
+lifecycle files currently contain placeholders. Build Stream's upgrade and rollback files, Image Build Manager's
 upgrade and rollback files, and Repo Manager's upgrade and rollback files are
 also placeholders. Do not use a placeholder operation as a deployment step.
 Utils is an on-demand utility module and does not implement the standard

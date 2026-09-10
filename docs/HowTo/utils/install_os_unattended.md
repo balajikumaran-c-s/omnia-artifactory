@@ -11,6 +11,9 @@ the installed operating system.
 The same workflow supports `x86_64` and `aarch64`. The target architecture can
 be configured explicitly or detected from the source ISO filename.
 
+Set `target_architecture` explicitly for repeatable builds. Automatic detection
+requires the source ISO filename to contain `x86_64` or `aarch64`.
+
 !!! warning
 
     The generated Kickstart clears and repartitions the configured
@@ -129,20 +132,24 @@ ansible-playbook playbooks/install_os.yml --tags deploy
 file without building an ISO, `build_iso` builds the custom media, and `deploy`
 uses an existing custom ISO.
 
+The `build_iso` and `deploy` stages write `install_os_status.yml`. The
+`credentials` and `generate_ks` stages do not write that installation status
+file.
+
 ### `install_os_config.yml` parameter reference
 
 | Parameter | Required | Default | Description |
 | --- | --- | --- | --- |
 | `source_iso_path` | Build and Kickstart generation | -- | Local path to the source ISO. |
 | `source_iso_checksum` | No | Empty | Optional SHA-256 checksum for the source ISO. |
-| `custom_iso_path` | Build and deployment | -- | NFS URI for the custom ISO in `server:/path/file.iso` format. |
+| `custom_iso_path` | Build, Kickstart generation, and deployment | -- | NFS URI for the custom ISO and generated artifacts in `server:/path/file.iso` format. |
 | `kickstart_delivery_method` | No | `embedded` | Use `embedded` or `nfs` Kickstart delivery. |
 | `kickstart_file` | No | Empty | Optional user-provided Kickstart file. Missing root password and SSH-key directives are injected. |
 | `kickstart_template` | No | `rhel10` | Built-in Kickstart template name. |
 | `target_bmc_ip` | Deployment | -- | Target BMC/iDRAC IP address. |
-| `target_hostname` | No | Empty | Hostname written by Kickstart. |
-| `target_admin_ip` | Deployment | -- | Static OS address and post-install SSH-verification target. |
-| `target_architecture` | No | Detected from ISO name | `x86_64` or `aarch64`. |
+| `target_hostname` | Build and Kickstart generation | -- | Hostname written by Kickstart. The current validator does not reject an empty value, but the generated static-network configuration requires one. |
+| `target_admin_ip` | Build, Kickstart generation, and deployment | -- | Static OS address written by Kickstart and used as the post-install SSH-verification target. |
+| `target_architecture` | No | Detected from ISO name | `x86_64` or `aarch64`. Set it explicitly when the ISO filename does not contain the architecture. |
 | `network_device` | No | First active link | Network interface used by Kickstart. |
 | `netmask` | No | `255.255.255.0` | Static network mask. |
 | `gateway` | No | Empty | Static default gateway. |
@@ -164,7 +171,7 @@ uses an existing custom ISO.
 2. Review the generated project status:
 
     ```bash title="Run on: OIM host"
-    cat /opt/omnia/utils/output/project_default/install_os_status.yml
+    cat "$OMNIA_DATA_PATH/utils/output/$OMNIA_PROJECT_NAME/install_os_status.yml"
     ```
 
 3. When SSH verification is enabled, connect to the installed node:
@@ -184,8 +191,8 @@ uses an existing custom ISO.
 
 - [Build Cluster Images](../image_build_manager/build_images.md) -- Use the
   installed node where required by the image-building workflow.
-- [Prepare an aarch64 Node](prepare_aarch64_node.md) -- Apply the installer to
-  an aarch64 target.
+- [Clean up Utils](cleanup_utils.md) -- Remove temporary installation
+  artifacts or reset the stored installation credentials.
 
 ## Troubleshooting
 
@@ -196,6 +203,9 @@ uses an existing custom ISO.
 - **The custom ISO path cannot be resolved**: Confirm `custom_iso_path` uses
   `server:/path/file.iso` format and that the NFS export is mountable from the
   OIM.
+- **Architecture detection fails**: Set `target_architecture` explicitly to
+  `x86_64` or `aarch64`; do not rely on detection when the ISO filename omits
+  the architecture.
 - **The target is already reachable**: Leave `force_reinstall: false` to protect
   an installed node, or set it to `true` only after confirming that the target
   may be reimaged.

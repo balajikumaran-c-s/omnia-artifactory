@@ -1,126 +1,161 @@
 # Re-provision Cluster Nodes
 
-Re-provisioning replaces the diskless image on existing cluster nodes. Since Omnia uses stateless (diskless) provisioning, nodes load their OS entirely from network-delivered images. Re-provisioning is performed by PXE booting the target nodes so they receive the latest image from the OIM.
+Re-provisioning replaces the diskless image on existing cluster nodes. Nodes
+load the operating system from images provided through OpenCHAMI and boot from
+the provisioning network. PXE boot is owned by the Orchestrator domain.
 
 !!! warning
 
-    If you deploy a fresh Slurm or Service Kubernetes cluster, ensure the NFS server share path used by the cluster is cleared manually. NFS details are configured in `storage_config.yml`.
+    Re-provisioning restarts the selected nodes. Stop workloads, back up
+    required data, and confirm the target mapping before continuing.
 
 !!! caution
 
-    Re-provisioning the Slurm Control Node or Kube Control Plane requires the entire cluster to be reprovisioned.
+    Re-provisioning a Slurm control node or Kubernetes control-plane node can
+    require the entire corresponding cluster to be re-provisioned.
 
 ## Prerequisites
 
-- The OIM is healthy and the services required by the selected modules are running.
-- NFS or PowerScale shared storage is accessible from the OIM and all cluster nodes.
+- The OIM and the required OpenCHAMI services are healthy.
+- The Omnia environment and required domains are initialized.
+- NFS or PowerScale shared storage is accessible from the OIM and the cluster
+  nodes.
+- The Orchestrator project mapping contains the correct target nodes and BMC
+  addresses.
+- Dell iDRAC credentials are available for physical-server PXE boot.
+- Cluster workloads are stopped or drained before nodes are restarted.
 
 ## Re-provision without modifications
 
-If no changes have been made to the mapping file, `software_config.json`, or input configuration files, PXE boot the target nodes. The OS is automatically installed on every PXE boot. This can be done using the [PXE Boot Playbook](../HowTo/orchestrator/configure_pxe_boot.md).
+If the mapping, catalog, built images, and Orchestrator inputs have not
+changed, rerun only the Orchestrator PXE workflow:
 
-```bash title="Run on: OIM host"
-ssh omnia_core
-cd /omnia/utils
-ansible-playbook set_pxe_boot.yml -i inventory
+```bash title="Run on: OIM"
+cd <OMNIA_SOURCE_PATH>/src/main
+./omnia.sh --run orchestrator --tags pxeboot
+```
+
+The workflow reads
+`$OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv`.
+It does not use the legacy Utils PXE playbook or a separate Ansible inventory.
+
+To re-provision only a reviewed subset of physical nodes, provide a CSV with
+the same mapping columns:
+
+```bash title="Run on: OIM"
+./omnia.sh --run orchestrator --tags pxeboot \
+  -e pxeboot_inventory=/path/to/reprovision_mapping.csv
 ```
 
 ## Re-provision with modifications
 
-Use this procedure when you have updated the mapping file, `software_config.json`, or any input configuration files.
+Use the following procedure when the mapping, catalog, image configuration, or
+Orchestrator inputs have changed.
 
-1. Update the PXE mapping file (for mapping file discovery) or ensure nodes are configured in OME (for OME-based provisioning). Update `software_config.json` as required.
+1. Update the catalog and the appropriate domain project inputs. Update
+   `pxe_mapping_file.csv` directly when using mapping-file discovery, or rerun
+   Discovery when OME supplies the mapping.
 
-2. If `software_config.json` has been modified, run `local_repo.yml` and then build new images:
+2. If catalog packages or repositories changed, synchronize Repository
+   Manager and regenerate its status:
 
-    ```bash title="Run on: omnia_core container"
-    cd /omnia/local_repo
-    ansible-playbook local_repo.yml
-  
-    cd /omnia/build_image_x86_64
-    ansible-playbook build_image_x86_64.yml
-
-    # For aarch64 images
-    cd /omnia/build_image_aarch64
-    ansible-playbook build_image_aarch64.yml -i inventory
+    ```bash title="Run on: OIM"
+    cd <OMNIA_SOURCE_PATH>/src/main
+    ./omnia.sh --run repo_manager --tags precheck
+    ./omnia.sh --run repo_manager --tags download
+    ./omnia.sh --run repo_manager --tags status
     ```
 
-3. After images are created, run `provision.yml`:
+3. If the catalog, packages, functional groups, or image settings changed,
+   rebuild the configured images:
 
-    ```bash title="Run on: omnia_core container"
-    cd /omnia/provision
-    ansible-playbook provision.yml
+    ```bash title="Run on: OIM"
+    ./omnia.sh --run image_build_manager --tags build
     ```
 
-4. PXE boot the target nodes using the [PXE Boot Playbook](../HowTo/orchestrator/configure_pxe_boot.md).
+   Image Build Manager builds the architectures and functional groups selected
+   by the current catalog through its domain entry point.
 
-## NFS share cleanup
+4. Validate the revised Orchestrator inputs and regenerate provisioning,
+   boot-service, metadata-service, and inventory content:
 
-When deploying a fresh cluster, you must clear the NFS share paths before re-provisioning. [OIM Cleanup](oim_cleanup.md) can be used to clear the NFS share paths. Choose one of the following approaches based on your requirements.
+    ```bash title="Run on: OIM"
+    ./omnia.sh --run orchestrator --tags validate
+    ./omnia.sh --run orchestrator --tags provision
+    ```
+
+5. PXE boot the reviewed nodes:
+
+    ```bash title="Run on: OIM"
+    ./omnia.sh --run orchestrator --tags pxeboot
+    ```
+
+For a combined Orchestrator operation, `--tags execute` runs provisioning and
+then runs PXE boot when `enable_pxe_boot: true` is configured. The staged
+commands above are recommended for maintenance because each phase can be
+verified separately.
+
+## NFS Share Cleanup
+
+When a fresh Slurm or Kubernetes cluster will reuse an existing shared-storage
+path, clear only the directories owned by that cluster before re-provisioning.
+OIM cleanup does not automatically make an arbitrary NFS share safe to reuse.
+
+!!! danger
+
+    Removing shared-storage content is irreversible. Verify the mounted
+    filesystem, configured path, cluster ownership, and backup before deleting
+    any content. Do not run a recursive deletion command against an unresolved
+    variable or an unverified mount point.
 
 ### Reuse the same share paths
 
-1. Power off all servers except the OIM.
-2. From the OIM, delete all contents in the nfs share used by the cluster (identified in `storage_config.yml`):
-
-    ```bash title="Run on: OIM host"
-    rm -rf <mounted_share_path>/*
-    ```
-
-3. Run `provision.yml`:
-
-    ```bash title="Run on: omnia_core container"
-    ssh omnia_core
-    cd /omnia/provision
-    ansible-playbook provision.yml
-    ```
-
-4. PXE boot the target nodes using the [PXE Boot Playbook](../HowTo/orchestrator/configure_pxe_boot.md).
+1. Stop the workloads and power off the affected cluster nodes when required.
+2. Identify the exact share paths from the Orchestrator project
+   `storage_config.yml`.
+3. Back up required data and clear the cluster-owned content using the
+   approved storage-administration procedure.
+4. Run the Orchestrator `provision` and `pxeboot` workflows.
 
 ### Use new share paths
 
-1. Update `mounts` in [storage_config.yml](../Reference/Configuration/storage_config.md) corresponding to `nfs_storage_name` under `slurm_cluster` or `service_k8s_cluster` in [omnia_config.yml](../Reference/Configuration/omnia_config.md).
-
-2. Run `provision.yml`:
-
-    ```bash title="Run on: omnia_core container"
-    cd /omnia/provision
-    ansible-playbook provision.yml
-    ```
-
-3. PXE boot the target nodes using the [PXE Boot Playbook](../HowTo/orchestrator/configure_pxe_boot.md).
+1. Configure new `mounts` entries in
+   [storage_config.yml](../Reference/Configuration/storage_config.md).
+2. Reference the required storage name from the applicable cluster definition
+   in [omnia_config.yml](../Reference/Configuration/omnia_config.md).
+3. Run the Orchestrator `validate`, `provision`, and `pxeboot` workflows.
 
 ## Verification
+
+Review the Orchestrator outputs:
+
+```bash title="Run on: OIM"
+cat "$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/orchestrator_status.yml"
+cat "$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/provisioning_report.yml"
+cat "$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/failed_nodes.json"
+```
+
+When a custom PXE subset was supplied, also review `pxeboot_status.yml` in the
+same output directory.
+
+Verify the applicable cluster:
 
 ```bash title="Run on: Slurm control node"
 sinfo
 ```
 
-```bash title="Run on: Kubernetes control plane"
+```bash title="Run on: Kubernetes control-plane node"
 kubectl get nodes
 ```
 
 !!! info
 
-    - [Add Nodes](add_nodes.md) or [Remove Slurm Compute Nodes](remove_slurm_nodes.md) -- Change the supported node inventory without re-imaging retained nodes.
-    - [OIM Cleanup](oim_cleanup.md) -- Full teardown and rebuild of the OIM itself.
-    - [Build Cluster Images](../HowTo/image_build_manager/build_images.md) -- Image build procedure.
-    - [Configure Mounts](../HowTo/orchestrator/configure_storage.md) -- NFS mount configuration for cluster nodes.
-    - [Configure PXE Boot](../HowTo/orchestrator/configure_pxe_boot.md) -- PXE boot configuration for cluster nodes.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    - [Add Nodes](add_nodes.md) or
+      [Remove Slurm Compute Nodes](remove_slurm_nodes.md) -- Change the
+      supported node inventory without re-imaging retained nodes.
+    - [Build Cluster Images](../HowTo/image_build_manager/build_images.md) --
+      Build the images selected by the catalog.
+    - [Configure Storage](../HowTo/orchestrator/configure_storage.md) -- Manage
+      storage configuration for cluster nodes.
+    - [Configure PXE Boot](../HowTo/orchestrator/configure_pxe_boot.md) --
+      Configure and run the Orchestrator PXE workflow.
