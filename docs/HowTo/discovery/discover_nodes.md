@@ -300,7 +300,7 @@ accordingly when this relationship is required.
     Discovery](index.md#run-discovery) for the complete tag table, including
     the lifecycle placeholders that do not perform work in this release.
 
-    A successful run without BuildStream prints a completion summary in this
+    A successful run without BuildStreaM prints a completion summary in this
     form:
 
     ```text title="Expected output"
@@ -322,10 +322,10 @@ accordingly when this relationship is required.
     ============================================================
     ```
 
-    The current Discovery implementation may print a Build Stream-specific
+    The current Discovery implementation may print a BuildStreaM-specific
     completion message only when a `build_stream_config.yml` is present in the
     Discovery input directory. That file is not part of the Discovery input
-    contract. Follow the Build Stream handoff in [Next steps](#next-steps)
+    contract. Follow the BuildStreaM handoff in [Next steps](#next-steps)
     instead of copying another domain's configuration into this directory.
 
 ## Verification
@@ -416,7 +416,7 @@ accordingly when this relationship is required.
    `GROUP_NAME` in the timestamped mapping file. Also confirm the generated
    service tags, parent relationships, MAC addresses, and IP addresses.
 
-2. Without BuildStream, copy the reviewed mapping to the Orchestrator input
+2. Without BuildStreaM, copy the reviewed mapping to the Orchestrator input
    directory:
 
     ```bash title="Run on: OIM host"
@@ -424,7 +424,7 @@ accordingly when this relationship is required.
       /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv
     ```
 
-3. With BuildStream enabled, build the images through the build pipeline first.
+3. With BuildStreaM enabled, build the images through the build pipeline first.
    If the GitLab server is not yet available, place the reviewed mapping at the
    Orchestrator input path shown above. If GitLab is available, copy it to
    `input/orchestrator/pxe_mapping_file.csv` in the GitLab project and commit

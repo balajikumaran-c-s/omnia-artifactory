@@ -34,7 +34,7 @@ Each domain writes its Ansible execution log to the OIM host under
 | `<OMNIA_DATA_PATH>/orchestrator/log/openchami/` | OpenCHAMI logs |
 | `<OMNIA_DATA_PATH>/repo_manager/log/` | Repository processing and Pulp logs |
 | `<OMNIA_DATA_PATH>/image_build_manager/log/<OMNIA_PROJECT_NAME>/` | Image build logs |
-| `<OMNIA_DATA_PATH>/build_stream_root/artifacts/<job_id>/` | Build Stream job artifacts and results |
+| `<OMNIA_DATA_PATH>/build_stream_root/artifacts/<job_id>/` | BuildStreaM job artifacts and results |
 
 !!! note
 
@@ -123,11 +123,21 @@ Kubernetes and Slurm log paths and create a timestamped archive with
 supported input file, command, output location, verification, and cleanup
 procedure.
 
+## OIM log backup
+
+Use the Utils `backup_oim_logs` workflow to archive selected Omnia domain log
+directories from the OIM to local or NFS storage. Unlike cluster-log
+collection, this workflow does not connect to provisioned nodes. It reads
+`$OMNIA_DATA_PATH/<domain>/log` for the selected domains and creates a
+timestamped archive with metadata and a SHA-256 checksum.
+
+See [Back Up OIM Logs](../HowTo/utils/backup_oim_logs.md) for configuration,
+execution, verification, and cleanup details.
+
 !!! info
 
     - [General Troubleshooting](../Troubleshooting/general.md) -- Uses logs as a primary diagnostic tool.
     - [Best Practices Checklist](best_practices_checklist.md) -- Storage and maintenance best practices.
-
 
 
 

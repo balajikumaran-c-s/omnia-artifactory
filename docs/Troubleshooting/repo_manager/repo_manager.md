@@ -3,122 +3,65 @@
 Issues related to Repo Manager, Pulp service operations, and repository
 synchronization.
 
-## Package Download Failure Due to Slow NFS Write Operations
+## Package Download Failure Due to Slow Storage
 
 ???+ note "Symptom"
 
-    If you see that a package has failed to download, or the package shows as downloaded successfully but is not present in Pulp, follow the resolution steps below.
+    The Repository Manager `download` phase reports a failed package, or a
+    package reports success but is unavailable from its Pulp distribution.
 
 ??? note "Cause"
 
-    This could be caused by slower write operations on the external NFS being used.
+    Slow or full storage can cause a Pulp task or package download to time out.
+    An unreachable source, invalid catalog entry, or registry authentication
+    failure can produce the same symptom.
 
 ??? note "Resolution"
 
-    **For a fresh installation:**
+    1. Check free space and storage latency for the configured Pulp paths.
+    2. Review `/var/log/omnia/repo_manager/repo_manager.log` and the current
+       runtime status files:
 
-    1. Delete the `/opt/omnia/log/local_repo/rhel/10.0/<arch>/<package_name>/status.csv` file
-    2. Delete the corresponding software entry from `/opt/omnia/log/local_repo/rhel/10.0/software.csv`
-    3. Rerun `local_repo.yml` playbook
-
-    **For upgrade scenario:**
-
-    1. Delete the `/opt/omnia/log/local_repo/rhel/10.0/<arch>/<package_name>/status.csv` file
-    2. Delete the corresponding software entry from `/opt/omnia/log/local_repo/rhel/10.0/software.csv`
-    3. Set the local_repo status to 'pending' in `/opt/omnia/.data/upgrade_manifest.yml`
-    4. Rerun `upgrade.yml` playbook
-
-## `local_repo.yml` Download Failures
-
-???+ note "Symptom"
-
-    The `local_repo.yml` playbook fails during package download, displaying errors such as "TASK [parse_and_download : Display Failed Packages]" or indicating that specific software packages could not be downloaded.
-
-??? note "Cause"
-
-    - Incorrect URLs in software JSON configuration files.
-    - Docker pull limit reached or invalid Docker credentials.
-    - Insufficient disk space on Pulp NFS storage.
-    - Unreachable software repositories.
-
-??? note "Resolution"
-
-    1. Verify and correct URLs in the software JSON configuration files.
-    2. Provide valid Docker credentials in `input/project_default/omnia_config_credentials.yml`.
-    3. Ensure adequate disk space is available on Pulp NFS storage.
-    4. Re-run the `local_repo.yml` playbook.
-
-    **Log analysis for download failures:**
-
-    !!! note
-
-        All log paths referenced in this section are on the OIM host filesystem.
-
-    - Overall download status:
-
-        ```text title="Example"
-        /opt/omnia/log/local_repo/<cluster_os>/<cluster_os_version>/<arch>/software.csv
+        ```text
+        <REPO_MANAGER_DATA_PATH>/log/<os>/<version>/<architecture>/groups_status.csv
+        <REPO_MANAGER_DATA_PATH>/log/<os>/<version>/<architecture>/<group>/status.csv
+        <REPO_MANAGER_DATA_PATH>/log/<os>/catalog_execution_summary.yml
         ```
 
-        Example: `/opt/omnia/log/local_repo/rhel/10.0/x86_64/software.csv`
+    3. Correct the source or storage problem. From `src/main`, rerun:
 
-    ![troubleshooting_local_repo_updated_2](../../assets/images/troubleshooting_local_repo_updated_2.png)
-
-    - Per-software task results:
-
-        ```text title="Example"
-        /opt/omnia/log/local_repo/rhel/10.0/x86_64/<sw>_task_results.log
+        ```bash title="Run on: OIM host"
+        ./omnia.sh --run repo_manager --tags download
+        ./omnia.sh --run repo_manager --tags status
         ```
 
-        Example for OpenLDAP: `/opt/omnia/log/local_repo/rhel/10.0/x86_64/openldap_task_results.log`
-
-    ![troubleshooting_local_repo_updated_3](../../assets/images/troubleshooting_local_repo_updated_3.png)
-
-    - Package-level status:
-
-        ```text title="Example"
-        /opt/omnia/log/local_repo/<cluster_os>/<cluster_os_version>/<arch>/<sw>/status.csv
-        ```
-
-        Example: `/opt/omnia/log/local_repo/rhel/10.0/x86_64/openldap/status.csv`
-
-    ![troubleshooting_local_repo_updated_4](../../assets/images/troubleshooting_local_repo_updated_4.png)
-
-    - Detailed failure information. View the reason a job was unsuccessful in the `package_status_<pid>.log` file referenced in the `<sw>_task_results.log`:
-
-        ```text title="Example"
-        /opt/omnia/log/local_repo/rhel/10.0/x86_64/<sw>/logs/package_status_<pid>.log
-        ```
-
-        Example: `/opt/omnia/log/local_repo/rhel/10.0/x86_64/openldap/logs/package_status_858667.log`
-
-    ![troubleshooting_local_repo_updated_5](../../assets/images/troubleshooting_local_repo_updated_5.png)
-
-    !!! note
-
-        If `local_repo.yml` completes without any package download failures, a `Successful` message is displayed.
-
-    ![local_repo_success](../../assets/images/local_repo_success.png)
+    Repository Manager uses its runtime status to resume idempotently. Do not
+    delete status files or edit an upgrade manifest to retry a download.
 
 ## Playbook Fails When Re-Run Multiple Times
 
 ???+ note "Symptom"
 
-    The `local_repo.yml` playbook fails when re-run multiple times in quick succession.
+    A Repository Manager download fails when another synchronization task is
+    already active.
 
 ??? note "Cause"
 
-    Pulp container resource saturation.
+    Concurrent runs can contend for the same Pulp resources. An interrupted run
+    can also leave an active Pulp task that has not finished cancelling.
 
 ??? note "Resolution"
 
-    Allow the system to idle approximately 1 hour before re-running.
+    Do not start concurrent Repository Manager runs. Inspect the active Pulp
+    tasks, allow the current task to finish, and rerun the `download` phase.
+    Repository Manager detects and recovers an active task left by an
+    interrupted earlier run before deciding whether to synchronize again.
 
 ## Pulp Reset Password Failed
 
 ???+ note "Symptom"
 
-    Pulp reset password operation fails during `prepare_oim.yml` execution.
+    Pulp credential setup fails during the Repository Manager `prepare` phase.
 
 ??? note "Cause"
 
@@ -129,7 +72,8 @@ synchronization.
 
 ??? note "Resolution"
 
-    Verify the NFS export configurations and settings mentioned above, then re-run the `prepare_oim.yml` playbook.
+    Verify the NFS export settings, then rerun
+    `./omnia.sh --run repo_manager --tags prepare` from `src/main`.
 
     For PowerScale-specific configuration details, see the PowerScale configuration on [Deploy PowerScale CSI](../../HowTo/orchestrator/deploy_powerscale_csi.md) page.
 
@@ -137,7 +81,8 @@ synchronization.
 
 ???+ note "Symptom"
 
-    `local_repo.yml` fails during Pulp repository sync of EPEL metadata or during individual EPEL package download/validation, with timeout, connection, sync failure, or repository errors. The failure can occur at two stages:
+    The Repository Manager `download` phase fails while synchronizing EPEL
+    metadata or downloading and validating an EPEL package.
 
     - **Pulp sync stage:** The EPEL URL reachability check fails or the Pulp remote sync to `x86_64_rhel_10.0_epel` (or `aarch64_rhel_10.0_epel`) times out.
     - **RPM download/validation stage:** Individual EPEL-dependent packages (`gedit`, `fping`, `clustershell`, `nss-pam-ldapd`, `apptainer`) fail during `dnf download` or `dnf info` validation.
@@ -171,16 +116,15 @@ synchronization.
 
         ```bash title="Run on: OIM host"
         grep -i "epel" /var/log/omnia/repo_manager/repo_manager.log
-        grep -RiE "epel|failed|timeout|error" /opt/omnia/log/local_repo/rhel/10.0/x86_64/default_packages/logs/
-        grep -RiE "epel|failed|timeout|error" /opt/omnia/log/local_repo/rhel/10.0/x86_64/admin_debug_packages/logs/
-        grep -RiE "epel|failed|timeout|error" /opt/omnia/log/local_repo/rhel/10.0/x86_64/openldap/logs/
-        grep -RiE "epel|failed|timeout|error" /opt/omnia/log/local_repo/rhel/10.0/x86_64/slurm_custom/logs/
-        cat /opt/omnia/log/local_repo/standard.log
+        grep -iE "epel|failed|timeout|error" /var/log/omnia/repo_manager/repo_manager.log
+        cat /opt/omnia/repo_manager/log/rhel/10.0/x86_64/groups_status.csv
+        find /opt/omnia/repo_manager/log/rhel/10.0/x86_64 -name status.csv -print
         ```
 
     4. Apply the appropriate recovery:
 
-        - If EPEL is temporarily unavailable, retry after service recovery by rerunning `local_repo.yml`.
+        - If EPEL is temporarily unavailable, retry after service recovery by
+          rerunning the Repository Manager `download` and `status` phases.
         - To force re-sync of only the EPEL repository without resyncing all repos:
 
             ```bash title="Run on: OIM host"
@@ -245,33 +189,41 @@ synchronization.
 
             Some mirrors from the mirrorlist may return 404 or time out because they have not fully synced the EPEL 10.0 archive. Skip those and test the next mirror. Choose the mirror with the highest download speed.
 
-        **c. Update the EPEL URL** in `input/project_default/local_repo_config.yml` with the fastest mirror. Replace the `url` value for the `epel` entry under `omnia_repo_url_rhel_x86_64` and/or `omnia_repo_url_rhel_aarch64`:
+        **c. Update the EPEL URL** in
+        `$OMNIA_DATA_PATH/repo_manager/input/$OMNIA_PROJECT_NAME/repo_manager_config.yml`.
+        Set the `epel.url` value under the applicable OS version and
+        architecture:
 
         For x86_64:
 
-        ```yaml title="input/project_default/local_repo_config.yml"
-        omnia_repo_url_rhel_x86_64:
-          # Before (default - slow/unreliable):
-          # - { url: "https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/", gpgkey: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-10", name: "epel"}
-          # After (faster mirror for RHEL 10.0):
-          - { url: "https://fedora-archive.ip-connect.info/epel/10.0/Everything/x86_64/", gpgkey: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-10", name: "epel"}
+        ```yaml title="File: /opt/omnia/repo_manager/input/project_default/repo_manager_config.yml"
+        repositories:
+          "10.0":
+            x86_64:
+              epel:
+                url: "https://fedora-archive.ip-connect.info/epel/10.0/Everything/x86_64/"
+                gpgkey: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-10"
         ```
 
         For aarch64:
 
-        ```yaml title="input/project_default/local_repo_config.yml"
-        omnia_repo_url_rhel_aarch64:
-          # Before (default - slow/unreliable):
-          # - { url: "https://dl.fedoraproject.org/pub/epel/10/Everything/aarch64/", gpgkey: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-10", name: "epel"}
-          # After (faster mirror for RHEL 10.0):
-          - { url: "https://fedora-archive.ip-connect.info/epel/10.0/Everything/aarch64/", gpgkey: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-10", name: "epel"}
+        ```yaml title="File: /opt/omnia/repo_manager/input/project_default/repo_manager_config.yml"
+        repositories:
+          "10.0":
+            aarch64:
+              epel:
+                url: "https://fedora-archive.ip-connect.info/epel/10.0/Everything/aarch64/"
+                gpgkey: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-10"
         ```
 
         !!! note
 
-            Keep the `gpgkey` URL unchanged (`dl.fedoraproject.org`). Only replace the `url` field with the chosen mirror. The `name` must remain `epel`. EPEL 10.0 packages are in the Fedora **archive** mirrors (the URL path contains `archive/epel/10.0/` instead of `epel/10/`).
+            Keep the `gpgkey` URL unchanged. The mapping key must remain
+            `epel` so it matches the selected catalog. EPEL 10.0 packages are
+            in the Fedora **archive** mirrors.
 
-    6. Rerun `local_repo.yml` and verify that all required packages download successfully.
+    6. Rerun the Repository Manager `download` and `status` phases and verify
+       that `repo_status.yml` reports `overall_status: success`.
 
     !!! note
 
@@ -389,26 +341,31 @@ synchronization.
 
 ???+ note "Symptom"
 
-    `local_repo.yml` fails with connectivity errors. Failures can occur at multiple stages:
+    The Repository Manager `precheck` or `download` phase fails with
+    connectivity errors. Failures can occur at multiple stages:
 
     - **Validation stage:** URL reachability checks fail with `<url> is either unreachable, invalid or has incorrect SSL certificates` or `Unreachable registries detected: <host>`.
     - **Pulp sync stage:** Repository sync to the local Pulp server fails or times out.
     - **Download stage:** Package downloads fail with `Download interrupted`, `Max retries exceeded, download failed`, or `Unable to reach Docker Hub (network DNS/timeout/SSL issue)`.
-    - **Final status reports:** `Local repo setup failed — some packages didn't download, and dependent scripts/playbooks may also fail. Refer to the localrepo logs for more details. Rerun local_repo.yml.`
+    - **Status phase:** `repo_status.yml` reports `overall_status: failed` or
+      omits a catalog-required distribution URL.
 
 ??? note "Cause"
 
     The OIM was unable to reach a required online resource. Specific causes include:
 
-    - External repository URLs are unreachable due to network outage, DNS failure, or firewall rules. `local_repo.yml` playbook fails fast on the first unreachable URL before testing all URLs and reporting all failures.
-    - User-defined registries or repository URLs in `local_repo_config.yml` are unreachable.
+    - External repository URLs are unreachable due to a network outage, DNS
+      failure, or firewall rule.
+    - User-defined registries or repository URLs in
+      `repo_manager_config.yml` are unreachable.
     - SSL/TLS certificate issues — mismatched, expired, or missing certificates for user repositories or registries.
     - Docker Hub rate limiting (HTTP 429), invalid credentials (HTTP 401), or server errors (HTTP 5xx).
     - Pulp container is not running or Pulp endpoint is unresponsive.
 
 ??? note "Resolution"
 
-    1. Verify connectivity to the upstream repository URLs configured in `local_repo_config.yml`.
+    1. Verify connectivity to the upstream repository URLs configured in the
+       project-scoped `repo_manager_config.yml`.
 
     2. Verify that the Pulp container is running and Pulp endpoint is accessible:
 
@@ -423,18 +380,23 @@ synchronization.
 
         ```bash title="Run on: OIM host"
         grep -i "unreachable" /var/log/omnia/repo_manager/repo_manager.log
-        grep -RiE "unreachable|timeout|connection|failed|SSL" /opt/omnia/log/local_repo/standard.log
-        grep -RiE "Download interrupted|Max retries exceeded|HTTP error" /opt/omnia/log/local_repo/rhel/10.0/x86_64/*/logs/
+        grep -iE "unreachable|timeout|connection|failed|SSL" /var/log/omnia/repo_manager/repo_manager.log
+        cat /opt/omnia/repo_manager/log/rhel/10.0/x86_64/groups_status.csv
         ```
 
     5. Apply the appropriate recovery:
 
-        - If the Pulp container is not running, run `prepare_oim.yml` first.
+        - If the Pulp container is not running, rerun the Repository Manager
+          `prepare` phase.
         - If external URLs are unreachable, verify DNS resolution and firewall rules on OIM.
         - If SSL certificate errors occur for user repos, verify that certificate files exist under the expected path and are valid.
-        - If Docker Hub rate limiting occurs, wait and retry, or configure Docker Hub credentials in `omnia_config_credentials.yml`.
+        - If Docker Hub rate limiting occurs, wait and retry, or run the
+          Repository Manager credential flow and configure the registry entry
+          in `repo_manager_config.yml`.
 
-    6. Rerun `local_repo.yml` after resolving the connectivity issues. Previously downloaded packages are not re-downloaded.
+    6. Rerun the Repository Manager `download` and `status` phases after
+       resolving the connectivity issue. Previously synchronized content is
+       reused unless `resync_repos` requests a resynchronization.
 
 ## Software Installation Fails With Checksum Error
 
@@ -444,12 +406,16 @@ synchronization.
 
 ??? note "Cause"
 
-    A local repository for the software has not been configured by the `local_repo.yml` playbook.
+    Repository Manager did not publish the catalog source that provides the
+    software, or the node is using a stale repository configuration.
 
 ??? note "Resolution"
 
-    1. Re-run the `local_repo.yml` playbook with proper inputs to download the software package to the Pulp repository.
-    2. Once the local repository has been configured successfully, re-run the failed installation script.
+    1. Confirm that the selected catalog references the package and that
+       `repo_manager_config.yml` defines its source repository.
+    2. Run the Repository Manager `download` and `status` phases and verify a
+       successful `repo_status.yml`.
+    3. Refresh the node repository metadata and rerun the failed installation.
 
 ## Pulp Certificate Trust Failure on Compute Nodes
 
@@ -532,7 +498,8 @@ synchronization.
 
 ??? note "Cause"
 
-    - Container image was not synced to Pulp during `local_repo.yml` execution.
+    - Repository Manager did not synchronize the container image selected by
+      the catalog.
     - Pulp mirror endpoint is unreachable from the node (firewall, network issues).
     - Pulp certificate not trusted on the node (see [Pulp certificate trust failure](#pulp-certificate-trust-failure-on-compute-nodes) above).
     - Image tag mismatch between `container_image.list` and what is available in Pulp.
@@ -576,7 +543,9 @@ synchronization.
 
 ???+ note "Symptom"
 
-    `local_repo.yml` fails during Pulp repository sync with a `404 Not Found` error or a checksum validation (mismatch) error for a specific RPM package. The error occurs even though the repository URL is reachable and other packages download successfully.
+    The Repository Manager `download` phase fails during Pulp synchronization
+    with a `404 Not Found` or checksum mismatch for a specific RPM package,
+    even though the repository URL is reachable.
 
     Example errors:
 
@@ -618,7 +587,11 @@ synchronization.
 
 ??? note "Resolution"
 
-    If `local_repo.yml` fails with a `404 Not Found` or checksum mismatch error because the upstream repository metadata is stale (references a missing RPM or contains an outdated checksum), set the affected repository to use `partial` sync policy by adding `caching: true`. This switches Pulp to `on_demand` download policy, which syncs only the repository metadata and defers individual package downloads — bypassing the 404 or checksum failure on the stale metadata entry. After the metadata sync completes, download the required packages from the Pulp repository **before** the environment is disconnected from the internet.
+    If the download fails because upstream metadata is stale, set the affected
+    repository to `policy: partial` with `caching: true`. This selects Pulp's
+    `on_demand` policy, which synchronizes metadata and defers package
+    downloads. Download all required content before disconnecting the
+    environment from the internet.
 
     1. List the available Pulp repository names to identify the correct `repoid` for the affected repository:
 
@@ -638,17 +611,25 @@ synchronization.
           -e "cleanup_repos=x86_64_rhel_10.0_cuda,aarch64_rhel_10.0_cuda"
         ```
 
-    3. Add `caching: true` to the affected repository entry in `/opt/omnia/input/project_default/local_repo_config.yml` and run `local_repo.yml`:
+    3. Update the affected entry in
+       `/opt/omnia/repo_manager/input/project_default/repo_manager_config.yml`,
+       then run the Repository Manager `download` phase:
 
         ```yaml title="Example: CUDA repository entries with caching: true"
-        omnia_repo_url_rhel_x86_64:
-          - { url: "https://developer.download.nvidia.com/compute/cuda/repos/rhel10/x86_64/",
-              gpgkey: "https://developer.download.nvidia.com/compute/cuda/repos/rhel10/x86_64/repodata/repomd.xml.key",
-              name: "cuda", caching: true }
-        omnia_repo_url_rhel_aarch64:
-          - { url: "https://developer.download.nvidia.com/compute/cuda/repos/rhel10/sbsa/",
-              gpgkey: "https://developer.download.nvidia.com/compute/cuda/repos/rhel10/sbsa/repodata/repomd.xml.key",
-              name: "cuda", caching: true }
+        repositories:
+          "10.0":
+            x86_64:
+              cuda:
+                url: "https://developer.download.nvidia.com/compute/cuda/repos/rhel10/x86_64/"
+                gpgkey: "https://developer.download.nvidia.com/compute/cuda/repos/rhel10/x86_64/repodata/repomd.xml.key"
+                policy: partial
+                caching: true
+            aarch64:
+              cuda:
+                url: "https://developer.download.nvidia.com/compute/cuda/repos/rhel10/sbsa/"
+                gpgkey: "https://developer.download.nvidia.com/compute/cuda/repos/rhel10/sbsa/repodata/repomd.xml.key"
+                policy: partial
+                caching: true
         ```
 
         ```bash title="Run on: OIM host"
@@ -657,9 +638,12 @@ synchronization.
         ansible-playbook repo_manager.yml --tags download
         ```
 
-        Refer to the **Policy and Caching Behavior** table in the [local_repo_config.yml](../../Reference/Configuration/repo_manager_config.md) parameter reference for the full mapping of policy and caching combinations to Pulp download policies.
+        Refer to the **Policy and Caching Behavior** table in the
+        [Repository Manager configuration](../../Reference/Configuration/repo_manager_config.md)
+        reference for the full mapping of policy and caching combinations.
 
-    4. After `local_repo.yml` completes with `partial`, sync the entire repository content from Pulp to a local directory. Run this for both x86_64 and aarch64 repositories:
+    4. After Repository Manager completes with the partial policy, synchronize
+       the entire required repository content from Pulp to a local directory.
 
         ```bash title="Run on: OIM host"
         dnf reposync --repoid=x86_64_rhel_10.0_cuda \
@@ -693,9 +677,6 @@ synchronization.
     - [Create Local Repositories](../../HowTo/repo_manager/configure_repos.md) -- Local repository setup guide.
     - [Log Management](../../Operations/log_management.md) -- Where to find logs for deeper diagnosis.
     - [Pulp Cleanup](../../Operations/pulp_cleanup.md) -- Pulp cleanup procedures.
-
-
-
 
 
 

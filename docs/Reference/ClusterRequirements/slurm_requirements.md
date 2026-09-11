@@ -3,23 +3,37 @@
 This section outlines the key requirements for Slurm used by Omnia to deploy HPC clusters. For more information about the supported devices and software, see [Support Matrix](../index.md#support-matrix).
 
 - Ensure that each slurm compute node has at least 64 GB RAM.
-- In a mixed architecture environment where the Slurm control node and compute nodes use different architectures (for example, control node with x86_64 and compute nodes with aarch64), ensure that Slurm binaries for both architectures are compiled and available in the user repository.
-- The Slurm RPM must be available in the user repository. If the Slurm RPM is not available, refer to [Slurm Quick Start Administrator Guide](https://slurm.schedmd.com/quickstart_admin.html) for instructions on building Slurm RPMs.
-- If the Slurm RPMS are already available, update the value (`<hosted slurm repository url>`) in the URL of the `user_repo_url_x86_64` or `user_repo_url_aarch64` parameter in `/opt/omnia/input/project_default/local_repo_config.yml`.
-- If the repository is hosted, use the URL created in the `local_repo_config.yml` file.
+- In a mixed architecture environment where the Slurm control node and compute nodes use different architectures (for example, control node with x86_64 and compute nodes with aarch64), ensure that compatible Slurm packages for both architectures are available in the user repository.
+- The Slurm RPMs required by the selected catalog must be available from a
+  repository that the OIM can reach. Omnia consumes this repository; it does
+  not build or host the RPMs.
+- For every architecture used by the cluster, configure the hosted Slurm repository under `repositories."10.0".<architecture>.user_repos.slurm_custom` in `$OMNIA_DATA_PATH/repo_manager/input/$OMNIA_PROJECT_NAME/repo_manager_config.yml`.
 
-    ```yaml title="File: /opt/omnia/input/project_default/local_repo_config.yml"
-    user_repo_url_x86_64:
-      - { url: "<hosted slurm repository url>", gpgkey: "", sslcacert: "", sslclientkey: "", sslclientcert: "", name: "slurm_custom" }
-
-    user_repo_url_aarch64:
-      - { url: "<hosted slurm repository url>", gpgkey: "", sslcacert: "", sslclientkey: "", sslclientcert: "", name: "slurm_custom" }
+    ```yaml title="File: $OMNIA_DATA_PATH/repo_manager/input/$OMNIA_PROJECT_NAME/repo_manager_config.yml"
+    repositories:
+      "10.0":
+        x86_64:
+          user_repos:
+            slurm_custom:
+              url: "http://<host>/slurm-repo/x86_64"
+        aarch64:
+          user_repos:
+            slurm_custom:
+              url: "http://<host>/slurm-repo/aarch64"
     ```
 
-    Run `ansible-playbook local_repo/local_repo.yml`.
+    Configure only the architectures used by the cluster. Ensure that the selected catalog references `slurm_custom`, and that its Slurm package names match the hosted RPMs.
 
-- Create Slurm repository build for x86_64. See [Build Slurm repository for x86_64]() and [Host RPMS on Apache server]().
-- After Slurm RPMS are generated, change the rpms in corresponding role accordingly if the rpm names are not matching with rpms in `input/config/x86_64/rhel/10.0/slurm_custom.json`.
+    Synchronize the catalog content and verify the result:
+
+    ```bash title="Run on: OIM host"
+    ./omnia.sh --run repo_manager --tags download
+    ./omnia.sh --run repo_manager --tags status
+    ```
+
+- If the package names in the repository differ from the selected catalog,
+  update the catalog so its Slurm package names match the available RPMs. See
+  [Add an RPM Repository](../../HowTo/repo_manager/adding_additional_repositories.md).
 
 ## HPC Benchmark Image Layer
 
@@ -72,20 +86,25 @@ The following prerequisites must be satisfied before deploying Omnia on Slurm cl
 
 **Repository Requirements**
 
-- CUDA repository: Provisioned automatically in the local Pulp repository as part of `local_repo_config.yml` execution. Slurm compute nodes must be able to reach this local repository; no separate CUDA repo setup is required.
-- DCGM repository: Also provisioned automatically in the local repository by `local_repo_config.yml`. No manual configuration is needed beyond ensuring `local_repo_config.yml` has run successfully.
+- Synchronize the selected RHEL 10.0 Slurm catalog through Repository Manager
+  before building the cluster images. The catalog must provide the NVIDIA
+  driver, CUDA toolkit, DCGM, and matching kernel-development packages for
+  each target architecture.
+- Slurm compute nodes must be able to reach the repositories recorded in the
+  successful Repository Manager `repo_status.yml`.
 
 **DCGM Installation Configuration**
 
-DCGM installation is controlled through the `metrics_enabled` parameter in the `telemetry_sources.dcgm` section of the `input/telemetry_config.yml` file:
+DCGM installation is controlled by `dcgm_enabled` in
+`orchestrator_config.yml`. The shipped value enables installation on
+GPU-capable Slurm nodes:
 
-```yaml title="File: /opt/omnia/input/project_default/telemetry_config.yml"
-telemetry_sources:
-  dcgm:
-    metrics_enabled: true
+```yaml title="File: $OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/orchestrator_config.yml"
+dcgm_enabled: true
 ```
 
-For DCGM installation to happen, ensure that `metrics_enabled` is set to `true`.
+Set `dcgm_enabled: false` to skip DCGM installation. DCGM metrics collection
+is not currently integrated into the Omnia Telemetry pipeline.
 
 **NFS Requirements**
 
@@ -97,6 +116,13 @@ For DCGM installation to happen, ensure that `metrics_enabled` is set to `true`.
 
 - NVIDIA GPU hardware: Must be present on any Slurm node intended for GPU workloads. Nodes without GPU hardware are automatically skipped at runtime.
 
+**NVIDIA Peer Memory**
+
+Omnia attempts to build and load `nvidia-peermem` through DKMS after detecting
+an NVIDIA GPU and a working driver. The `kernel-devel` package must match the
+running kernel. Nodes without applicable GPU hardware skip the operation.
+`nvidia-peermem` is required only for GPUDirect RDMA workloads.
+
 !!! note
 
     If repositories are not reachable or the NFS path is unavailable at provisioning time, GPU setup will fail on affected nodes and the DCGM service will not be started. Refer to the Manual Recovery section for remediation steps.
@@ -105,9 +131,6 @@ For DCGM installation to happen, ensure that `metrics_enabled` is set to `true`.
 
     - [Set Up Slurm](../../HowTo/orchestrator/deploy_slurm.md) -- For detailed information on setting up the Slurm cluster.
     - [Slurm Configuration](../Configuration/omnia_config.md#slurm-configuration-parameters) -- For detailed information on Slurm configuration parameters.
-
-
-
 
 
 

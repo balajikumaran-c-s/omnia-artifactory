@@ -1,8 +1,8 @@
 # build_stream_config.yml
 
-The consolidated Build Stream configuration controls the Build Stream Manager
+The consolidated BuildStreaM configuration controls the BuildStreaM Manager
 (BSM) API and the managed GitLab deployment. It replaces the former separate
-Build Stream and GitLab configuration files.
+BuildStreaM and GitLab configuration files.
 
 ## Location
 
@@ -56,6 +56,5 @@ gitlab_sidekiq_concurrency: 10
 ## Related configuration
 
 - [Main environment](omnia_env.md)
-- [Build Stream contract](../domain_contracts/build_stream_contract.md)
-- [Deploy GitLab and Build Stream](../../HowTo/build_stream/deploy_gitlab.md)
-
+- [BuildStreaM contract](../domain_contracts/build_stream_contract.md)
+- [BuildStreaM](../../HowTo/build_stream/index.md)

@@ -37,13 +37,13 @@ each domain owns and exposes its cleanup workflow.
 
 | Domain | Cleanup scope |
 |---|---|
-| `build_stream` | Removes GitLab and Build Stream services, the watcher, PostgreSQL service, NFS artifacts, and Build Stream credentials. PostgreSQL data is preserved by default. |
+| `build_stream` | Removes GitLab and BuildStreaM services, the watcher, PostgreSQL service, NFS artifacts, and BuildStreaM credentials. PostgreSQL data is preserved by default. |
 | `telemetry` | Removes enabled telemetry sources and sinks. Persistent volumes, including the iDRAC MySQL PVC, are preserved by default. |
-| `orchestrator` | Removes enabled OpenCHAMI, OpenLDAP, Slurm, Kubernetes, storage-mount, and generated Orchestrator resources. Credentials are preserved by default. |
+| `orchestrator` | Removes enabled OpenCHAMI, OpenLDAP, Slurm, Kubernetes, storage-mount, and generated Orchestrator resources. Credentials are removed by default. |
 | `discovery` | Runs the reserved cleanup entry point. The current source implementation is a placeholder and does not remove Discovery artifacts. |
 | `image_build_manager` | Removes MinIO, the registry, build output, domain data, logs, and Image Build Manager credentials. |
 | `repo_manager` | Removes the Pulp deployment, Pulp data, CLI configuration, repository integration, and logs. Credential removal is selected interactively unless explicitly configured. |
-| `utils` | Removes log-collection run directories and temporary unattended-OS-installation artifacts. Credential removal is selected interactively when applicable. |
+| `utils` | The general cleanup removes cluster-log collection directories and temporary unattended-OS-installation artifacts. OIM log backups require the separate `cleanup_backup_oim_logs` tag. Credential removal is selected interactively when applicable. |
 
 ## Steps
 
@@ -66,7 +66,8 @@ cd <OMNIA_SOURCE_PATH>/src/main
 
 See [Clean Up Utils](../HowTo/utils/cleanup_utils.md) before running the Utils
 command; its log cleanup removes every collection run directory after checking
-archive age.
+archive age. The command does not remove OIM log backups. Preserve required
+backups, then run the dedicated cleanup described in that guide when needed.
 
 Stop and resolve any failure before continuing to the next domain. Do not run
 the main cleanup while domain playbooks still need the shared virtual
@@ -74,9 +75,9 @@ environment.
 
 !!! warning
 
-    The current Build Stream entry point contains an unresolved static import
+    The current BuildStreaM entry point contains an unresolved static import
     for its upgrade placeholder. Until that source issue is corrected, the
-    top-level Build Stream playbook can fail during parsing before the
+    top-level BuildStreaM playbook can fail during parsing before the
     `cleanup` tag runs.
 
 !!! note
@@ -97,12 +98,17 @@ To remove only iDRAC Telemetry resources, use `--tags cleanup_idrac`. Its MySQL
 PVC `mysqldb-pvc-idrac-telemetry-0` is also preserved unless
 `Delete_volume=true` is supplied.
 
-Orchestrator preserves its encrypted credentials and Vault key during normal
-cleanup. To remove them with the components, run:
+Orchestrator removes its encrypted credentials and Vault key during full
+cleanup by default. To preserve them, run:
 
 ```bash title="Run on: OIM"
-./omnia.sh --run orchestrator --tags cleanup,cleanup_credentials
+./omnia.sh --run orchestrator --tags cleanup -e cleanup_credentials=false
 ```
+
+Slurm and Kubernetes shared-data deletion is selected independently during
+full cleanup. Review
+[Clean Up Orchestrator](../HowTo/orchestrator/cleanup_orchestrator.md) before
+running the command.
 
 Repository Manager and Utils can prompt before removing credentials. Review
 each prompt carefully and select the option that matches the redeployment

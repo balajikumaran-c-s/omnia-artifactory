@@ -30,11 +30,11 @@ podman logs -n 200 <container>
 podman exec -it <container> sh -lc 'curl -I https://example.com'
 ```
 
-## Prepare OIM Failures
+## Base Infrastructure Preparation Failures
 
 ???+ note "Symptom"
 
-    - Certificate or TLS failures during `prepare_oim.yml`.
+    - Certificate or TLS failures while running `./omnia.sh --prepare-base`.
     - Expected container not created.
     - Service is running but unreachable.
 
@@ -55,7 +55,12 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
 
     2. Review container logs for specific error messages.
     3. Verify network connectivity and TLS certificate validity.
-    4. Re-run `prepare_oim.yml` after correcting the issue.
+    4. After correcting the issue, rerun base preparation from `src/main`:
+
+        ```bash title="Run on: OIM host"
+        cd <OMNIA_SOURCE_PATH>/src/main
+        ./omnia.sh --prepare-base
+        ```
 
 ## Ansible Vault Decryption Failures
 
@@ -166,7 +171,9 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
 
 ???+ note "Symptom"
 
-    OpenCHAMI certificates have expired, causing service communication failures. This can also cause the cloud-init server to fail when running `provision.yml`.
+    OpenCHAMI certificates have expired, causing service communication failures.
+    This can also cause the metadata service checks to fail during the
+    Orchestrator `provision` phase.
 
 ??? note "Cause"
 
@@ -733,7 +740,7 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
 
 ???+ note "Symptom"
 
-    PostgreSQL deployment fails after Build Stream cleanup.
+    PostgreSQL deployment fails after BuildStreaM cleanup.
 
 ??? note "Cause"
 
@@ -758,7 +765,10 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
 
 ???+ note "Symptom"
 
-    Any Omnia playbook (prepare_oim.yml, local_repo.yml, provision.yml, telemetry.yml, upgrade.yml) terminates with a fatal Ansible error before completing. Typical error patterns include:
+    An Omnia domain playbook, such as `repo_manager.yml`,
+    `image_build_manager.yml`, `orchestrator.yml`, or `telemetry.yml`,
+    terminates with a fatal Ansible error before completing. Typical error
+    patterns include:
 
     - SSH connectivity failures: `UNREACHABLE! => {"msg": "Failed to connect to the host via ssh"}`
     - NFS mount or access errors: `mount.nfs: access denied`, `Stale file handle`, `Input/output error`
@@ -827,15 +837,16 @@ podman exec -it <container> sh -lc 'curl -I https://example.com'
         - **Storage issues**: Free disk space (prune old container images with `podman image prune -a`, remove stale logs), restore NFS mounts (`mount <mount_point>`), verify NFS export permissions.
         - **Hardware issues**: Verify BMC reachability (`ipmitool -I lanplus -H <bmc_ip> -U <user> -P <pass> chassis status`), power-cycle affected node, replace failed hardware.
         - **Certificate issues**: Renew OpenCHAMI certificates (`sudo openchami-certificate-update update <hostname>.<domain>`), restart affected services, correct system clock.
-        - **Container runtime issues**: If Podman storage is corrupted, reset with `podman system reset` (destructive — requires re-running prepare_oim.yml).
+        - **Container runtime issues**: Inspect the failed containers and their
+          logs. The Omnia source does not define or validate a recovery workflow
+          after `podman system reset`; do not use that destructive command as an
+          Omnia recovery step.
 
     3. After resolving the root cause, re-run only the failed playbook. Do not re-run the entire stack if only one playbook failed.
 
     !!! tip
 
         Increase Ansible verbosity (`-vvv`) when re-running to capture detailed error output for root-cause analysis.
-
-
 
 
 

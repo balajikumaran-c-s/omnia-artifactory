@@ -1,20 +1,20 @@
-# Add Nodes through Build Stream
+# Add Nodes through BuildStreaM
 
 ## Overview
 
 Add nodes by updating the Orchestrator PXE mapping in the managed GitLab
-project and running the Build Stream deploy pipeline. A committed change to
+project and running the BuildStreaM deploy pipeline. A committed change to
 `input/orchestrator/pxe_mapping_file.csv` automatically selects the deploy
 pipeline. The child pipeline then requires an operator to select a `BUILT`
 image group and start deployment.
 
 The mapping is uploaded to Orchestrator as the desired deployment input. Keep
-all nodes that must remain in the cluster in the file; the Build Stream source
+all nodes that must remain in the cluster in the file; the BuildStreaM source
 does not create a new-node-only inventory from the changed rows.
 
 ## Prerequisites
 
-- Complete [Deploy GitLab and Build Stream](../../HowTo/build_stream/deploy_gitlab.md).
+- Complete [BuildStreaM deployment](../../HowTo/build_stream/index.md).
 - Ensure at least one image group has `BUILT` status. Run the
   [build pipeline](../../HowTo/build_stream/execute_build_pipeline.md) first if
   no built image group is available.
@@ -76,5 +76,5 @@ For the complete pipeline procedure, see
   groups with `BUILT` status. Complete a build pipeline first.
 - **An operational stage fails:** Open its GitLab job log and use the BSM job
   log path reported for the failed stage.
-- See [Build Stream troubleshooting](../../Troubleshooting/build_stream/build_stream.md)
+- See [BuildStreaM troubleshooting](../../Troubleshooting/build_stream/build_stream.md)
   for additional investigations.

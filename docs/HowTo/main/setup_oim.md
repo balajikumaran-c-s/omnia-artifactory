@@ -2,10 +2,11 @@
 
 ## Overview
 
-`omnia.sh --setup-venv` installs the Main environment, creates or updates the
-shared Python virtual environment, initializes the selected modules, and copies
-the supplied catalog samples. Use this command for the initial setup of the
-Omnia Infrastructure Manager (OIM).
+`omnia.sh --setup-venv` installs the Main environment during the first setup,
+creates or updates the shared Python virtual environment, initializes the
+selected modules, and copies the supplied catalog samples. Later setup runs
+preserve the installed environment. Use this command to set up the Omnia
+Infrastructure Manager (OIM).
 
 ## Prerequisites
 
@@ -37,15 +38,18 @@ Omnia Infrastructure Manager (OIM).
 
     The short form is `./omnia.sh -s`. The command:
 
-    - Copies `omnia.env` to `/etc/omnia/omnia.env`.
+    - Installs `omnia.env` as `/etc/omnia/omnia.env` during the first setup.
+      Subsequent setup runs preserve the installed file unless `--force-env`
+      is specified.
     - Creates `/etc/profile.d/omnia-env.sh`.
     - Validates the OIM hostname, domain name, and administrative NIC address.
     - Creates `<OMNIA_DATA_PATH>`, `<OMNIA_DATA_PATH>/.data`, and the virtual
       environment at `OMNIA_VENV_PATH`.
     - Upgrades `pip`, `setuptools`, and `wheel` in the virtual environment.
     - Runs each selected module's `domain-init.sh`.
-    - Copies JSON and YAML samples from `src/main/samples/` to
-      `<OMNIA_DATA_PATH>/catalog/`.
+    - Copies top-level JSON and YAML samples from `src/main/samples/` to
+      `<OMNIA_DATA_PATH>/catalog/`. Deployment-specific catalogs under
+      `src/main/samples/catalogs/` are not copied automatically.
 
 3. Use setup options when required:
 
@@ -53,6 +57,7 @@ Omnia Infrastructure Manager (OIM).
     |---|---|
     | `--deps-only` | Install module dependencies without staging module inputs. |
     | `--force-deps` | Bypass the dependency cache and reinstall dependencies. |
+    | `--force-env` | Replace `/etc/omnia/omnia.env` with `src/main/omnia.env`. Use only when intentionally resetting the installed environment from the source template. |
     | `--skip <domain,...>` | Skip the modules identified by the listed internal domain names during initialization. |
     | `--skip-catalog` | Do not copy the catalog samples. |
 
@@ -84,14 +89,17 @@ ls /etc/omnia/omnia.env
 
 ## Next steps
 
-- Continue with the [Repository Manager flow](../repo_manager/index.md) to
-  configure repository inputs, deploy Pulp, synchronize catalog content, and
-  generate the repository output required by Image Build Manager.
+- [Select or update the catalog](update_catalog.md) when the default catalog
+  does not match the required workload, architecture, or VAST selection.
+- [Prepare the base infrastructure](prepare_base.md) to validate the core
+  domain inputs, collect credentials, and deploy the services required before
+  repository synchronization and image building.
 
 ## Troubleshooting
 
-- **`SYSTEM_ADMIN_NIC_IPV4` is missing or invalid**: Set a valid IPv4 address
-  in `src/main/omnia.env` and rerun setup.
+- **`SYSTEM_ADMIN_NIC_IPV4` is missing or invalid**: Before the first setup,
+  set a valid IPv4 address in `src/main/omnia.env`. After setup, update
+  `/etc/omnia/omnia.env`.
 - **The administrative address is not local**: Select an address assigned to
   an OIM network interface.
 - **The hostname check fails**: Make `SYSTEM_HOSTNAME` match `hostname -s`. A

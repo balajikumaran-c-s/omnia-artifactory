@@ -96,7 +96,7 @@ Issues related to BuildStreaM pipeline execution, GitLab integration, catalog va
 ??? note "Cause"
 
     - Playbook execution failed
-    - Configuration issues in `local_repo_config.yml`
+    - Catalog or `repo_manager_config.yml` configuration issues
 
 ??? note "Resolution"
 
@@ -112,11 +112,12 @@ Issues related to BuildStreaM pipeline execution, GitLab integration, catalog va
             "ended_at": "2026-03-11T10:49:20.639894+00:00Z",
             "error_code": "PLAYBOOK_EXECUTION_FAILED",
             "error_summary": "Playbook exited with code 2",
-            "log_file_path": "/nfs/omnia/log/build_stream/5a4f69f4-44df-42eb-b88b-1583ea2610a8/local_repo.yml_20260311_171630.log"
+            "log_file_path": "/var/log/omnia/repo_manager/<job-id>/repo_manager.yml_20260311_171630.log"
         }
         ```
 
-    2. Verify the configuration settings in `local_repo_config.yml`.
+    2. Verify the selected catalog and the project-scoped
+       `repo_manager_config.yml` settings.
 
     3. After fixing the configuration issues, re-run the pipeline.
 
@@ -176,14 +177,11 @@ Issues related to BuildStreaM pipeline execution, GitLab integration, catalog va
 
 !!! info
 
-    - [Deploy GitLab](../../HowTo/build_stream/deploy_gitlab.md) -- GitLab deployment procedures
+    - [BuildStreaM](../../HowTo/build_stream/index.md) -- BuildStreaM and GitLab deployment procedures
     - [Execute Build Pipeline](../../HowTo/build_stream/execute_build_pipeline.md) -- Build pipeline operations
     - [Execute Deploy Pipeline](../../HowTo/build_stream/execute_deploy_pipeline.md) -- Deploy pipeline operations
     - [Retry Pipelines](../../Operations/build_stream/retry_pipelines.md) -- Retry failed pipeline operations
     - [Update Catalog](../../Operations/build_stream/update_catalog.md) -- Catalog configuration
-
-
-
 
 
 

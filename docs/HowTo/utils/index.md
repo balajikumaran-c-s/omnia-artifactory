@@ -5,7 +5,8 @@
 The Utils module provides optional utilities that run from the
 Omnia Infrastructure Manager (OIM). The current Utils entry point supports
 collecting Kubernetes and Slurm logs, installing RHEL on a bare-metal node
-through iDRAC Virtual Media, and cleaning up artifacts from those workflows.
+through iDRAC Virtual Media, backing up Omnia domain logs stored on the OIM,
+and cleaning up artifacts from those workflows.
 
 The OS installation workflow supports both `x86_64` and `aarch64`. The source
 tree also contains reusable Slurm configuration backup, cleanup, and
@@ -41,16 +42,18 @@ Run Utils workflows through the OIM domain launcher:
 | `precheck` | Validate the installed OIM environment used by Utils. |
 | `collect` | Collect and bundle Kubernetes and Slurm logs. |
 | `install_os` | Build and deploy installation media through iDRAC Virtual Media. |
+| `backup_oim_logs` | Archive selected Omnia domain logs to local or NFS storage. |
 | `cleanup_logs` | Remove log-collection artifacts. |
 | `cleanup_install_os` | Remove temporary OS-installation artifacts and optionally reset credentials. |
-| `cleanup` | Run both Utils cleanup workflows. |
+| `cleanup_backup_oim_logs` | Remove every OIM log-backup run directory from the resolved destination. |
+| `cleanup` | Run log-collection and OS-installation cleanup. OIM log backups are excluded. |
 
 !!! note
 
     Running `./omnia.sh --run utils` without a tag performs Utils setup only.
-    It does not collect logs or install an operating system. The `upgrade` and
-    `rollback` tags are placeholders in the current source and do not perform
-    lifecycle operations.
+    It does not collect or back up logs, or install an operating system. The
+    `upgrade` and `rollback` tags are placeholders in the current source and
+    do not perform lifecycle operations.
 
 ## Choose a task
 
@@ -58,7 +61,8 @@ Run Utils workflows through the OIM domain launcher:
 |---|---|
 | [Install an OS unattended](install_os_unattended.md) | Build a Kickstart-enabled ISO, attach it through iDRAC Virtual Media, and install one `x86_64` or `aarch64` node. |
 | [Collect cluster logs](../../Operations/collect_cluster_logs.md) | Collect Kubernetes and Slurm logs from configured nodes and create a support archive with metadata. |
-| [Clean up Utils](cleanup_utils.md) | Remove log-collection or OS-installation artifacts by using the full or scoped cleanup tags. |
+| [Back up OIM logs](backup_oim_logs.md) | Archive logs from selected Omnia domains on the OIM to local or NFS storage. |
+| [Clean up Utils](cleanup_utils.md) | Remove cluster-log, OS-installation, or OIM log-backup artifacts with the applicable cleanup tag. |
 | [Use the Slurm configuration roles](../../Operations/slurm_configuration_roles.md) | Integrate the standalone Slurm backup, cleanup, and rollback roles into an administrator-maintained playbook. |
 
 ## Contract reference

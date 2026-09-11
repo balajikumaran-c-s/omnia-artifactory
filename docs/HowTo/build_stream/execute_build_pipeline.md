@@ -1,10 +1,10 @@
 # Execute Build Pipeline
 
-Update the `catalog_rhel.json` file and execute the Build Stream build pipeline through GitLab. This procedure covers catalog modifications, pipeline triggering (automatic and manual), and verification of pipeline status.
+Update the `catalog_rhel.json` file and execute the BuildStreaM build pipeline through GitLab. This procedure covers catalog modifications, pipeline triggering (automatic and manual), and verification of pipeline status.
 
 ## Overview
 
-The Build Stream build pipeline automates the creation of diskless images based on catalog specifications. The pipeline consists of four sequential stages:
+The BuildStreaM build pipeline automates the creation of diskless images based on catalog specifications. The pipeline consists of four sequential stages:
 
 - **parse-catalog**: Parses and validates the catalog file for build requirements
 - **generate-input-files**: Generates input files and configuration data for image building
@@ -15,11 +15,11 @@ The build pipeline is automatically triggered when you update the `catalog_rhel.
 
 !!! warning
 
-    **Pipeline Retry Behavior**: If a pipeline fails partially (e.g., one architecture succeeds while another fails), retrying the pipeline may result in INTERNAL_ERROR for previously completed image builds. Build Stream currently does not skip or reuse already-successful builds during retry operations. If you encounter this issue, consider starting a fresh pipeline rather than retrying the failed one. Ensure adequate system resources (including 200 GB free disk space on OIM / partition) before initial pipeline execution to minimize the risk of partial failures.
+    **Pipeline Retry Behavior**: If a pipeline fails partially (e.g., one architecture succeeds while another fails), retrying the pipeline may result in INTERNAL_ERROR for previously completed image builds. BuildStreaM currently does not skip or reuse already-successful builds during retry operations. If you encounter this issue, consider starting a fresh pipeline rather than retrying the failed one. Ensure adequate system resources (including 200 GB free disk space on OIM / partition) before initial pipeline execution to minimize the risk of partial failures.
 
 !!! warning
 
-    Do not cancel a running GitLab pipeline or stage. Cancellation prevents some pipeline steps from executing, which leaves the Build Stream job in an intermediate, inconsistent state.
+    Do not cancel a running GitLab pipeline or stage. Cancellation prevents some pipeline steps from executing, which leaves the BuildStreaM job in an intermediate, inconsistent state.
 
 !!! note
 
@@ -34,8 +34,8 @@ The build pipeline is automatically triggered when you update the `catalog_rhel.
 
 ## Prerequisites
 
-- Build Stream container is deployed on the OIM node
-- GitLab deployment for Build Stream is completed (see [Deploy GitLab](deploy_gitlab.md))
+- BuildStreaM container is deployed on the OIM node
+- GitLab deployment for BuildStreaM is completed (see [BuildStreaM](index.md))
 - You can access the GitLab project repository
 - **200 GB free disk space** on the OIM **/ partition** before triggering the build pipeline
   - This requirement applies to the OIM root partition before pipeline execution
@@ -72,11 +72,11 @@ The build pipeline is automatically triggered when you update the `catalog_rhel.
 
 5. Commit the catalog changes. The pipeline triggers automatically.
 
-    ![Build Stream Build Trigger](../../assets/images/buildstream-build-trigger.png)
+    ![BuildStreaM Build Trigger](../../assets/images/buildstream-build-trigger.png)
 
 6. Monitor the pipeline progress.
 
-    ![Build Stream Pipeline Execution](../../assets/images/buildstream-buid-success.png)
+    ![BuildStreaM Pipeline Execution](../../assets/images/buildstream-buid-success.png)
 
 ### Trigger Build Pipeline Manually
 
@@ -139,12 +139,10 @@ After the pipeline completes:
 ## Troubleshooting
 
 - **Parse-Catalog stage failing**: Ensure the JSON is aligned with the expected schema. See catalog examples at [https://github.com/dell/omnia/tree/pub/build_stream/examples/catalog](https://github.com/dell/omnia/tree/pub/build_stream/examples/catalog).
-- **Create-Local-Repo stage failing**: Check the log path from the API response and verify `local_repo_config.yml` settings.
+- **Repository Manager stage failing**: Check the log path from the API
+  response and verify the selected catalog and `repo_manager_config.yml`.
 - **Build-Image stage failing**: Ensure the catalog has valid functional groups.
-- For additional issues, see [Build Stream Troubleshooting](../../Troubleshooting/build_stream/buildstream.md).
-
-
-
+- For additional issues, see [BuildStreaM Troubleshooting](../../Troubleshooting/build_stream/build_stream.md).
 
 
 

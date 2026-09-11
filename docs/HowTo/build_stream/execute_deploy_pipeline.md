@@ -1,10 +1,10 @@
 # Execute Deploy Pipeline
 
-Execute the Build Stream deploy pipeline to deploy built images to cluster nodes. This procedure covers the three deploy stages, manual execution, monitoring, handling partial failures, and adding new nodes.
+Execute the BuildStreaM deploy pipeline to deploy built images to cluster nodes. This procedure covers the three deploy stages, manual execution, monitoring, handling partial failures, and adding new nodes.
 
 ## Overview
 
-The Build Stream deploy pipeline automates the deployment of built images to target cluster nodes. The pipeline consists of three sequential stages:
+The BuildStreaM deploy pipeline automates the deployment of built images to target cluster nodes. The pipeline consists of three sequential stages:
 
 - **deploy**: Deploys the built images to the target nodes
 - **restart**: PXE-boots the target nodes to load the deployed images
@@ -16,7 +16,7 @@ be initiated manually through the GitLab interface.
 
 !!! warning
 
-    Do not cancel a running GitLab pipeline or stage. Cancellation prevents some pipeline steps from executing, which leaves the Build Stream job in an intermediate, inconsistent state.
+    Do not cancel a running GitLab pipeline or stage. Cancellation prevents some pipeline steps from executing, which leaves the BuildStreaM job in an intermediate, inconsistent state.
 
 !!! note
 
@@ -94,7 +94,7 @@ be initiated manually through the GitLab interface.
 
 ### Handle Deploy Failures During Restart Stage
 
-When the restart stage encounters partial failures (some nodes PXE booted successfully while others fail), Build Stream provides a `failed_nodes.json` mechanism to enable efficient retry operations.
+When the restart stage encounters partial failures (some nodes PXE booted successfully while others fail), BuildStreaM provides a `failed_nodes.json` mechanism to enable efficient retry operations.
 
 `failed_nodes.json` is a structured JSON file that tracks which nodes failed to PXE boot. This file enables you to:
 
@@ -171,19 +171,18 @@ After the deploy pipeline completes:
 
 3. Log in to a sample of deployed nodes to verify the correct image is loaded.
 
-4. Check the Build Stream API for deployment status and image group information.
+4. Check the BuildStreaM API for deployment status and image group information.
 
 ## Next Steps
 
-- [Add Nodes through Build Stream](../../Operations/build_stream/add_nodes.md) -- Update the desired mapping and run the deploy pipeline
+- [Add Nodes through BuildStreaM](../../Operations/build_stream/add_nodes.md) -- Update the desired mapping and run the deploy pipeline
 - [Cleanup Operations](../../Operations/build_stream/cleanup_operations.md) -- Remove old Image Groups
 
 ## Troubleshooting
 
 - **Deploy stage failing**: Check the log path from the API response. Ensure the functional groups in the PXE mapping file match the `catalog_rhel.json`.
 - **Restart stage failing**: Verify iDRAC readiness and BMC network connectivity.
-- For additional issues, see [Build Stream Troubleshooting](../../Troubleshooting/build_stream/buildstream.md).
-
+- For additional issues, see [BuildStreaM Troubleshooting](../../Troubleshooting/build_stream/build_stream.md).
 
 
 

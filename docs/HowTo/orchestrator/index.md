@@ -112,21 +112,26 @@ advanced or component-specific operations.
 Run one Orchestrator workflow tag at a time, except when using the supported
 `cleanup,cleanup_credentials` combination.
 
-| Tag | Implemented behavior |
-|---|---|
-| `precheck` | Validate inputs, mapping data, storage prerequisites, environment settings, and functional-group images. |
-| `validate` | Validate input-file schemas and configuration logic only. |
-| `credentials` | Create or update the Vault-encrypted Orchestrator credentials. |
-| `prepare` | Collect credentials, deploy OpenCHAMI and catalog-selected OpenLDAP, and validate deployment readiness. |
-| `deploy` | Deploy or retry OpenCHAMI and catalog-selected OpenLDAP together with their readiness checks, without collecting credentials. |
-| `provision` | Configure SSH access, provision Kubernetes, Slurm, login, OS-only, and custom functional groups, and run post-provision validation. This workflow does not initiate PXE boot. |
-| `execute` | Run provisioning followed by PXE boot when `enable_pxe_boot` is `true`. |
-| `validate-deployment` | Validate OpenCHAMI and catalog-selected OpenLDAP service health and readiness. |
-| `pxeboot` | Set the boot source and restart mapped Dell iDRAC nodes when PXE boot is enabled. |
-| `cleanup` | Remove all enabled Orchestrator components while preserving credentials. Component-specific cleanup is available only through the standalone cleanup playbook. |
-| `cleanup_credentials` | Remove the Orchestrator credential file and Vault key. |
-| `upgrade` | Run the OpenCHAMI and OpenLDAP upgrade workflows. |
-| `rollback` | Enter the reserved rollback workflows. Both OpenCHAMI and OpenLDAP rollback are unsupported in this release and intentionally stop with an error. |
+| Tag | Implemented behavior | Required state before the phase |
+|---|---|---|
+| `validate` | Validate input-file schemas and configuration logic only. | Staged Orchestrator YAML inputs. This phase does not require the catalog or upstream status files. |
+| `precheck` | Validate inputs, mapping data, storage prerequisites, environment settings, and functional-group images. | Current PXE mapping and catalog, successful `repo_status.yml` and `build_status.yml`, and reachable image artifacts. |
+| `credentials` | Create or update the Vault-encrypted Orchestrator credentials. | Current catalog and the applicable credential values. Upstream status files are not required. |
+| `prepare` | Collect credentials, deploy OpenCHAMI and catalog-selected OpenLDAP, and validate deployment readiness. | Current catalog and PXE mapping. Upstream status files are not required for this service-preparation phase. |
+| `deploy` | Deploy or retry OpenCHAMI and catalog-selected OpenLDAP together with their readiness checks, without collecting credentials. | A completed `prepare` phase, including stored credentials, and the current catalog. Use this tag to retry service deployment, not for initial preparation. |
+| `provision` | Configure SSH access, provision Kubernetes, Slurm, login, OS-only, and custom functional groups, and run post-provision validation. This workflow does not initiate PXE boot. | Successful `precheck` and `prepare` phases, healthy OpenCHAMI and any selected OpenLDAP service, stored credentials, and successful Repository Manager and Image Build Manager outputs. |
+| `execute` | Run provisioning followed by PXE boot when `enable_pxe_boot` is `true`. | The same state as `provision`; when PXE is enabled, reachable mapped iDRACs and BMC credentials are also required. |
+| `validate-deployment` | Validate OpenCHAMI and catalog-selected OpenLDAP service health and readiness. | A completed service deployment and the current catalog. Upstream status files are not required. |
+| `pxeboot` | Set the boot source and restart mapped Dell iDRAC nodes when PXE boot is enabled. | Completed provisioning, stored BMC credentials, current mapping and PXE configuration, reachable iDRACs, and successful `repo_status.yml` and `build_status.yml`. |
+| `cleanup` | Remove all enabled Orchestrator components. | Review the cleanup scope and data-retention settings first. Component-specific cleanup is available only through the standalone cleanup playbook. |
+| `cleanup_credentials` | Remove the Orchestrator credential file and Vault key. | No deployment or upstream output is required. |
+| `upgrade` | Run the OpenCHAMI and OpenLDAP upgrade workflows. | A supported deployed source version and successful `repo_status.yml`. |
+| `rollback` | Enter the reserved rollback workflows. Both OpenCHAMI and OpenLDAP rollback are unsupported in this release and intentionally stop with an error. | None; this operation is unavailable in this release. |
+
+Running a phase tag does not automatically run its prerequisite phases. For a
+new deployment, either run Orchestrator without tags or run `validate`,
+`precheck`, `prepare`, and `execute` in that order. Use `provision` followed by
+`pxeboot` instead of `execute` only when the two operations must be separated.
 
 ### Deployment and node lifecycle
 
@@ -191,8 +196,9 @@ The provisioning and PXE-boot workflows write customer-readable results under
 | `failed_nodes.json` | Detailed failures from iDRAC PXE boot or node-registration. |
 
 Orchestrator also generates
-`$OMNIA_DATA_PATH/.data/functional_groups_config.yml` and stores its runtime
-state in `orchestrator_state.yml` in the project output directory. Inventory
+`$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/.data/functional_groups_config.yml`
+and stores its runtime state in `orchestrator_state.yml` in the project output
+directory. Inventory
 generation, OpenCHAMI configuration, Slurm and Kubernetes provisioning, and
 validation consume the generated functional-groups configuration.
 

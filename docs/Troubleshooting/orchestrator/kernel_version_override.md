@@ -6,12 +6,13 @@ Issues related to kernel version override functionality, including repository sy
 
 ???+ note "Symptom"
 
-    - `local_repo.yml` fails to sync the additional kernel repositories.
+    - The Repository Manager `download` phase fails to synchronize the
+      additional kernel repositories.
     - Kernel packages are not available in Pulp after sync.
 
 ??? note "Cause"
 
-    - Repository URLs in `local_repo_config.yml` are incorrect or unreachable
+    - Repository URLs in `repo_manager_config.yml` are incorrect or unreachable
     - RHEL subscription (EUS) entitlement certificates are expired or invalid
     - Pulp container cannot access the external repositories due to network or
       firewall issues
@@ -43,14 +44,17 @@ Issues related to kernel version override functionality, including repository sy
         curl -k https://<oim_admin_ip>:2225/pulp/content/opt/omnia/offline_repo/cluster/x86_64/rhel/10.0/rpms/<repo_name>/Packages/k/ | grep kernel
         ```
 
-    5. If no kernel packages are found, correct the repository URLs in `local_repo_config.yml` and re-run `local_repo.yml`.
+    5. If no kernel packages are found, correct the repository URLs in
+       `$OMNIA_DATA_PATH/repo_manager/input/$OMNIA_PROJECT_NAME/repo_manager_config.yml`,
+       then rerun the Repository Manager `download` and `status` phases.
 
 ## Kernel Image Not Found in S3
 
 ???+ note "Symptom"
 
-    - `provision.yml` fails with a kernel validation error.
-    - The specified `kernel_version_override` is not found in S3.
+    - The Orchestrator `precheck` phase fails with a kernel validation error.
+    - The specified `kernel_version_override` does not match the kernel recorded
+      for the functional group in `build_status.yml`.
 
 ??? note "Cause"
 
@@ -79,15 +83,24 @@ Issues related to kernel version override functionality, including repository sy
        The build process selects the latest kernel available across all
        configured repositories.
 
-    4. Re-run the build image playbook to rebuild with the correct kernel:
+    4. Rerun the Image Build Manager `build` phase from `src/main`:
 
         ```bash title="Run on: OIM host"
-        source /opt/omnia/activate-omnia.sh
-        cd src/image_build_manager/playbooks
-        ansible-playbook image_build_manager.yml --tags build
+        cd <OMNIA_SOURCE_PATH>/src/main
+        ./omnia.sh --run image_build_manager --tags build
         ```
 
-    5. After the build completes, verify the new kernel image in S3 and re-run `provision.yml`.
+    5. After the build completes, verify the new kernel image in S3 and rerun
+       the Orchestrator `precheck` phase:
+
+        ```bash title="Run on: OIM host"
+        s3cmd ls -Hr s3://boot-images
+        cd <OMNIA_SOURCE_PATH>/src/main
+        ./omnia.sh --run orchestrator --tags precheck
+        ```
+
+       When the precheck succeeds, return to the applicable Orchestrator
+       deployment procedure.
 
 ## PXE Boot Issues
 
@@ -126,14 +139,15 @@ Issues related to kernel version override functionality, including repository sy
 
 ???+ note "Symptom"
 
-    - `local_repo.yml` fails with TLS/SSL errors when syncing EUS repositories.
+    - The Repository Manager `download` phase fails with TLS/SSL errors when
+      synchronizing EUS repositories.
     - Pulp reports authentication failures for RHEL CDN URLs.
 
 ??? note "Cause"
 
     - RHEL subscription (EUS) entitlement certificates have expired or are invalid
     - Certificate files are missing or not accessible from the configured paths in
-      `local_repo_config.yml`
+      `repo_manager_config.yml`
     - SSL/TLS certificate trust issues between the Pulp container and RHEL CDN
 
 ??? note "Resolution"
@@ -150,6 +164,8 @@ Issues related to kernel version override functionality, including repository sy
         openssl x509 -in /opt/omnia/rhel_repo_certs/<entitlement-cert>.pem -noout -dates
         ```
 
-    3. Verify the `sslcacert`, `sslclientkey`, and `sslclientcert` paths in `local_repo_config.yml` match the actual file locations on the OIM.
+    3. Verify the `sslcacert`, `sslclientkey`, and `sslclientcert` paths in
+       `repo_manager_config.yml` match the actual file locations on the OIM.
 
-    4. After correcting the certificates, re-run `local_repo.yml`.
+    4. After correcting the certificates, rerun the Repository Manager
+       `download` and `status` phases.

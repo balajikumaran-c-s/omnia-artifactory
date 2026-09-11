@@ -8,6 +8,15 @@ Image Build Manager consumes `repo_status.yml`, the output contract produced
 by Repository Manager. Build-related flows require the file and validate it
 against the Repo Manager status schema before loading repository data.
 
+| Contract | Default producer output | Structure sample |
+|---|---|---|
+| `repo_status.yml` | `$OMNIA_DATA_PATH/repo_manager/output/$OMNIA_PROJECT_NAME/repo_status.yml` | [Image Build Manager upstream contract samples](https://github.com/dell/omnia/tree/issue-4849-omnia-modernization/src/image_build_manager/samples) (`repo_manager_output/repo_status.yml`) |
+
+The path can be overridden by `repo_manager_output_path` in
+`image_build_config.yml`. The generated Repository Manager output is
+authoritative; the linked file is a structure sample for the consumer
+contract.
+
 The required contract includes a successful overall status, operating-system
 metadata, versioned repository mappings, and Repo Manager certificate data.
 When a certificate path is present, the certificate must also exist. The
@@ -25,6 +34,23 @@ output.
 
 **Consumer**: The provisioning workflow, for image validation and BSS template
 rendering.
+
+The current manifest does not contain a `schema_version` or
+`contract_version` field. Consumers determine compatibility by validating the
+required fields directly.
+
+The producer also writes
+`build_status_<OMNIA_VERSION>_<YYYYMMDD_HHMM>.yml` beside the latest file.
+The version and timestamp in that filename identify the producing product run;
+they are not a manifest schema version.
+
+The latest `build_status.yml` is overwritten only when the workflow reaches
+the status-writing step after the selected image builds. If a build fails
+before that step, an existing manifest from an earlier run is not replaced or
+removed. Verify that the current build completed successfully and that the
+manifest references its expected S3 artifacts before using it for
+provisioning. Full Image Build Manager cleanup removes both the latest and
+versioned status outputs.
 
 | Field | Type | Purpose |
 |---|---|---|

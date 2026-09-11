@@ -288,52 +288,39 @@ Issues related to LDAP authentication, user login, OpenLDAP service, and TLS cer
 
 ??? note "Cause"
 
-    - The CA certificate used by step-ca is not installed on the client node.
-    - The service certificate has expired.
-    - The certificate's Subject Alternative Name (SAN) does not match the hostname or IP being used to connect.
+    - The Orchestrator-generated `ldapserver.crt` is missing from the client.
+    - The `omnia_auth` service is not running on the OIM.
+    - `ldap_connection_type` does not match the URI and port in the generated
+      SSSD configuration.
 
 ??? note "Resolution"
 
-    1. Check the certificate expiry:
-
-        ```bash title="Run on: auth server"
-        openssl x509 -in /etc/step/certs/server.crt -noout -dates
-        step certificate inspect /etc/step/certs/server.crt --short
-        ```
-
-    2. If expired, renew the certificate:
-
-        ```bash title="Run on: auth server"
-        step ca renew /etc/step/certs/server.crt /etc/step/certs/server.key
-        ```
-
-    3. Verify the CA certificate is installed on client nodes:
-
-        ```bash title="Run on: compute node"
-        ls /etc/pki/ca-trust/source/anchors/
-        ```
-
-        If the CA cert is missing, copy it and update the trust store:
+    1. Verify the generated certificate and `omnia_auth` service on the OIM:
 
         ```bash title="Run on: OIM host"
-        scp /etc/step/certs/root_ca.crt <client_node>:/etc/pki/ca-trust/source/anchors/
-        ssh <client_node> update-ca-trust
+        openssl x509 \
+          -in "$OMNIA_DATA_PATH/auth/tls_certs/ldapserver.crt" \
+          -noout -dates -ext subjectAltName
+        systemctl status omnia_auth
         ```
 
-    4. Verify the SAN matches the connection target:
+    2. Verify the certificate copied to the affected Slurm or login node:
 
-        ```bash title="Run on: auth server"
-        openssl x509 -in /etc/step/certs/server.crt -noout -ext subjectAltName
+        ```bash title="Run on: affected node"
+        ls -l /etc/openldap/certs/ldapserver.crt
+        grep -E 'ldap_uri|ldap_chpass_uri|ldap_tls_cacert' /etc/sssd/sssd.conf
         ```
 
-        If the SAN does not include the correct hostname or IP, reissue the certificate:
+    3. Confirm that `security_config.yml` uses `TLS` for port 389 or `SSL` for
+       port 636, then rerun Orchestrator provisioning to regenerate the node
+       configuration when it is inconsistent:
 
-        ```bash title="Run on: auth server"
-        step ca certificate <hostname> /etc/step/certs/server.crt \
-          /etc/step/certs/server.key --san <hostname> --san <ip_address>
+        ```yaml title="security_config.yml"
+        ldap_connection_type: "TLS"
         ```
 
-    5. Restart services after updating certificates:
+    4. Restart SSSD after the generated certificate and configuration are
+       present:
 
         ```bash title="Run on: compute node"
         systemctl restart sssd
@@ -341,4 +328,5 @@ Issues related to LDAP authentication, user login, OpenLDAP service, and TLS cer
 
 !!! info
 
-    - [Deploy External LDAP](../../HowTo/Authentication/deploy_external_ldap.md) -- External LDAP deployment guide.
+    - [Deploy OpenLDAP](../../HowTo/orchestrator/deploy_openldap.md) -- Deploy
+      and validate the OIM-hosted `omnia_auth` service.

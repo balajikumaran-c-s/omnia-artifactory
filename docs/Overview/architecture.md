@@ -14,7 +14,7 @@ implementation paths, `<domain>` is the module's internal identifier. The
 `src/main/omnia.sh` script initializes the modules and invokes one module
 playbook at a time. `main` is the common controller and is not an eighth module.
 
-![Omnia Architecture](../assets/images/omnia_arch_s.svg)
+![Omnia Architecture](../assets/images/omnia_arch_updated.jpg)
 
 ## Deployment module responsibilities
 
@@ -25,8 +25,8 @@ playbook at a time. `main` is the common controller and is not an eighth module.
 | `discovery` | Query OpenManage Enterprise for BMC inventory and generate an Orchestrator-compatible mapping. | `bmc_pxe_mapping_file.csv` and `bmc_discovery_report.csv` |
 | `orchestrator` | Deploy OpenCHAMI and catalog-selected OpenLDAP, register mapped nodes, create boot and cloud-init configuration, configure Slurm or service Kubernetes, and optionally initiate iDRAC PXE boot. | `orchestrator_status.yml`, `orchestrator_inventory.yaml`, provisioning reports, and the deployed clusters |
 | `telemetry` | Deploy the enabled telemetry sources, bridges, Kafka, VictoriaMetrics, and VictoriaLogs on a service Kubernetes cluster. | `telemetry_status.yml`, Kubernetes workloads, and optional external connection exports |
-| `build_stream` | Deploy PostgreSQL, Build Stream Manager, the playbook watcher, GitLab integration, and the managed CI/CD project and runner. | `build_stream_status.yml`, the BSM API, and GitLab pipelines |
-| `utils` | Run independent operational utilities, including log collection and unattended OS installation. | `utils_status.yml` and operation-specific results |
+| `build_stream` | Deploy PostgreSQL, BuildStreaM Manager, the playbook watcher, GitLab integration, and the managed CI/CD project and runner. | `build_stream_status.yml`, the BSM API, and GitLab pipelines |
+| `utils` | Run independent operational utilities, including cluster-log collection, OIM log backup, and unattended OS installation. | `utils_status.yml` and operation-specific results |
 
 Modules can be invoked separately, but downstream workflows require the
 contracts produced upstream. Discovery is optional when the administrator
@@ -41,23 +41,31 @@ The direct deployment flow implemented by `omnia.sh` is:
 omnia.sh setup
       |
       v
-repo_manager  -- repo_status.yml --> image_build_manager
-                                          |
-                                          +-- build_status.yml --+
-                                                               |
-discovery -- bmc_pxe_mapping_file.csv --+                     |
-                                         v                     v
-                                      orchestrator <------------+
-                                         |
-                                         +-- orchestrator_inventory.yaml
-                                         +-- bmc_group_data.csv
-                                         +-- provisioned Slurm/Kubernetes
+repo_manager
+      |
+      +-- repo_status.yml ------------------------------+
+              |                                         |
+              v                                         |
+image_build_manager                                     |
+      |                                                 |
+      +-- build_status.yml -----------------------------+
+                                                        |
+discovery                                               |
+      |                                                 |
+      +-- bmc_pxe_mapping_file.csv ---------------------+
                                                         |
                                                         v
-                                                    telemetry
+                                                 orchestrator
+                                                        |
+                                                        +-- orchestrator_inventory.yaml
+                                                        +-- bmc_group_data.csv
+                                                        +-- provisioned Slurm/Kubernetes
+                                                                    |
+                                                                    v
+                                                               telemetry
 
-utils: invoked independently for a selected operational task
-build_stream: alternate automation path for build and deploy pipelines
+utils        : invoked independently for a selected operational task
+build_stream : alternate automation path for build and deploy pipelines
 ```
 
 The principal handoffs are:
@@ -69,7 +77,7 @@ The principal handoffs are:
 | Discovery or administrator | Orchestrator | `pxe_mapping_file.csv` |
 | Orchestrator | Telemetry | `orchestrator_inventory.yaml` and, for iDRAC, `bmc_group_data.csv` |
 | Catalog | Repository Manager, Image Build Manager, and Orchestrator | JSON functional layers, groups, packages, and sources |
-| GitLab pipelines | Build Stream Manager | Uploaded catalog and module input files plus API job requests |
+| GitLab pipelines | BuildStreaM Manager | Uploaded catalog and module input files plus API job requests |
 
 Contracts are not limited to YAML. Omnia uses YAML configuration and status
 files, JSON catalogs and job data, and CSV mappings and reports.
@@ -93,7 +101,7 @@ project layout. With the supplied defaults, that layout is:
 
 The actual root and project are controlled by `OMNIA_DATA_PATH` and
 `OMNIA_PROJECT_NAME`. Component-specific data-path variables can override the
-default module directories. Build Stream currently fixes its entry-playbook
+default module directories. BuildStreaM currently fixes its entry-playbook
 input and output project to `project_default`.
 
 ## OIM and managed services
@@ -106,7 +114,7 @@ by the deployment:
 | Repository Manager | Pulp and its HTTPS content endpoints |
 | Image Build Manager | MinIO S3 storage and a local OCI registry |
 | Orchestrator | OpenCHAMI services, CoreDHCP, coresmd/CoreDNS, and optional OpenLDAP |
-| Build Stream | PostgreSQL, the BSM API, and the playbook watcher; GitLab and its runner are deployed on the configured GitLab host |
+| BuildStreaM | PostgreSQL, the BSM API, and the playbook watcher; GitLab and its runner are deployed on the configured GitLab host |
 | Telemetry | Kubernetes workloads on the service cluster, rather than an OIM-wide telemetry container |
 
 Node operating-system images, hostnames, network data, and functional groups

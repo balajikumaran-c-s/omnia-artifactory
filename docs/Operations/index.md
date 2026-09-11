@@ -29,14 +29,14 @@ logs, and cleaning up domains or the OIM environment.
   custom inventory to PXE boot only the new physical nodes.
 - [Remove Slurm compute nodes](remove_slurm_nodes.md) omitted from the current
   desired mapping, with source-defined handling for active jobs.
-- [Add nodes through Build Stream](build_stream/add_nodes.md) by committing the
+- [Add nodes through BuildStreaM](build_stream/add_nodes.md) by committing the
   revised Orchestrator mapping and running the deploy pipeline.
 - [Reprovision a cluster](reprovision_cluster.md) when existing nodes must be
   provisioned again.
 
-## Build Stream lifecycle
+## BuildStreaM lifecycle
 
-- [Update the Build Stream catalog](build_stream/update_catalog.md).
+- [Update the BuildStreaM catalog](build_stream/update_catalog.md).
 - [Clean up image groups](build_stream/cleanup_operations.md).
 - [Retry a failed pipeline](build_stream/retry_pipelines.md).
 
@@ -44,10 +44,11 @@ logs, and cleaning up domains or the OIM environment.
 
 - [Collect cluster logs](collect_cluster_logs.md) with the Utils `collect`
   workflow.
+- [Back up OIM logs](../HowTo/utils/backup_oim_logs.md) with the Utils
+  `backup_oim_logs` workflow to local or NFS storage.
 - Review the [Slurm configuration roles](slurm_configuration_roles.md) before
   integrating the source roles into an administrator-maintained playbook.
 - Use [Log Management](log_management.md) for general log inspection.
-
 
 
 

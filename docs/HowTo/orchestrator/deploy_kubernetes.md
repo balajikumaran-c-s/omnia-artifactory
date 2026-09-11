@@ -35,8 +35,8 @@ generation, the first `service_kube_control_plane_x86_64` group is converted to
   configuration directories.
 - Configure `high_availability_config.yml`; its `cluster_name` must match the
   Kubernetes entry selected for deployment.
-- If the catalog enables the PowerScale CSI driver, provide the secret and
-  values file paths requested by `omnia_config.yml`.
+- To deploy PowerScale CSI, set `enable_powerscale_csi: true` on the deployed
+  `service_k8s_cluster` and provide its secret and values file paths.
 
 ### K8s storage architecture
 
@@ -68,6 +68,7 @@ etcd data.
     service_k8s_cluster:
       - cluster_name: service_cluster
         deployment: true
+        enable_powerscale_csi: false
         etcd_on_local_disk: false
         k8s_cni: "calico"
         pod_external_ip_range: "<external-ip-range-or-cidr>"
@@ -150,8 +151,8 @@ command should reach `Running` or `Completed`.
 - Use [Configure HA](configure_kubernetes_ha.md) and
   [Configure Storage](configure_storage.md) for the associated
   project inputs.
-- If selected by the catalog, configure the PowerScale CSI files before
-  rerunning provisioning.
+- To deploy PowerScale CSI, enable it in `omnia_config.yml` and configure both
+  required files before rerunning provisioning.
 - After the service cluster is ready, configure and run the
   [Telemetry domain](../Telemetry/index.md) separately when telemetry is
   required.

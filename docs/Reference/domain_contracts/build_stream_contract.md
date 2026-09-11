@@ -1,6 +1,6 @@
-# Build Stream Domain Contract
+# BuildStreaM Domain Contract
 
-**Deployment module**: Build Stream | **CLI identifier**: `build_stream`
+**Deployment module**: BuildStreaM | **CLI identifier**: `build_stream`
 
 ## Upstream domain contract
 
@@ -13,7 +13,14 @@ are:
 FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP
 ```
 
-Build Stream infrastructure preparation does not require another domain's
+| Contract | Producer or staged location | Structure sample |
+|---|---|---|
+| `pxe_mapping_file.csv` | Discovery: `$OMNIA_DATA_PATH/discovery/output/$OMNIA_PROJECT_NAME/bmc_pxe_mapping_file.csv`; staged for Orchestrator: `$OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv` | [PXE mapping structure sample](https://github.com/dell/omnia/blob/issue-4849-omnia-modernization/src/orchestrator/examples/pxe_mapping_file.csv) |
+
+Review Discovery output before staging it. The reviewed, staged file is the
+authoritative pipeline input; the linked file is a structure sample.
+
+BuildStreaM infrastructure preparation does not require another domain's
 status output.
 
 ## Output contract
@@ -37,7 +44,7 @@ $OMNIA_DATA_PATH/build_stream/output/project_default/build_stream_status.yml
 | `bsm_api_url` | Computed BSM HTTPS base URL. |
 
 The source does not generate `pipeline_status.yml` or
-`catalog_manifest.yml` in the Build Stream project output directory.
+`catalog_manifest.yml` in the BuildStreaM project output directory.
 Pipeline and job results are exposed through GitLab and BSM job state.
 
 ### Managed services and GitLab resources
@@ -61,19 +68,18 @@ runner.
 |---|---|
 | No tag | Setup, validation, credentials, BSM preparation, and GitLab execution. |
 | `precheck` | Checks the existing environment without collecting credentials. |
-| `validate` | Validates the Build Stream domain settings. |
-| `credentials` | Collects or updates Build Stream credentials. |
+| `validate` | Validates the BuildStreaM domain settings. |
+| `credentials` | Collects or updates BuildStreaM credentials. |
 | `prepare` | Deploys PostgreSQL, BSM, and the playbook watcher. |
 | `execute` | Deploys and configures GitLab CI/CD. |
 | `build` | Runs both `prepare` and `execute`. |
-| `cleanup` | Removes the GitLab and Build Stream infrastructure. |
+| `cleanup` | Removes the GitLab and BuildStreaM infrastructure. |
 | `upgrade` | Runs the current placeholder upgrade flow. |
 | `rollback` | Runs the current placeholder rollback flow. |
 
 ## Related documentation
 
-- [Build Stream](../../HowTo/build_stream/index.md)
-- [Deploy GitLab and Build Stream](../../HowTo/build_stream/deploy_gitlab.md)
+- [BuildStreaM](../../HowTo/build_stream/index.md)
 - [Execute the build pipeline](../../HowTo/build_stream/execute_build_pipeline.md)
 - [Execute the deploy pipeline](../../HowTo/build_stream/execute_deploy_pipeline.md)
 - [Orchestrator contract](orchestrator_contract.md)

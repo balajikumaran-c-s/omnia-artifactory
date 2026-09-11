@@ -14,6 +14,11 @@ be configured explicitly or detected from the source ISO filename.
 Set `target_architecture` explicitly for repeatable builds. Automatic detection
 requires the source ISO filename to contain `x86_64` or `aarch64`.
 
+!!! note
+
+    The workflow installs one server at a time. For multiple servers, update
+    the target-node values and run the workflow separately for each server.
+
 !!! warning
 
     The generated Kickstart clears and repartitions the configured
@@ -24,19 +29,35 @@ requires the source ISO filename to contain `x86_64` or `aarch64`.
 
 - Complete the [OIM setup](../main/setup_oim.md) and initialize the utils
   module.
+- Confirm that the target server and iDRAC version are supported. See the
+  [Servers](../../Reference/SupportMatrix/servers.md) and
+  [Software Compatibility Matrix](../../Reference/software_compatibility_matrix.md).
 - Place a RHEL 10 source ISO on a filesystem accessible to the OIM.
 - Provide an NFS destination in `server:/export/path/file.iso` format. The OIM
   must be able to mount the export, and the target BMC must be able to access it.
+- Configure the target server for UEFI boot. The workflow requests a one-time
+  boot from the virtual CD presented through iDRAC.
 - Ensure the OIM can reach the target BMC through HTTPS and the installed node
   through SSH.
 - Ensure the target BMC supports the Redfish operations used by the iDRAC
   virtual-media modules.
+- Reserve the administrative IP address that Kickstart will assign to the
+  installed node. Ensure that it is reachable from the OIM.
+- Identify the target installation disk and network interface. Device names
+  vary by server model and architecture; verify them on equivalent hardware or
+  through the server inventory before starting the installation.
 - Create the SSH public key configured by `ssh_public_key_path`. The default is
   `/root/.ssh/id_rsa.pub`.
 
 The first installation run prompts for `bmc_username`, `bmc_password`, and
 `os_root_password`. The workflow stores them in an Ansible Vault-encrypted
 `install_os_credentials.yml` file in the utils project input directory.
+
+!!! note
+
+    Enter the OS root password as plain text at the protected prompt. The
+    workflow hashes it before adding it to the generated Kickstart file; do not
+    pre-hash the password.
 
 ## Procedure
 
@@ -91,7 +112,32 @@ The first installation run prompts for `bmc_username`, `bmc_password`, and
     ssh_verify_delay: 30
     ```
 
+    The ISO creation workflow validates `custom_iso_path` before accessing the
+    NFS share. Use a valid hostname or IPv4 address, an absolute NFS path, and
+    an ISO filename containing only letters, numbers, underscores, hyphens,
+    and periods. The filename must end with lowercase `.iso`. Do not include
+    `..`, wildcards, or shell metacharacters.
+
     Replace the example addresses and paths with values for the deployment.
+
+    For an `aarch64` target, use an `aarch64` source ISO and custom ISO name,
+    and set the architecture explicitly. The remaining parameters use the same
+    workflow and must match the target hardware and network:
+
+    ```yaml title="AArch64-specific values"
+    source_iso_path: "/opt/omnia/iso/RHEL-10.0-aarch64-dvd.iso"
+    custom_iso_path: "192.0.2.10:/exports/omnia/RHEL-10.0-aarch64-omnia.iso"
+    target_architecture: "aarch64"
+    ```
+
+    !!! important
+
+        Do not copy the example `network_device` or `install_disk` values
+        without verifying them on the target platform. If you change a
+        Kickstart-backed setting after the custom ISO has been created, set
+        `rebuild_iso: true` for the next run. Set `force_reinstall: true` only
+        when intentionally reimaging a node that is already reachable through
+        SSH.
 
 4. Run the complete workflow:
 
@@ -115,6 +161,11 @@ The workflow performs the following operations:
    one-time virtual-CD boot.
 7. Power-cycles the node and, when enabled, waits for SSH to become available.
 8. Writes installation and utils status files for the active project.
+
+The deployment stage attempts to eject existing virtual media before mounting
+the custom ISO and ejects it again after installation. If the server does not
+boot from the ISO, inspect the iDRAC Virtual Media and boot settings for stale
+media or an unsupported virtual-CD boot target.
 
 ### Run individual build or deployment stages
 
@@ -200,12 +251,20 @@ file.
   the staged file under `<OMNIA_DATA_PATH>/utils/input/<project>/`.
 - **The source ISO is rejected**: Confirm `source_iso_path` exists and that
   `source_iso_checksum`, when configured, is the correct SHA-256 value.
-- **The custom ISO path cannot be resolved**: Confirm `custom_iso_path` uses
-  `server:/path/file.iso` format and that the NFS export is mountable from the
-  OIM.
+- **The custom ISO path is rejected or cannot be resolved**: Confirm
+  `custom_iso_path` uses `server:/absolute/path/file.iso` format, satisfies the
+  filename and path restrictions above, and identifies an NFS export mountable
+  from the OIM.
 - **Architecture detection fails**: Set `target_architecture` explicitly to
   `x86_64` or `aarch64`; do not rely on detection when the ISO filename omits
   the architecture.
+- **The target does not boot from the custom ISO**: Confirm that the server is
+  configured for UEFI boot and that iDRAC Virtual Media is enabled. In the
+  iDRAC console, disconnect any stale virtual media and confirm that a virtual
+  CD is available as a one-time boot target.
+- **The installed node does not use the expected static IP**: Verify
+  `network_device`, `target_admin_ip`, `netmask`, `gateway`, and `dns_server`.
+  Rebuild the custom ISO after correcting any Kickstart-backed value.
 - **The target is already reachable**: Leave `force_reinstall: false` to protect
   an installed node, or set it to `true` only after confirming that the target
   may be reimaged.

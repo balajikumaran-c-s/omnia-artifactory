@@ -1,24 +1,24 @@
-# Path D: Build Stream Automated Deployment
+# Path D: BuildStreaM Automated Deployment
 
 ## Overview
 
 Use this deployment path to automate image building and node provisioning with
-Build Stream and its managed GitLab pipelines.
+BuildStreaM and its managed GitLab pipelines.
 
 The workflow prepares the Omnia Infrastructure Manager (OIM) and the base
-module services before deploying Build Stream. A change to the catalog starts
+module services before deploying BuildStreaM. A change to the catalog starts
 the build pipeline, which synchronizes repository content and builds the
 selected images. A change to the PXE mapping starts the deploy pipeline, which
 deploys the selected image, restarts the target nodes, and validates the
-deployment. Deploying Build Stream prepares the automation environment; image
+deployment. Deploying BuildStreaM prepares the automation environment; image
 building and node provisioning occur when you run the corresponding pipeline.
 
-## Build Stream workflow
+## BuildStreaM workflow
 
 <div class="of-wrap">
 <div class="of-root">
   <div class="of-hdr">
-    <div class="of-h2">Source-defined Build Stream and pipeline flow</div>
+    <div class="of-h2">Source-defined BuildStreaM and pipeline flow</div>
   </div>
   <div class="of-flow">
     <div class="of-pill">Start on the OIM</div>
@@ -32,13 +32,13 @@ building and node provisioning occur when you run the corresponding pipeline.
     <div class="of-s">
       <div class="t">Prepare the base module services</div>
       <div class="d">Pulp, MinIO, registry, and required credentials</div>
-      <div class="of-more"><a href="../HowTo/build_stream/deploy_gitlab.html#prerequisites">Learn more: Base prerequisites &gt;&gt;</a></div>
+      <div class="of-more"><a href="../HowTo/build_stream/index.html#prerequisites">Learn more: Base prerequisites &gt;&gt;</a></div>
     </div>
     <div class="of-c"></div>
     <div class="of-s">
-      <div class="t">Configure and deploy Build Stream</div>
+      <div class="t">Configure and deploy BuildStreaM</div>
       <div class="d">PostgreSQL, BSM, watcher, GitLab, project, and runner</div>
-      <div class="of-more"><a href="../HowTo/build_stream/deploy_gitlab.html">Learn more: Deploy Build Stream &gt;&gt;</a></div>
+      <div class="of-more"><a href="../HowTo/build_stream/index.html">Learn more: Deploy BuildStreaM &gt;&gt;</a></div>
     </div>
     <div class="of-c"></div>
     <div class="of-s">
@@ -56,7 +56,7 @@ building and node provisioning occur when you run the corresponding pipeline.
     <div class="of-s">
       <div class="t">Verify GitLab and BSM results</div>
       <div class="d">Pipeline state, module contracts, and job logs</div>
-      <div class="of-more"><a href="../HowTo/build_stream/deploy_gitlab.html#verification">Learn more: Verify Build Stream &gt;&gt;</a></div>
+      <div class="of-more"><a href="../HowTo/build_stream/index.html#verification">Learn more: Verify BuildStreaM &gt;&gt;</a></div>
     </div>
     <div class="of-c"></div>
     <div class="of-pill">Automated image lifecycle ready</div>
@@ -66,18 +66,18 @@ building and node provisioning occur when you run the corresponding pipeline.
 
 ## Prerequisites
 
-- Use an Omnia source checkout on the OIM. Build Stream requires RHEL or Rocky
+- Use an Omnia source checkout on the OIM. BuildStreaM requires RHEL or Rocky
   Linux 10.x, Python 3.12 or later, Ansible Core 2.20 or later, and Podman 5.0
   or later.
 - Set `SYSTEM_ADMIN_NIC_IPV4` in `src/main/omnia.env` to an IPv4 address
   assigned to an OIM interface. Keep `OMNIA_PROJECT_NAME=project_default` for
-  this workflow because the current Build Stream setup role fixes its project
+  this workflow because the current BuildStreaM setup role fixes its project
   input and output directories to that name.
 - Prepare the Repository Manager and Image Build Manager base services. The
-  Build Stream precheck specifically requires running `pulp`, `minio-server`,
+  BuildStreaM precheck specifically requires running `pulp`, `minio-server`,
   and `registry` containers and the two modules' credential files.
 - Provide a GitLab host reachable from the OIM through SSH and HTTPS. Provide
-  its root SSH password during Build Stream credential collection.
+  its root SSH password during BuildStreaM credential collection.
 - Disable SELinux on the GitLab host and reboot it before deployment. The
   source prerequisite check stops when SELinux is enabled.
 - Ensure the GitLab host meets the minimum CPU, memory, and free-storage values
@@ -104,14 +104,14 @@ building and node provisioning occur when you run the corresponding pipeline.
     ```
 
 2. Create the shared virtual environment, install module dependencies, and
-   stage the module input files and Build Stream application:
+   stage the module input files and BuildStreaM application:
 
     ```bash title="Run on: OIM host"
     ./omnia.sh --setup-venv
     ```
 
     This command runs the selected modules' `domain-init.sh` scripts. With the
-    standard environment, Build Stream stages its configuration at:
+    standard environment, BuildStreaM stages its configuration at:
 
     ```text
     /opt/omnia/build_stream/input/project_default/build_stream_config.yml
@@ -123,7 +123,7 @@ For all environment and setup options, see
 
 ### 2. Configure and prepare the base modules
 
-Build Stream does not consume an upstream status file during its own
+BuildStreaM does not consume an upstream status file during its own
 preparation, but its precheck and generated pipelines depend on the base
 module services and inputs.
 
@@ -148,7 +148,7 @@ module services and inputs.
     ./omnia.sh --prepare-base
     ```
 
-    The Build Stream precheck expects `pulp`, `minio-server`, and `registry` to
+    The BuildStreaM precheck expects `pulp`, `minio-server`, and `registry` to
     be running. It also checks for:
 
     ```text
@@ -156,7 +156,7 @@ module services and inputs.
     <OMNIA_DATA_PATH>/image_build_manager/input/<OMNIA_PROJECT_NAME>/image_build_credentials.yml
     ```
 
-### 3. Configure Build Stream
+### 3. Configure BuildStreaM
 
 1. Edit the staged consolidated configuration:
 
@@ -184,10 +184,10 @@ module services and inputs.
     keys; the source schema rejects unknown fields.
 
 For the complete input and credential contract, see
-[Deploy GitLab and Build Stream](../HowTo/build_stream/deploy_gitlab.md) and the
-[Build Stream contract](../Reference/domain_contracts/build_stream_contract.md).
+[BuildStreaM](../HowTo/build_stream/index.md) and the
+[BuildStreaM contract](../Reference/domain_contracts/build_stream_contract.md).
 
-### 4. Validate and deploy Build Stream
+### 4. Validate and deploy BuildStreaM
 
 1. Run the opt-in base-service precheck:
 
@@ -196,14 +196,14 @@ For the complete input and credential contract, see
     ./omnia.sh --run build_stream --tags precheck
     ```
 
-2. Run the complete untagged Build Stream flow:
+2. Run the complete untagged BuildStreaM flow:
 
     ```bash title="Run on: OIM host"
     ./omnia.sh --run build_stream
     ```
 
     The flow validates `build_stream_config.yml`, collects or reuses the
-    encrypted Build Stream credentials, prepares PostgreSQL, the BSM API, and
+    encrypted BuildStreaM credentials, prepares PostgreSQL, the BSM API, and
     the playbook watcher on the OIM, and then deploys and configures GitLab.
     The GitLab phase creates the managed project and trigger, sets the BSM
     project variables, pushes the pipeline and available module input files,
@@ -212,7 +212,7 @@ For the complete input and credential contract, see
     Credential collection requests the GitLab root and SSH passwords, BSM
     authentication username and password, and PostgreSQL username and password.
     These values are written to an Ansible Vault-protected file beside the
-    Build Stream configuration.
+    BuildStreaM configuration.
 
 3. Confirm that preparation wrote:
 
@@ -307,14 +307,14 @@ For detailed operation and retry guidance, see
     ```
 
     The restart stage performs the PXE restart workflow. Do not run a separate
-    PXE utility step for this Build Stream deployment.
+    PXE utility step for this BuildStreaM deployment.
 
 For the complete procedure, see
 [Execute the Deploy Pipeline](../HowTo/build_stream/execute_deploy_pipeline.md).
 
 ## Verification
 
-1. Inspect the Build Stream output contract on the OIM:
+1. Inspect the BuildStreaM output contract on the OIM:
 
     ```bash title="Run on: OIM host"
     cat /opt/omnia/build_stream/output/project_default/build_stream_status.yml
@@ -361,7 +361,7 @@ For the complete procedure, see
     cat /opt/omnia/orchestrator/output/project_default/provisioning_report.yml
     ```
 
-Build Stream does not write `pipeline_status.yml` or `catalog_manifest.yml` to
+BuildStreaM does not write `pipeline_status.yml` or `catalog_manifest.yml` to
 its project output directory. GitLab and BSM job state are the authoritative
 pipeline results.
 
@@ -381,8 +381,8 @@ pipeline results.
 
 ## Troubleshooting
 
-- If the Build Stream input directory is missing, keep
-  `OMNIA_PROJECT_NAME=project_default` and rerun OIM setup or the Build Stream
+- If the BuildStreaM input directory is missing, keep
+  `OMNIA_PROJECT_NAME=project_default` and rerun OIM setup or the BuildStreaM
   `domain-init.sh`. The current executable role does not select another project.
 - If the precheck fails, ensure `pulp`, `minio-server`, and `registry` are
   running and the two upstream credential files exist. The source precheck
@@ -408,5 +408,5 @@ pipeline results.
   the deploy-pipeline retry procedure.
 - Do not cancel a running stage or start an overlapping pipeline against the
   same resources; either action can leave shared workflow state incomplete.
-- See [Build Stream troubleshooting](../Troubleshooting/build_stream/buildstream.md)
+- See [BuildStreaM troubleshooting](../Troubleshooting/build_stream/build_stream.md)
   for detailed investigations.

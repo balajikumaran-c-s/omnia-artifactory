@@ -45,8 +45,7 @@ Image building and S3 storage issues - OS image creation, MinIO uploads, archite
 
 | Topic | Description |
 | --- | --- |
-| [Build Cluster Image Issues](image_build_manager/build_cluster_images.md) | OS image creation and S3 storage issues |
-| [Image Build Manager Issues](image_build_manager/image_build_manager.md) | Image building and MinIO operations |
+| [Image Build Manager Issues](image_build_manager/image_build_manager.md) | OS image creation, architecture-specific builds, and S3 or MinIO operations |
 
 ### Discovery module
 
@@ -78,14 +77,13 @@ Monitoring and metrics collection issues - iDRAC telemetry, LDMS samplers, Kafka
 | --- | --- |
 | [Telemetry Issues](telemetry/telemetry.md) | iDRAC telemetry, LDMS samplers, Kafka, VictoriaMetrics, and VictoriaLogs |
 
-### Build Stream module
+### BuildStreaM module
 
 GitOps-based CI/CD pipeline issues - BuildStreaM execution, GitLab integration, catalog validation
 
 | Topic | Description |
 | --- | --- |
 | [BuildStreaM Issues](build_stream/build_stream.md) | BuildStreaM pipeline stage failures, API registration, and catalog parsing |
-| [BuildStream Issues](build_stream/buildstream.md) | BuildStream pipeline execution issues |
 
 ### Utils module
 
@@ -107,8 +105,6 @@ Helper utilities issues - Backup, install, and prepare operations
     If you cannot resolve an issue using this guide, open an issue on the
     [Omnia GitHub repository](https://github.com/dell/omnia/issues) with
     the relevant log output and a description of your environment.
-
-
 
 
 

@@ -10,6 +10,11 @@ Use `user_repos` for independent custom repositories. Use
 `additional_repos` when several upstream repositories must be exposed through
 one aggregate Pulp distribution for an architecture.
 
+All `additional_repos` entries for an architecture are published through that
+single aggregate repository and must use the same effective DNF priority. An
+omitted priority resolves to `99`; if priorities are specified, their effective
+values must match.
+
 ## Prerequisites
 
 - Complete [Create Local Repositories](configure_repos.md).
@@ -17,7 +22,9 @@ one aggregate Pulp distribution for an architecture.
   or TLS material.
 - Ensure the repository exposes `repodata/repomd.xml` and is reachable from
   the OIM.
-- Identify the catalog package or group that will consume the repository.
+- Identify the catalog package or group that will consume the repository. See
+  [Select or update the catalog](../main/update_catalog.md) to confirm which
+  catalog file is active.
 
 ## Procedure
 

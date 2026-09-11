@@ -123,11 +123,11 @@ restricted to the trusted service-cluster network.
 |6001-6100|TCP|LDMS store daemon|Manager (Telemetry)|
 |10001-10100|TCP|LDMS sampler|Compute|
 
-### Build Stream Ports
+### BuildStreaM Ports
 
 | Port | Protocol | Service Name | Type of Node |
 |---|---|---|---|
-|8010|TCP|Build Stream API|Manager (OIM)|
+|8010|TCP|BuildStreaM API|Manager (OIM)|
 
 ### DOCA/IB Ports
 

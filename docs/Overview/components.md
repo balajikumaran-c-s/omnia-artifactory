@@ -23,7 +23,8 @@ and execution commands.
 
 **OpenCHAMI** (Composable Hierarchical Automated Management Infrastructure) is the provisioning engine at the core of Omnia's bare-metal lifecycle management. OpenCHAMI provides an API-driven approach to discovering, inventorying, and provisioning servers.
 
-OpenCHAMI runs as a set of Podman containers on the OIM, deployed during `prepare_oim.yml`.
+OpenCHAMI runs as a set of Podman containers on the OIM. The Orchestrator
+`prepare` phase deploys and validates the OpenCHAMI services.
 
 ### State Manager Daemon (SMD)
 
@@ -92,7 +93,9 @@ Pulp can mirror the following repository types:
 - **RPM repositories** -- RHEL BaseOS, AppStream, EPEL, CUDA, ROCm, Slurm, and any custom RPM repositories.
 - **Container images** -- OCI container images required by Kubernetes services and Omnia's own containers.
 
-The `local_repo.yml` playbook configures Pulp mirroring based on settings in `local_repo_config.yml`.
+The Repository Manager workflow configures Pulp mirroring from the selected
+catalog and the project-scoped `repo_manager_config.yml`. Run it through
+`./omnia.sh --run repo_manager` or select its documented phase tags.
 
 !!! note
 
@@ -100,7 +103,9 @@ The `local_repo.yml` playbook configures Pulp mirroring based on settings in `lo
 
 ## Omnia Auth
 
-Omnia Auth provides centralized identity and authentication services for the cluster using **OpenLDAP**, deployed as the `omnia_auth` Podman container on the OIM during `prepare_oim.yml`.
+Omnia Auth provides centralized identity and authentication services for the
+cluster using **OpenLDAP**. When OpenLDAP support is enabled, the Orchestrator
+`prepare` phase deploys it as the `omnia_auth` Podman container on the OIM.
 
 **What Omnia Auth provides**
 
@@ -111,30 +116,31 @@ Omnia Auth provides centralized identity and authentication services for the clu
 
 Centralized authentication is configured via `security_config.yml`.
 
-## BuildStream
+## BuildStreaM
 
-BuildStream is an optional automation framework that provides a REST API and playbook execution pipeline for catalog-driven deployments. When enabled (`enable_build_stream: true` in `build_stream_config.yml`), Omnia deploys the following additional containers on the OIM during `prepare_oim.yml`:
+BuildStreaM is an optional automation framework that provides a REST API and
+playbook execution pipeline for catalog-driven deployments. When enabled
+(`enable_build_stream: true` in `build_stream_config.yml`), the BuildStreaM
+`prepare` phase deploys the following additional containers on the OIM:
 
 - **omnia_build_stream** -- API server that manages deployment catalogs, job queues, and playbook execution.
-- **omnia_postgres** -- PostgreSQL database for storing BuildStream state, job history, and image group metadata.
+- **omnia_postgres** -- PostgreSQL database for storing BuildStreaM state, job history, and image group metadata.
 
 **Key capabilities**
 
 - **Playbook watcher** -- A systemd service that monitors a playbook queue and executes Ansible playbooks in sequence.
 - **JWT authentication** -- API access is secured via JSON Web Tokens.
-- **GitLab integration** -- When used with the optional GitLab deployment (`gitlab/gitlab.yml`), BuildStream enables CI/CD pipeline execution for cluster deployments.
+- **GitLab integration** -- When used with the optional GitLab deployment (`gitlab/gitlab.yml`), BuildStreaM enables CI/CD pipeline execution for cluster deployments.
 
 !!! tip
 
-    BuildStream is optional. Omnia can run Ansible playbooks directly on the
-    OIM through `omnia.sh`. BuildStream adds an automation layer for teams that
+    BuildStreaM is optional. Omnia can run Ansible playbooks directly on the
+    OIM through `omnia.sh`. BuildStreaM adds an automation layer for teams that
     want API-driven, catalog-based workflows.
 
 !!! info "Related Pages"
 
     - [Architecture](architecture.md) -- Visual diagram of how components are deployed across the OIM and cluster nodes.
-
-
 
 
 

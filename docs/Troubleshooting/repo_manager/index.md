@@ -4,7 +4,8 @@ Repository mirroring and synchronization issues - Pulp operations, package downl
 
 ## Local Repository and Pulp Issues
 
-Issues related to the `local_repo.yml` playbook, Pulp container operations, and repository synchronization.
+Issues related to Repository Manager download and status phases, Pulp
+container operations, and repository synchronization.
 
 For detailed troubleshooting information, see [Local Repository and Pulp Issues](repo_manager.md).
 

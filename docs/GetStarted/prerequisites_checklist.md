@@ -69,7 +69,7 @@ cluster.
 | ☐ | RHEL 10.0 with Server with GUI Base Environment | Minimal installs are not supported. The GUI group pulls in required libraries used by Ansible and Podman. See [supported operating systems](../Reference/SupportMatrix/operating_systems.md). |
 | ☐ | Podman container engine installed | Verify: `podman --version`. If missing, install via `dnf install -y podman`. |
 | ☐ | Two active NIC ports | **NIC 1 (public):** Internet-facing, for downloading packages and container images. **NIC 2 (internal/admin):** Connected to the admin switch for PXE provisioning and cluster management. |
-| ☐ | Internet access (direct or via proxy) | Required during `local_repo.yml` to pull OS packages, Python modules, and container images. After repo sync, air-gapped operation is possible. |
+| ☐ | Internet access (direct or via proxy) | Required while the Repository Manager `download` workflow synchronizes OS packages, Python modules, and container images. After synchronization, air-gapped operation is possible. |
 | ☐ | Git installed | `dnf install git -y`. Needed to clone the Omnia repository. |
 | ☐ | 500 GB+ free disk on / | Local repos, container images, and node OS images consume significant space. Use `df -h /` to check. |
 | ☐ | Required ports open on OIM | See [Ports Used by the OIM](#ports-used-by-the-oim) below for the complete list of ports that must be available. |
@@ -134,7 +134,7 @@ Omnia uses the following ports on the OIM. Ensure these ports are not assigned t
 | ☐ | Admin network switch configured | A dedicated VLAN or flat L2 segment connecting OIM NIC 2 to all target-node admin NICs. DHCP must not already be running on this segment (Omnia provides its own). |
 | ☐ | BMC network switch configured | A separate VLAN or segment connecting OIM to all target-node iDRAC BMC ports. Can share a physical switch with admin if VLANs are used. |
 | ☐ | IP ranges planned for admin and BMC subnets | You will enter these CIDRs in `network_spec.yml`. Example: admin `10.5.0.0/16`, BMC `10.3.0.0/16`. |
-| ☐ | No conflicting DHCP servers on admin or BMC subnets | Omnia's DHCP (via `prepare_oim.yml`) must be the sole DHCP source on the PXE/admin network. |
+| ☐ | No conflicting DHCP servers on admin or BMC subnets | OpenCHAMI CoreDHCP is deployed by the Orchestrator `prepare` phase. Ensure that no other DHCP server serves the PXE/admin-network address ranges configured in `network_spec.yml`. |
 | ☐ | InfiniBand Subnet Manager running (if using IB fabric) | Ensure the Subnet Manager (SM) service is enabled and running on the InfiniBand switch or host. Failure to meet this prerequisite may result in InfiniBand ports remaining in the Initializing state. |
 | ☐ | DNS resolution working on OIM | `nslookup google.com` must succeed. Configure `/etc/resolv.conf` or NetworkManager DNS if needed. |
 
@@ -185,7 +185,7 @@ Omnia uses the following ports on the OIM. Ensure these ports are not assigned t
 | ☑ | Requirement | Details |
 | --- | --- | --- |
 | ☐ | RHEL subscription active on OIM | `subscription-manager status` must show **Current**. Required for `AppStream`, `BaseOS`, and `codeready-builder` repos. |
-| ☐ | Docker Hub credentials available | A Docker Hub account (free tier is sufficient) is needed for pulling container images during `local_repo.yml`. |
+| ☐ | Docker Hub credentials available | Provide Docker Hub credentials to Repository Manager when anonymous pulls would exceed registry limits or the selected catalog uses private content. |
 | ☐ | OIM has access to public network | Required to download and store packages/images to the desired NFS share. |
 | ☐ | Certificates stored using Ansible Vault | Ensure all required certificates are stored using Ansible Vault for confidentiality and integrity within the cluster. |
 | ☐ | All repository URLs accessible | Verify that all repository URLs for software packages are accessible. If not, the download will fail for that specific package. |
@@ -217,15 +217,6 @@ via iDRAC or BIOS Setup (F2 at POST).
 | ☐ | iDRAC IP assigned on BMC network | Can be DHCP (Omnia will assign) or static. If static, record each iDRAC IP for the mapping file. |
 | ☐ | Current iDRAC credentials known | Provide them through the Orchestrator credential workflow when prompted. |
 
-## Aarch64 Node Prerequisites
-
-
-| ☑ | Requirement | Details |
-| --- | --- | --- |
-| ☐ | Disk available for Full OS installation | You must install the OS manually on aarch64 nodes. |
-| ☐ | IP address assigned with PXE network connectivity | Ensure the aarch64 node has an IP and connectivity to the PXE network. |
-| ☐ | Same NFS share as OIM reachable | Ensure the NFS share used in OIM is also reachable on the aarch64 node. |
-
 ## Service Kubernetes (K8s) Requirements
 
 
@@ -243,23 +234,27 @@ via iDRAC or BIOS Setup (F2 at POST).
 | --- | --- | --- |
 | ☐ | Each Slurm compute node has at least 64 GB RAM | Verify with `free -h`. |
 | ☐ | Slurm RPMs available in user repository | If not available, refer to the [Slurm Quick Start Administrator Guide](https://slurm.schedmd.com/quickstart_admin.html) for building Slurm RPMs. |
-| ☐ | Slurm repo URL configured in `local_repo_config.yml` | Update `user_repo_url_x86_64` or `user_repo_url_aarch64` in `/opt/omnia/input/project_default/local_repo_config.yml` with the hosted Slurm repository URL. |
+| ☐ | Slurm repository configured | For each required architecture, set `repositories."10.0".<architecture>.user_repos.slurm_custom.url` in `$OMNIA_DATA_PATH/repo_manager/input/$OMNIA_PROJECT_NAME/repo_manager_config.yml`. The selected catalog must reference `slurm_custom`. |
 | ☐ | Mixed architecture: Slurm binaries for both architectures | In environments with x86_64 control nodes and aarch64 compute nodes, ensure Slurm binaries for both architectures are compiled and available. |
-| ☐ | Slurm RPM names match config | After generating Slurm RPMs, verify names match those in `input/config/x86_64/rhel/10.0/slurm_custom.json`. |
+| ☐ | Slurm RPM names match the catalog | Verify that the Slurm package names in the selected catalog match the RPMs hosted in the `slurm_custom` repository. |
 
 ### CUDA and DCGM Prerequisites (for Slurm GPU Nodes)
 
 | ☑ | Requirement | Details |
 | --- | --- | --- |
 | ☐ | NVIDIA GPU hardware present | Must be present on any Slurm node intended for GPU workloads. Nodes without GPU hardware are automatically skipped. |
-| ☐ | CUDA repository provisioned | CUDA repository is provisioned automatically in the local Pulp repository as part of `local_repo_config.yml` execution. No separate CUDA repo setup is required. |
-| ☐ | DCGM repository provisioned | DCGM repository is also provisioned automatically in the local repository by `local_repo_config.yml`. No manual configuration is needed beyond ensuring `local_repo_config.yml` has run successfully. |
-| ☐ | DCGM metrics enabled | DCGM installation is controlled through the `metrics_enabled` parameter in the `telemetry_sources.dcgm` section of `input/telemetry_config.yml`. Set `metrics_enabled: true` to enable DCGM installation on GPU-capable nodes. |
+| ☐ | GPU packages synchronized | Synchronize the selected RHEL 10.0 Slurm catalog through Repository Manager. It must provide the NVIDIA driver, CUDA toolkit, DCGM, and matching kernel-development packages for each target architecture. |
+| ☐ | GPU repositories reachable | Confirm Repository Manager completed successfully and Slurm compute nodes can reach the repositories recorded in `repo_status.yml`. |
+| ☐ | DCGM installation setting reviewed | DCGM installation on GPU-capable Slurm nodes is controlled by `dcgm_enabled` in `$OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/orchestrator_config.yml`. The shipped value is `true`. |
 | ☐ | NFS path for HPC tools reachable | The shared NFS path for Slurm HPC tools must be reachable from all Slurm compute and login/compiler nodes. Minimum 30 GB recommended for `hpc_tools/cuda`. The NFS share must be exported with `no_root_squash`. |
 
 !!! note
 
-    The `nvidia-peermem` module is out of scope for Omnia 2.2 and is not included in the deployment. If you require RDMA support for NVIDIA GPUs, configure it manually post-deployment.
+    During provisioning, Omnia attempts to build and load `nvidia-peermem`
+    through DKMS on Slurm nodes that have an NVIDIA GPU and a working NVIDIA
+    driver. Ensure that matching kernel headers are available. Nodes without
+    an NVIDIA GPU or working driver skip this operation. The module is required
+    only for workloads that use GPUDirect RDMA.
 
 ### HPC Benchmark Image Layer
 
@@ -278,8 +273,8 @@ via iDRAC or BIOS Setup (F2 at POST).
 
 | ☑ | Requirement | Details |
 | --- | --- | --- |
-| ☐ | LDAP server details available | Required to configure the `omnia_auth` container and OpenLDAP. See [Deploy External LDAP](../HowTo/Authentication/deploy_external_ldap.md). |
-| ☐ | External OpenLDAP server deployed (if applicable) | Ensure the OpenLDAP server is deployed and configured with the required directory structure (users and groups). See [External LDAP Deployment](../HowTo/Authentication/deploy_external_ldap.md). |
+| ☐ | OpenLDAP selected in the catalog | Include the OpenLDAP group when centralized authentication is required. Orchestrator derives OpenLDAP enablement from the selected catalog. |
+| ☐ | OpenLDAP deployment inputs available | Configure `SYSTEM_DOMAIN_NAME`, `SYSTEM_ADMIN_NIC_IPV4`, and `ldap_connection_type`, and have the OpenLDAP database credentials available when Orchestrator prompts for them. See [Deploy OpenLDAP](../HowTo/orchestrator/deploy_openldap.md). |
 
 ## Telemetry Prerequisites
 
@@ -294,8 +289,8 @@ via iDRAC or BIOS Setup (F2 at POST).
 | ☑ | Requirement | Details |
 | --- | --- | --- |
 | ☐ | EPEL and AppStream repositories configured | Ensure `python3-devel` and `python3-Cython` are installed: `sudo dnf install -y python3-devel python3-Cython` |
-| ☐ | LDMS RPM available in user repository | If not available, refer to [Building LDMS PRODUCER RPM Package](https://github.com/dell/omnia-containers?tab=readme-ov-file). Update `ldms.json` accordingly. |
-| ☐ | LDMS repo URL configured in `local_repo_config.yml` | Update `user_repo_url_x86_64` or `user_repo_url_aarch64` in `/opt/omnia/input/project_default/local_repo_config.yml` with the hosted LDMS repository URL. |
+| ☐ | LDMS RPM available in user repository | If not available, refer to [Building LDMS PRODUCER RPM Package](https://github.com/dell/omnia-containers?tab=readme-ov-file). Verify that the selected catalog references `ldms` and lists the hosted LDMS packages. |
+| ☐ | LDMS repository configured | For each required architecture, set `repositories."10.0".<architecture>.user_repos.ldms.url` in `$OMNIA_DATA_PATH/repo_manager/input/$OMNIA_PROJECT_NAME/repo_manager_config.yml`. |
 
 ### iDRAC Telemetry Prerequisites (for Service Cluster)
 
@@ -366,13 +361,6 @@ dnf repolist
     deep in the Ansible playbook execution.
 
 You are now ready to choose your deployment path. Return to [Get Started Index](index.md).
-
-
-
-
-
-
-
 
 
 

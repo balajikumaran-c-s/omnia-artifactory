@@ -4,13 +4,13 @@
 
 Orchestrator provides a full cleanup workflow and a standalone
 component-cleanup playbook. Full cleanup removes every enabled Orchestrator
-component while preserving the encrypted credential file and Vault key by
-default. Credential cleanup is always opt-in.
+component, including the encrypted credential file and Vault key by default.
+Set `cleanup_credentials=false` to preserve the credentials.
 
 Component cleanup can remove OpenCHAMI, OpenLDAP, Slurm, Kubernetes, storage
 mounts, or generated Orchestrator artifacts independently. Slurm and
-Kubernetes cleanup automatically unmounts configured storage before deleting
-their managed directories.
+Kubernetes cleanup deletes or preserves the selected shared data first and
+then unmounts the corresponding storage and removes its `/etc/fstab` entries.
 
 !!! danger
 
@@ -52,16 +52,47 @@ cd src/main
 ./omnia.sh --run orchestrator --tags cleanup
 ```
 
-Type exactly `yes` when prompted. Any other response aborts cleanup. This
-operation preserves
-`$OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/omnia_config_credentials.yml`
-and `.omnia_config_credentials_key`.
+Full cleanup prompts independently before deleting Slurm and Kubernetes shared
+data. For each prompt, type exactly `yes` to delete that component's shared
+data. Any other response preserves the shared data; cleanup continues and
+still unmounts that component's storage.
+
+Use `cleanup_slurm` and `cleanup_k8s` to make these decisions
+non-interactively:
+
+| Value | Behavior |
+|---|---|
+| `true` | Delete the component's shared data without prompting, then unmount its storage. |
+| `false` | Preserve the component's shared data without prompting, then unmount its storage. |
+| Omitted | Prompt independently for that component. |
+
+For example:
+
+```bash title="Run on: OIM"
+./omnia.sh --run orchestrator --tags cleanup \
+  -e cleanup_slurm=true -e cleanup_k8s=false
+```
+
+This deletes Slurm shared data, preserves Kubernetes shared data, and unmounts
+both storage domains. Full cleanup also removes
+`omnia_config_credentials.yml` and `.omnia_config_credentials_key` by default.
+To preserve both credential files, run:
+
+```bash title="Run on: OIM"
+./omnia.sh --run orchestrator --tags cleanup \
+  -e cleanup_credentials=false
+```
 
 For an approved non-interactive operation, set `SKIP_APPROVAL=true`:
 
 ```bash title="Run on: OIM"
 SKIP_APPROVAL=true ./omnia.sh --run orchestrator --tags cleanup
 ```
+
+When `cleanup_slurm` or `cleanup_k8s` is omitted,
+`SKIP_APPROVAL=true` approves deletion of that component's shared data. The
+command above also removes Orchestrator credentials because credential cleanup
+is enabled by default.
 
 ### Clean credentials
 
@@ -95,8 +126,8 @@ Supported component tags are:
 |---|---|
 | `openchami` | OpenCHAMI services, containers, configuration, and artifacts. |
 | `openldap` | OpenLDAP container, Quadlet configuration, and data. |
-| `slurm` | Slurm configuration and managed shared-storage directories. It also runs `storage_mounts` first. |
-| `k8s` | Kubernetes configuration and managed shared-storage directories. It also runs `storage_mounts` first. |
+| `slurm` | Slurm configuration and managed shared-storage directories. It deletes or preserves shared data before scoped storage cleanup. |
+| `k8s` | Kubernetes configuration and managed shared-storage directories. It deletes or preserves shared data before scoped storage cleanup. |
 | `storage_mounts` | Configured NFS unmount and `/etc/fstab` cleanup. |
 | `artifacts` | Generated Orchestrator artifacts and state files. |
 | `cleanup_credentials` | Encrypted credential file and Vault key. |
@@ -104,7 +135,8 @@ Supported component tags are:
 Use `DRY_RUN=true` or `SKIP_APPROVAL=true` with the standalone command when
 the same preview or explicitly approved non-interactive behavior is required.
 Running the standalone playbook without tags selects all enabled components
-and preserves credentials.
+and removes Orchestrator credentials by default. Set
+`cleanup_credentials=false` to preserve them.
 
 ## Verification
 
@@ -126,11 +158,12 @@ and preserves credentials.
 
 ## Troubleshooting
 
-- **Cleanup aborts immediately:** Run it interactively and type exactly `yes`,
-  or set `SKIP_APPROVAL=true` only after reviewing the destructive scope.
-- **Shared data was skipped:** Confirm the expected share was mounted on the
-  OIM. Cleanup skips server-side data that is not accessible through the
-  configured mount.
+- **Explicit component cleanup aborts:** Run it interactively and type exactly
+  `yes`, or set `SKIP_APPROVAL=true` only after reviewing the destructive
+  scope.
+- **Shared-data cleanup fails:** Confirm the expected share is mounted on the
+  OIM or is a local NFS export. When deletion was selected, cleanup fails if
+  the server-side data is inaccessible.
 - **A component tag is rejected:** Run component tags against
   `playbooks/cleanup/cleanup_orchestrator.yml`, not the top-level
   `playbooks/orchestrator.yml`.

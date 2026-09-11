@@ -10,6 +10,17 @@ The source currently expects an explicitly selected or staged inventory; it
 does not automatically transfer the Orchestrator output into the Telemetry
 project.
 
+| Contract | Producer output | Structure sample |
+|---|---|---|
+| `orchestrator_inventory.yaml` | `$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/orchestrator_inventory.yaml` | [Orchestrator inventory sample](https://github.com/dell/omnia/blob/issue-4849-omnia-modernization/src/telemetry/samples/orchestrator_inventory.yaml) |
+| `bmc_group_data.csv` | `$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/bmc_group_data.csv` | [BMC group-data sample](https://github.com/dell/omnia/blob/issue-4849-omnia-modernization/src/telemetry/samples/bmc_group_data.csv) |
+
+Reference these generated files through `cluster_inventory` and, when iDRAC
+telemetry is enabled,
+`idrac_telemetry_configurations.bmc_group_data_path` in
+`telemetry_config.yml`. The generated Orchestrator output is authoritative;
+the linked files are structure samples.
+
 ## Output contract
 
 ### Deployment and cleanup status

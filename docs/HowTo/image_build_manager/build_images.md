@@ -29,6 +29,9 @@ are not supported.
   dependencies declared by the Image Build Manager.
 - The Repo Manager completed successfully and its repository URLs are
   reachable from the OIM.
+- For catalog mode, [select or update the catalog](../main/update_catalog.md)
+  and complete Repo Manager synchronization for that catalog before building
+  images.
 - Run the playbooks on the OIM with privileges sufficient to create files
   under the path configured by `OMNIA_DATA_PATH` and under `/var/log/omnia`,
   manage systemd services and firewall rules, and run Podman.
@@ -77,8 +80,8 @@ files are not stored in the Image Build Manager input directory.
 
 | Upstream or external input | When required | Contract |
 |----------------------------|---------------|----------|
-| `repo_status.yml` | Build, execute, or the default untagged flow | Read from `repo_manager_output_path`. The default path is `<OMNIA_DATA_PATH>/repo_manager/output/<OMNIA_PROJECT_NAME>/repo_status.yml`. `overall_status` must be `success`; `repositories` must contain at least one non-empty x86_64 repository URL; and any configured Repo Manager certificate must exist. |
-| Catalog JSON | `functional_groups_source: "catalog"` | Read from the absolute path set in `CATALOG_FILE_PATH`. Packages are resolved through `catalog.functionallayer`, `catalog.groups`, and `catalog.packages`. Layer names beginning with `baseos` provide the base packages; other matching architecture layers become functional-group images. |
+| `repo_status.yml` | Build, execute, or the default untagged flow | Read from `repo_manager_output_path`. The default path is `<OMNIA_DATA_PATH>/repo_manager/output/<OMNIA_PROJECT_NAME>/repo_status.yml`. `overall_status` must be `success`; `repositories` must contain at least one non-empty x86_64 or aarch64 repository URL; and any configured Repo Manager certificate must exist. |
+| [Catalog JSON](../main/update_catalog.md) | `functional_groups_source: "catalog"` | Read from the absolute path set in `CATALOG_FILE_PATH`. Packages are resolved through `catalog.functionallayer`, `catalog.groups`, and `catalog.packages`. Layer names beginning with `baseos` provide the base packages; other matching architecture layers become functional-group images. |
 
 For MinIO, leave `s3_configurations.endpoint_url` empty; the endpoint is set to
 `http://<SYSTEM_ADMIN_NIC_IPV4>:9000`. For PowerScale, set the provider to
@@ -140,11 +143,27 @@ used by the workflow are fixed.
 3. Configure one package-resolution mode:
 
     - For catalog mode, set `functional_groups_source: "catalog"` and export
-      the absolute catalog path:
+      the default catalog path:
 
         ```bash title="Run on: OIM host"
         export CATALOG_FILE_PATH="${OMNIA_DATA_PATH}/catalog/catalog_rhel.json"
         ```
+
+        !!! note
+
+            OIM setup copies the default catalog to
+            `$OMNIA_DATA_PATH/catalog/catalog_rhel.json`. To build images for
+            a different supported workload, architecture, or VAST combination,
+            select the appropriate catalog from:
+
+            ```text
+            <OMNIA_SOURCE_PATH>/src/main/samples/catalogs/
+            ```
+
+            OIM setup does not copy these additional catalogs. Follow
+            [Select or update the catalog](../main/update_catalog.md) to select
+            and copy the required catalog to the runtime catalog directory,
+            and then update `CATALOG_FILE_PATH` to reference that JSON file.
 
     - For config mode, set `functional_groups_source: "config"` and edit the
       staged `package_groups.yml`. Packages under `base_packages` are installed
@@ -395,12 +414,13 @@ used by the workflow are fixed.
 - **`repo_status.yml` is missing or rejected**: Confirm that
   `repo_manager_output_path` points to the Repo Manager output for the current
   project. The file must report `overall_status: "success"`, contain at least
-  one usable x86_64 repository URL, and reference an existing certificate when
+  one usable x86_64 or aarch64 repository URL, and reference an existing certificate when
   `repo_manager.certificates.server_crt` is set. The build also fails when a
   listed repository URL is unreachable.
 
-- **Catalog validation fails**: Export `CATALOG_FILE_PATH` as an absolute path
-  to an existing JSON file. Confirm that the catalog contains
+- **Catalog validation fails**: Follow
+  [Select or update the catalog](../main/update_catalog.md) and confirm that
+  `CATALOG_FILE_PATH` resolves to an existing JSON file. Confirm that it contains
   `functionallayer`, `groups`, and `packages` data and that its layer names end
   in the architecture being built. Names beginning with `baseos` are treated
   as base layers; all other matching layers are treated as compute layers.

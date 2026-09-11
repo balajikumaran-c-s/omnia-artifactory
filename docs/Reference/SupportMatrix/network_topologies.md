@@ -1,7 +1,7 @@
 
 # Network Topologies
 
-Omnia 2.2.0.0 supports three network topology models. The choice of topology determines how the OIM, cluster nodes, and switches are physically and logically connected.
+Omnia 2.3.0.0 supports three network topology models. The choice of topology determines how the OIM, cluster nodes, and switches are physically and logically connected.
 
 ## Topology comparison
 
@@ -18,7 +18,6 @@ Omnia 2.2.0.0 supports three network topology models. The choice of topology det
       parameter reference.
     - [Switches](switches.md) -- Switch models and VLAN configuration.
     - [Nics](nics.md) -- Supported NIC models for each topology.
-
 
 
 

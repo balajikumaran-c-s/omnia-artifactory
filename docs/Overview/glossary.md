@@ -19,14 +19,14 @@ formatting, is also its directory name under `src/` and the value accepted by
 :   Boot Script Service, an OpenCHAMI service that returns the boot parameters
     assigned to a registered node.
 
-**Build Stream**
-:   The deployment module identified as `build_stream`. It deploys PostgreSQL, the Build Stream Manager
+**BuildStreaM**
+:   The deployment module identified as `build_stream`. It deploys PostgreSQL, the BuildStreaM Manager
     API, a playbook-watcher service, GitLab integration, and a managed project
     runner. A change to the project catalog starts the build pipeline; a change
     to the Orchestrator PXE mapping starts the deploy pipeline. See
-    [Build Stream](../HowTo/build_stream/index.md).
+    [BuildStreaM](../HowTo/build_stream/index.md).
 
-**Build Stream Manager (BSM)**
+**BuildStreaM Manager (BSM)**
 :   The FastAPI service that accepts authenticated pipeline requests, records
     jobs in PostgreSQL, and writes playbook requests for the watcher.
 
@@ -72,6 +72,13 @@ formatting, is also its directory name under `src/` and the value accepted by
 :   The deployment module identified as `discovery`. It queries OpenManage Enterprise and writes a BMC
     discovery report and an Orchestrator-compatible PXE mapping.
 
+**Domain**
+:   An independently executable Omnia deployment unit implemented as an
+    Ansible collection. Each domain has its own playbook, inputs, validation,
+    dependencies, logs, and output contract. Domains exchange contract files
+    instead of importing one another's source code. This meaning is distinct
+    from the DNS domain configured by `SYSTEM_DOMAIN_NAME`.
+
 **Domain identifier**
 :   The internal name accepted by `omnia.sh --run` and used in source paths,
     such as `repo_manager` or `orchestrator`. This implementation term is
@@ -82,7 +89,7 @@ formatting, is also its directory name under `src/` and the value accepted by
 :   A capability-based unit of deployment responsibility with its own
     initialization script, dependencies, inputs, entry playbook, logs, and
     outputs. Omnia has seven modules: Repository Manager, Image Build Manager,
-    Discovery, Orchestrator, Telemetry, Build Stream, and Utils. `main` is the
+    Discovery, Orchestrator, Telemetry, BuildStreaM, and Utils. `main` is the
     common controller, not a deployment module.
 
 **Module contract**
@@ -140,7 +147,7 @@ formatting, is also its directory name under `src/` and the value accepted by
 :   Omnia Infrastructure Manager. The Linux management host from which Omnia
     setup and module playbooks run. It stores the shared runtime and hosts
     module-owned management services such as Pulp, MinIO, the registry,
-    OpenCHAMI, and Build Stream services when selected.
+    OpenCHAMI, and BuildStreaM services when selected.
 
 **OpenCHAMI**
 :   The bare-metal provisioning services deployed by Orchestrator. Omnia uses
@@ -218,7 +225,9 @@ formatting, is also its directory name under `src/` and the value accepted by
 **Utils**
 :   The deployment module identified as `utils`. It provides operations selected with utility-specific
     tags, including `collect` for cluster log collection and `install_os` for
-    unattended operating-system installation through iDRAC.
+    unattended operating-system installation through iDRAC. The
+    `backup_oim_logs` operation archives Omnia domain logs stored on the OIM to
+    local or NFS storage.
 
 **VictoriaLogs**
 :   The log-storage sink deployed by Telemetry when required by enabled log

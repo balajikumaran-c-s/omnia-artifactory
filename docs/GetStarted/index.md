@@ -47,7 +47,7 @@ documented input/output contracts and can be invoked separately using the
 | [Discovery](../HowTo/discovery/index.md) (`discovery`) | BMC discovery and PXE mapping generation through OME; manual mappings are supplied directly to Orchestrator |
 | [Orchestrator](../HowTo/orchestrator/index.md) (`orchestrator`) | Node provisioning, boot configuration, and cluster setup |
 | [Telemetry](../HowTo/Telemetry/index.md) (`telemetry`) | Telemetry pipeline deployment (iDRAC, LDMS, Kafka, VictoriaMetrics, VictoriaLogs) |
-| [Build Stream](../HowTo/build_stream/index.md) (`build_stream`) | GitLab CI/CD automation for catalog-driven build and deployment pipelines |
+| [BuildStreaM](../HowTo/build_stream/index.md) (`build_stream`) | GitLab CI/CD automation for catalog-driven build and deployment pipelines |
 | [Utilities](../HowTo/utils/index.md) (`utils`) | Utility operations including unattended OS installation and log collection |
 
 !!! info

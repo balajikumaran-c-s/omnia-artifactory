@@ -1,8 +1,9 @@
 # omnia.env
 
 `omnia.env` is the shared environment configuration used by `omnia.sh`, module
-initialization scripts, and Ansible playbooks. Edit the source file before OIM
-setup. The setup flow installs the resulting environment under `/etc/omnia`.
+initialization scripts, and Ansible playbooks. Edit `src/main/omnia.env` before
+the first OIM setup. After installation, `/etc/omnia/omnia.env` is authoritative
+and is preserved by subsequent setup runs.
 
 ## Location
 
@@ -11,13 +12,17 @@ Source:    src/main/omnia.env
 Installed: /etc/omnia/omnia.env
 ```
 
-Source the environment before running Omnia commands directly:
+Source the installed environment before running Omnia commands directly:
 
 ```bash
 set -a
-source src/main/omnia.env
+source /etc/omnia/omnia.env
 set +a
 ```
+
+For normal changes after setup, edit `/etc/omnia/omnia.env`. To intentionally
+replace the installed environment with the source template, run
+`./omnia.sh --setup-venv --force-env`.
 
 ## Variables
 

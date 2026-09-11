@@ -21,13 +21,16 @@ modules: `build_stream`, `discovery`, `repo_manager`, `image_build_manager`,
 `orchestrator`, `telemetry`, or `utils`. Main installs the shared environment
 instead of using this module input layout.
 
+For Utils OIM log backups, see the
+[OIM Log Backup Configuration](Configuration/backup_oim_logs_config.md).
+
 ## Module Contracts
 
 Domain contracts document upstream domain handoffs, produced artifacts, and
 runtime or lifecycle behavior. Domain-owned input configuration is documented
 separately in the configuration reference and how-to guides.
 
-- [Build Stream Contract](domain_contracts/build_stream_contract.md) - GitLab and BSM readiness status and pipeline interfaces
+- [BuildStreaM Contract](domain_contracts/build_stream_contract.md) - GitLab and BSM readiness status and pipeline interfaces
 - [Discovery Contract](domain_contracts/discovery_contract.md) - BMC discovery and PXE mapping file generation
 - [Repo Manager Contract](domain_contracts/repo_manager_contract.md) - Local repository creation and package management
 - [Image Build Manager Contract](domain_contracts/image_build_manager_contract.md) - Diskless OS image building
@@ -63,7 +66,6 @@ Complete catalog of telemetry metrics collected and exposed by Omnia. Metrics ar
 ## Appendices
 
 Supplementary reference information, including naming conventions, filesystem layouts, directory structures, configuration standards, and other supporting technical specifications.
-
 
 
 

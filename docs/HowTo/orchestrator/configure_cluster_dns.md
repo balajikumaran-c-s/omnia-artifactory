@@ -161,7 +161,7 @@ Cluster DNS replaces per-node `/etc/hosts` synchronization with coresmd, a CoreD
 
     All nodes should show as `IDLE` or `ALLOCATED` in `sinfo`, and jobs should complete without DNS errors or timeouts.
 
-8. **Verify new node auto-resolution**. After adding a node via `provision.yml`, wait up to 30 seconds for coresmd to refresh its cache, then confirm resolution without any playbook re-run:
+8. **Verify new node auto-resolution**. After adding a node by running the Orchestrator `provision` phase (`./omnia.sh --run orchestrator --tags provision`), wait up to 30 seconds for coresmd to refresh its cache, then confirm resolution without any playbook re-run:
 
     ```bash title="Run on: compute node"
     getent hosts <new_hostname>

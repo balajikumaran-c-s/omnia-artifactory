@@ -566,9 +566,8 @@ Issues related to the telemetry pipeline for example: Kafka, iDRAC telemetry, LD
         `telemetry_sources.idrac.metrics_enabled: true` and requires both
         collection targets in the project `telemetry_config.yml`. The receiver,
         pumps, ActiveMQ, and MySQL are generated as one StatefulSet. Modify the
-        Telemetry domain inputs and rerun `./omnia.sh --run telemetry --tags
-        deploy`; do not edit the pod or manually apply legacy
-        `telemetry.sh`/`provision.yml` artifacts.
+        project-scoped Telemetry inputs and rerun the Telemetry `deploy` phase.
+        Do not edit the pod or manually apply generated manifests or scripts.
 
 ## VictoriaMetrics (Cluster Mode) — Pods Down, PVC Full, or Queries Failing
 
@@ -636,7 +635,17 @@ Issues related to the telemetry pipeline for example: Kafka, iDRAC telemetry, LD
 
     **Resolution Steps**
 
-    1. Expand the vmstorage PVC (if the StorageClass allows allowVolumeExpansion) or reduce retention. In Omnia, set retention and sizing through the telemetry input config, then run `ansible-playbook provision/provision.yml`, SSH to kube_vip and manually re-run `bash <k8s_client_mount_path>/telemetry/telemetry.sh`; do not manually edit the StatefulSet.
+    1. Expand the vmstorage PVC if its StorageClass allows volume expansion,
+       or reduce retention. Update the applicable values in the project-scoped
+       `telemetry_config.yml` and `telemetry_storage_config.yml`, then redeploy
+       from `src/main`:
+
+        ```bash title="Run on: OIM host"
+        cd <OMNIA_SOURCE_PATH>/src/main
+        ./omnia.sh --run telemetry --tags deploy
+        ```
+
+       Do not manually edit the StatefulSet.
 
     2. Restore quorum by bringing failed vmstorage pods back (resolve node disk pressure or memory issues), confirming vmselect reports enough healthy nodes.
 
@@ -692,15 +701,13 @@ Issues related to the telemetry pipeline for example: Kafka, iDRAC telemetry, LD
         kubectl -n telemetry exec vlstorage-victoria-logs-cluster-2 -- df -h
         ```
 
-        Increase storage in input/telemetry_storage_config.yml or reduce retention in input/telemetry_config.yml, then redeploy:
+        Increase storage in the project-scoped `telemetry_storage_config.yml`
+        or reduce retention in `telemetry_config.yml`, then redeploy from
+        `src/main`:
 
         ```bash title="Run on: OIM host"
-        ansible-playbook provision/provision.yml
-        ```
-
-        ```bash title="Run on: K8s control plane"
-        ssh <kube_control_plane>
-        ./<k8s_client_mount_path>/telemetry/telemetry.sh
+        cd <OMNIA_SOURCE_PATH>/src/main
+        ./omnia.sh --run telemetry --tags deploy
         ```
 
     3. Recover unavailable storage pods
@@ -830,7 +837,6 @@ Issues related to the telemetry pipeline for example: Kafka, iDRAC telemetry, LD
     - [Setup Telemetry](../../HowTo/Telemetry/setup_telemetry.md) -- Telemetry pipeline setup.
     - [Telemetry Setup](../../HowTo/Telemetry/setup_telemetry.md) -- Telemetry sources and configuration.
     - [Log Management](../../Operations/log_management.md) -- Log locations for telemetry services.
-
 
 
 

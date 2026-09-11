@@ -21,7 +21,10 @@ As described in the Red Hat documentation for InfiniBand and RDMA networking, NV
 
 ### Local Repository GPG Validation
 
-The `local_repo.yml` playbook completes successfully even when an invalid GPG key is provided during repository configuration. GPG key validation is currently not enforced during Pulp remote creation. Although local repositories support GPG keys, this functionality is not yet enabled in Pulp.
+The Repository Manager workflow can complete even when an invalid GPG key is
+provided in `repo_manager_config.yml`. GPG key validation is currently not
+enforced during Pulp remote creation. Although local repositories support GPG
+keys, this functionality is not yet enabled in Pulp.
 
 For tracking, see: [pulp_rpm issue #4241](https://github.com/pulp/pulp_rpm/issues/4241)
 
@@ -251,7 +254,6 @@ There is currently no workaround available.
 An enhancement request has been submitted to enable support for the complete set of iDRAC telemetry metrics on the PowerEdge XE8712 platform:
 
 **GitHub Enhancement Request:** [Enhancement Request: Support Complete iDRAC Telemetry Metrics on PowerEdge XE8712 with NVIDIA GB200](https://github.com/dell/iDRAC-Telemetry-Reference-Tools/issues/190)
-
 
 
 

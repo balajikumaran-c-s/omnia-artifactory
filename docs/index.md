@@ -32,8 +32,8 @@ a deployment module.
 | `discovery` | Discover BMC endpoints through OME and produce a PXE mapping. | Independent and optional when a mapping is supplied manually |
 | `orchestrator` | Deploy OpenCHAMI and optional OpenLDAP, provision Slurm or service Kubernetes, and optionally start physical nodes through iDRAC PXE boot. | Built images, repository information, and a PXE mapping |
 | `telemetry` | Deploy enabled telemetry sources, bridges, and sinks on service Kubernetes. | A provisioned service Kubernetes cluster |
-| `build_stream` | Deploy Build Stream Manager, GitLab integration, and catalog-driven build and deploy pipelines. | Prepared Repository Manager and Image Build Manager services |
-| `utils` | Run utilities such as log collection and unattended OS installation. | Depends on the selected utility |
+| `build_stream` | Deploy BuildStreaM Manager, GitLab integration, and catalog-driven build and deploy pipelines. | Prepared Repository Manager and Image Build Manager services |
+| `utils` | Run utilities such as cluster-log collection, OIM log backup, and unattended OS installation. | Depends on the selected utility |
 
 For a direct deployment, the source-defined order is:
 
@@ -42,7 +42,7 @@ Repository Manager -> Image Build Manager -> optional Discovery
                    -> Orchestrator -> optional Telemetry
 ```
 
-Build Stream provides a separate automation path: its build pipeline invokes
+BuildStreaM provides a separate automation path: its build pipeline invokes
 Repository Manager and Image Build Manager, and its deploy pipeline invokes
 Orchestrator. Utils is used independently when an operational task requires it.
 
@@ -75,7 +75,7 @@ interfaces and handoffs.
     Provision Slurm and service Kubernetes, then deploy the required Telemetry
     sources and sinks.
 
--   :material-source-branch: **[Build Stream](GetStarted/buildstream_deployment.md)**
+-   :material-source-branch: **[BuildStreaM](GetStarted/buildstream_deployment.md)**
 
     ---
 
@@ -107,7 +107,7 @@ interfaces and handoffs.
     ---
 
     Complete a task within `main`, Repository Manager, Image Build Manager,
-    Discovery, Orchestrator, Telemetry, Build Stream, or Utils.
+    Discovery, Orchestrator, Telemetry, BuildStreaM, or Utils.
 
 -   :material-file-document: **[Reference](Reference/index.md)**
 
@@ -120,7 +120,7 @@ interfaces and handoffs.
 
     ---
 
-    Perform day-2 repository, node, Build Stream, diagnostic, and platform
+    Perform day-2 repository, node, BuildStreaM, diagnostic, and platform
     lifecycle operations.
 
 -   :material-alert-circle: **[Troubleshooting](Troubleshooting/index.md)**

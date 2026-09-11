@@ -8,7 +8,7 @@ the requested module identifier, and invokes its top-level playbook.
 
 `--run` accepts one module's internal domain identifier per command. It does
 not accept `all` or a comma-separated list. Run each required module in dependency order, or
-use the Build Stream pipeline path where applicable.
+use the BuildStreaM pipeline path where applicable.
 
 ## Prepare the common runtime
 
@@ -52,12 +52,12 @@ Initialization copies source templates from `src/<domain>/input/` to:
 Edit the staged project inputs before running a deployment phase. Existing
 files may require confirmation before an initialization script overwrites them.
 
-`./omnia.sh --prepare-base` runs the `validate`, `credentials`, and `prepare`
-tags for Repository Manager, Image Build Manager, and Orchestrator in that
-order. It does not synchronize repositories, build images, or provision nodes.
-The Repository Manager entry playbook implements configuration validation under
-`precheck`, not `validate`; run its `precheck` operation explicitly before
-using its outputs.
+`./omnia.sh --prepare-base` runs the validation, `credentials`, and `prepare`
+phases for Repository Manager, Image Build Manager, and Orchestrator. During
+the validation phase, it runs `precheck` for Repository Manager and `validate`
+for Image Build Manager and Orchestrator. It does not synchronize repositories,
+build images, or provision nodes. No separate Repository Manager `precheck` is
+required after the helper completes successfully.
 
 ## Run one module
 
@@ -106,7 +106,7 @@ For a direct cluster deployment, run modules in this dependency order:
 | 5 | `telemetry` (optional) | Uses the generated Orchestrator inventory and requires a provisioned service Kubernetes cluster. LDMS additionally requires Slurm control and compute nodes. |
 | 6 | `utils` (on demand) | Runs an operation-specific utility and is not a required deployment stage. |
 
-Build Stream is not an additional final step in this direct sequence. It is an
+BuildStreaM is not an additional final step in this direct sequence. It is an
 alternative automation path: its build pipeline invokes Repository Manager and
 Image Build Manager, and its deploy pipeline invokes Orchestrator.
 
@@ -124,7 +124,7 @@ deployment procedures.
 | `orchestrator` | `precheck`, `validate`, `credentials`, `prepare`, `deploy`, `provision`, `execute`, `validate-deployment`, `pxeboot`, `cleanup`, `cleanup_credentials` |
 | `telemetry` | `precheck`, `validate`/`validation`, `execute`/`deploy`, `cleanup`, source-specific cleanup tags, `external_kafka`, `external_victoria` |
 | `build_stream` | `precheck`, `validate`, `credentials`, `prepare`, `execute`, `build`, `cleanup` |
-| `utils` | `precheck`, `collect`, `install_os`, `cleanup`, `cleanup_logs`, `cleanup_install_os`; running without a tag performs setup only |
+| `utils` | `precheck`, `collect`, `install_os`, `backup_oim_logs`, `cleanup`, `cleanup_logs`, `cleanup_install_os`, `cleanup_backup_oim_logs`; running without a tag performs setup only |
 
 Repository Manager's standard tags can be combined in the order implemented by
 its entry playbook. Other module entry points direct operators to run one tag
@@ -178,7 +178,7 @@ cat <OMNIA_DATA_PATH>/orchestrator/output/<OMNIA_PROJECT_NAME>/orchestrator_stat
 cat <OMNIA_DATA_PATH>/telemetry/output/<OMNIA_PROJECT_NAME>/telemetry_status.yml
 ```
 
-Discovery primarily produces CSV results, Build Stream reports its prepared
+Discovery primarily produces CSV results, BuildStreaM reports its prepared
 services in `build_stream_status.yml`, and Utils writes `utils_status.yml` plus
 operation-specific results. A file's presence alone is not success; inspect its
 reported state and the corresponding module log.

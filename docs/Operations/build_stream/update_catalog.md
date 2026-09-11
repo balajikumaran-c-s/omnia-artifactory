@@ -1,6 +1,6 @@
-# Update the Build Stream Catalog
+# Update the BuildStreaM Catalog
 
-Update the Build Stream catalog file to modify build specifications and trigger new pipeline runs.
+Update the BuildStreaM catalog file to modify build specifications and trigger new pipeline runs.
 
 ## Overview
 
@@ -9,9 +9,9 @@ The `catalog_rhel.json` file defines your build requirements, including function
 ## Prerequisites
 
 
-Complete the following before you update the Build Stream catalog:
+Complete the following before you update the BuildStreaM catalog:
 
-- **Deploy GitLab for Build Stream** -- GitLab must be deployed and configured for Build Stream. See [Deploy GitLab](../../HowTo/build_stream/deploy_gitlab.md).
+- **Deploy GitLab for BuildStreaM** -- GitLab must be deployed and configured for BuildStreaM. See [BuildStreaM](../../HowTo/build_stream/index.md).
 
 - **No conflicting build pipeline** -- The current GitLab configuration allows
   pipelines to run concurrently. Wait for a build using the same catalog or
@@ -78,7 +78,6 @@ Ensure the catalog JSON follows
 `src/build_stream/app/core/catalog/resources/CatalogSchema.json`. Use the
 catalog staged in the managed GitLab project and the samples under
 `src/main/samples/` as source-backed references.
-
 
 
 
