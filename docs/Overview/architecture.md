@@ -14,7 +14,7 @@ implementation paths, `<domain>` is the module's internal identifier. The
 `src/main/omnia.sh` script initializes the modules and invokes one module
 playbook at a time. `main` is the common controller and is not an eighth module.
 
-![Omnia Architecture](../assets/images/omnia_arch_s.svg)
+![Omnia Architecture](../assets/images/omnia_arch_updated.jpg)
 
 ## Deployment module responsibilities
 
