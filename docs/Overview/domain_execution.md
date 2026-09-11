@@ -124,7 +124,7 @@ deployment procedures.
 | `orchestrator` | `precheck`, `validate`, `credentials`, `prepare`, `deploy`, `provision`, `execute`, `validate-deployment`, `pxeboot`, `cleanup`, `cleanup_credentials` |
 | `telemetry` | `precheck`, `validate`/`validation`, `execute`/`deploy`, `cleanup`, source-specific cleanup tags, `external_kafka`, `external_victoria` |
 | `build_stream` | `precheck`, `validate`, `credentials`, `prepare`, `execute`, `build`, `cleanup` |
-| `utils` | `precheck`, `collect`, `install_os`, `cleanup`, `cleanup_logs`, `cleanup_install_os`; running without a tag performs setup only |
+| `utils` | `precheck`, `collect`, `install_os`, `backup_oim_logs`, `cleanup`, `cleanup_logs`, `cleanup_install_os`, `cleanup_backup_oim_logs`; running without a tag performs setup only |
 
 Repository Manager's standard tags can be combined in the order implemented by
 its entry playbook. Other module entry points direct operators to run one tag

@@ -32,13 +32,13 @@ building and node provisioning occur when you run the corresponding pipeline.
     <div class="of-s">
       <div class="t">Prepare the base module services</div>
       <div class="d">Pulp, MinIO, registry, and required credentials</div>
-      <div class="of-more"><a href="../HowTo/build_stream/deploy_gitlab.html#prerequisites">Learn more: Base prerequisites &gt;&gt;</a></div>
+      <div class="of-more"><a href="../HowTo/build_stream/index.html#prerequisites">Learn more: Base prerequisites &gt;&gt;</a></div>
     </div>
     <div class="of-c"></div>
     <div class="of-s">
       <div class="t">Configure and deploy BuildStreaM</div>
       <div class="d">PostgreSQL, BSM, watcher, GitLab, project, and runner</div>
-      <div class="of-more"><a href="../HowTo/build_stream/deploy_gitlab.html">Learn more: Deploy BuildStreaM &gt;&gt;</a></div>
+      <div class="of-more"><a href="../HowTo/build_stream/index.html">Learn more: Deploy BuildStreaM &gt;&gt;</a></div>
     </div>
     <div class="of-c"></div>
     <div class="of-s">
@@ -56,7 +56,7 @@ building and node provisioning occur when you run the corresponding pipeline.
     <div class="of-s">
       <div class="t">Verify GitLab and BSM results</div>
       <div class="d">Pipeline state, module contracts, and job logs</div>
-      <div class="of-more"><a href="../HowTo/build_stream/deploy_gitlab.html#verification">Learn more: Verify BuildStreaM &gt;&gt;</a></div>
+      <div class="of-more"><a href="../HowTo/build_stream/index.html#verification">Learn more: Verify BuildStreaM &gt;&gt;</a></div>
     </div>
     <div class="of-c"></div>
     <div class="of-pill">Automated image lifecycle ready</div>
@@ -184,7 +184,7 @@ module services and inputs.
     keys; the source schema rejects unknown fields.
 
 For the complete input and credential contract, see
-[Deploy GitLab and BuildStreaM](../HowTo/build_stream/deploy_gitlab.md) and the
+[BuildStreaM](../HowTo/build_stream/index.md) and the
 [BuildStreaM contract](../Reference/domain_contracts/build_stream_contract.md).
 
 ### 4. Validate and deploy BuildStreaM

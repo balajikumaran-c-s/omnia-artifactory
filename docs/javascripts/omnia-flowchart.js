@@ -185,7 +185,7 @@
         add('connector', 'cb2', {});
       }
 
-      add('step', 'sb-oim', { title: 'Deploy BuildStreaM and Configure GitLab', desc: '<code>./omnia.sh --run build_stream</code>', details: { href: '../HowTo/build_stream/deploy_gitlab.html', text: 'Learn more: Deploy BuildStreaM >>' } });
+      add('step', 'sb-oim', { title: 'Deploy BuildStreaM and Configure GitLab', desc: '<code>./omnia.sh --run build_stream</code>', details: { href: '../HowTo/build_stream/index.html', text: 'Learn more: Deploy BuildStreaM >>' } });
       add('connector', 'cb3', {});
 
       add('step', 'sb-cat', { title: 'Update Catalog', desc: 'GitLab', details: { href: '../HowTo/build_stream/execute_build_pipeline.html', text: 'Learn more: Update catalog >>' } });

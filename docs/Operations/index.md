@@ -44,10 +44,11 @@ logs, and cleaning up domains or the OIM environment.
 
 - [Collect cluster logs](collect_cluster_logs.md) with the Utils `collect`
   workflow.
+- [Back up OIM logs](../HowTo/utils/backup_oim_logs.md) with the Utils
+  `backup_oim_logs` workflow to local or NFS storage.
 - Review the [Slurm configuration roles](slurm_configuration_roles.md) before
   integrating the source roles into an administrator-maintained playbook.
 - Use [Log Management](log_management.md) for general log inspection.
-
 
 
 

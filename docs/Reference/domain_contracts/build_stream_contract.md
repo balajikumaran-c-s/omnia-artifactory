@@ -80,7 +80,6 @@ runner.
 ## Related documentation
 
 - [BuildStreaM](../../HowTo/build_stream/index.md)
-- [Deploy GitLab and BuildStreaM](../../HowTo/build_stream/deploy_gitlab.md)
 - [Execute the build pipeline](../../HowTo/build_stream/execute_build_pipeline.md)
 - [Execute the deploy pipeline](../../HowTo/build_stream/execute_deploy_pipeline.md)
 - [Orchestrator contract](orchestrator_contract.md)

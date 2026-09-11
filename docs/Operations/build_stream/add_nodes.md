@@ -14,7 +14,7 @@ does not create a new-node-only inventory from the changed rows.
 
 ## Prerequisites
 
-- Complete [Deploy GitLab and BuildStreaM](../../HowTo/build_stream/deploy_gitlab.md).
+- Complete [BuildStreaM deployment](../../HowTo/build_stream/index.md).
 - Ensure at least one image group has `BUILT` status. Run the
   [build pipeline](../../HowTo/build_stream/execute_build_pipeline.md) first if
   no built image group is available.

@@ -26,7 +26,7 @@ playbook at a time. `main` is the common controller and is not an eighth module.
 | `orchestrator` | Deploy OpenCHAMI and catalog-selected OpenLDAP, register mapped nodes, create boot and cloud-init configuration, configure Slurm or service Kubernetes, and optionally initiate iDRAC PXE boot. | `orchestrator_status.yml`, `orchestrator_inventory.yaml`, provisioning reports, and the deployed clusters |
 | `telemetry` | Deploy the enabled telemetry sources, bridges, Kafka, VictoriaMetrics, and VictoriaLogs on a service Kubernetes cluster. | `telemetry_status.yml`, Kubernetes workloads, and optional external connection exports |
 | `build_stream` | Deploy PostgreSQL, BuildStreaM Manager, the playbook watcher, GitLab integration, and the managed CI/CD project and runner. | `build_stream_status.yml`, the BSM API, and GitLab pipelines |
-| `utils` | Run independent operational utilities, including log collection and unattended OS installation. | `utils_status.yml` and operation-specific results |
+| `utils` | Run independent operational utilities, including cluster-log collection, OIM log backup, and unattended OS installation. | `utils_status.yml` and operation-specific results |
 
 Modules can be invoked separately, but downstream workflows require the
 contracts produced upstream. Discovery is optional when the administrator

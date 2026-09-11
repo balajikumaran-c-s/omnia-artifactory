@@ -1,6 +1,8 @@
 # OIM Requirements
 
-This section outlines the key requirements for the Omnia Infrastructure Manager (OIM) and Aarch64 nodes used by Omnia to deploy HPC clusters. For more information about the supported devices and software, see [Support Matrix](../index.md#support-matrix).
+This section outlines the key requirements for the Omnia Infrastructure Manager
+(OIM) used to deploy HPC clusters. For more information about the supported
+devices and software, see [Support Matrix](../index.md#support-matrix).
 
 ## Omnia Infrastructure Manager
 
@@ -20,17 +22,10 @@ This section outlines the key requirements for the Omnia Infrastructure Manager 
 - Complete [Setup the OIM](../../HowTo/main/setup_oim.md) to install the shared
   environment and initialize the deployment modules.
 
-## aarch64 Node Prerequisites
-
-- Ensure that a disk is available to the aarch64 node for Full OS installation and you must install the OS manually.
-- Ensure that an IP address is assigned to the aarch64 node and the node has connectivity to the PXE network.
-- Ensure that the same NFS share used in OIM is reachable on the aarch64 node.
-
 !!! info
 
     See [Running Deployment Modules](../../Overview/domain_execution.md) for
     the supported module setup and execution workflow.
-
 
 
 

@@ -225,7 +225,9 @@ formatting, is also its directory name under `src/` and the value accepted by
 **Utils**
 :   The deployment module identified as `utils`. It provides operations selected with utility-specific
     tags, including `collect` for cluster log collection and `install_os` for
-    unattended operating-system installation through iDRAC.
+    unattended operating-system installation through iDRAC. The
+    `backup_oim_logs` operation archives Omnia domain logs stored on the OIM to
+    local or NFS storage.
 
 **VictoriaLogs**
 :   The log-storage sink deployed by Telemetry when required by enabled log

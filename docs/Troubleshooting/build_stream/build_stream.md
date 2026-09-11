@@ -177,12 +177,11 @@ Issues related to BuildStreaM pipeline execution, GitLab integration, catalog va
 
 !!! info
 
-    - [Deploy GitLab](../../HowTo/build_stream/deploy_gitlab.md) -- GitLab deployment procedures
+    - [BuildStreaM](../../HowTo/build_stream/index.md) -- BuildStreaM and GitLab deployment procedures
     - [Execute Build Pipeline](../../HowTo/build_stream/execute_build_pipeline.md) -- Build pipeline operations
     - [Execute Deploy Pipeline](../../HowTo/build_stream/execute_deploy_pipeline.md) -- Deploy pipeline operations
     - [Retry Pipelines](../../Operations/build_stream/retry_pipelines.md) -- Retry failed pipeline operations
     - [Update Catalog](../../Operations/build_stream/update_catalog.md) -- Catalog configuration
-
 
 
 

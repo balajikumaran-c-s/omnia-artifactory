@@ -1,9 +1,9 @@
 # Utils Domain Contract
 
-The Utils module provides log collection and unattended operating
-system installation through its `playbooks/utils.yml` entry point. This
-contract describes the files and artifacts used by those implemented
-workflows.
+The Utils module provides cluster-log collection, unattended operating-system
+installation, and OIM domain-log backup through its `playbooks/utils.yml`
+entry point. This contract describes the files and artifacts used by those
+implemented workflows.
 
 ## Upstream domain contract
 
@@ -81,6 +81,42 @@ the temporary `k8s` and `slurm` collection directories. Because archives and
 metadata are stored inside the run directories, preserve required bundles
 before running cleanup.
 
+### OIM log-backup artifacts
+
+`backup_oim_logs` reads the optional project input:
+
+```text
+$OMNIA_DATA_PATH/utils/input/$OMNIA_PROJECT_NAME/backup_oim_logs_config.yml
+```
+
+The `domains` list selects `repo_manager`, `image_build_manager`,
+`orchestrator`, `discovery`, `telemetry`, `build_stream`, or `utils`. An empty
+list selects all seven. Each source is the domain-level
+`$OMNIA_DATA_PATH/<domain>/log` directory.
+
+The destination is selected from command-line `backup_path`, configuration
+`backup_path`, `OMNIA_BACKUP_PATH`, or the following default, in that order:
+
+```text
+$OMNIA_DATA_PATH/utils/output/$OMNIA_PROJECT_NAME/backup_oim_logs/
+└── omnia_oim_logs_<timestamp>/
+    ├── omnia_oim_logs_<timestamp>.tar.gz
+    └── metadata.json
+```
+
+The destination can be an absolute local path or a raw NFS export in
+`server:/export/path` format. `metadata.json` records included and skipped
+domains, UTC and local generation times, the triggering user, OIM operating
+system, backup location, exclusions, warnings, and `archive_sha256`.
+
+The workflow skips missing selected domain log directories and fails when no
+requested log directory exists. Files ending in `.tmp`, `.temp`, and `.bak`
+are excluded.
+
+`cleanup_backup_oim_logs` uses the same destination resolution and removes
+all matching `omnia_oim_logs_*` directories. It is not included in the general
+Utils `cleanup` tag.
+
 ### Standalone Slurm role artifacts
 
 The Slurm configuration roles are not invoked by `playbooks/utils.yml`. When
@@ -101,9 +137,11 @@ integrated into an administrator-maintained playbook:
 | `precheck` | Validates the installed environment against the OIM. |
 | `collect` | Collects and bundles cluster logs. |
 | `install_os` | Runs the complete ISO build and iDRAC deployment workflow. |
+| `backup_oim_logs` | Archives selected OIM domain logs to local or NFS storage. |
 | `cleanup_logs` | Applies log archive retention and removes collection workspaces. |
 | `cleanup_install_os` | Removes temporary installation files and optionally credentials. |
-| `cleanup` | Runs both cleanup workflows. |
+| `cleanup_backup_oim_logs` | Removes all OIM log-backup run directories from the resolved destination. |
+| `cleanup` | Runs log-collection and OS-installation cleanup; it excludes OIM log backups. |
 | `upgrade` | Unsupported placeholder; it only prints a message and performs no upgrade. |
 | `rollback` | Unsupported placeholder; it only prints a message and performs no rollback. |
 
@@ -114,6 +152,7 @@ The installation playbook also supports the direct stage tags `credentials`,
 
 - [Utils overview](../../HowTo/utils/index.md)
 - [Install an OS unattended](../../HowTo/utils/install_os_unattended.md)
+- [Back up OIM logs](../../HowTo/utils/backup_oim_logs.md)
 - [Clean up Utils](../../HowTo/utils/cleanup_utils.md)
 - [Collect cluster logs](../../Operations/collect_cluster_logs.md)
 - [Use the Slurm configuration roles](../../Operations/slurm_configuration_roles.md)

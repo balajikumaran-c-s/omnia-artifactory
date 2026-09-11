@@ -57,5 +57,4 @@ gitlab_sidekiq_concurrency: 10
 
 - [Main environment](omnia_env.md)
 - [BuildStreaM contract](../domain_contracts/build_stream_contract.md)
-- [Deploy GitLab and BuildStreaM](../../HowTo/build_stream/deploy_gitlab.md)
-
+- [BuildStreaM](../../HowTo/build_stream/index.md)

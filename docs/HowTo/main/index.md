@@ -95,7 +95,7 @@ domain operation.
 | `orchestrator` | `precheck`, `validate`, `credentials`, `prepare`, `deploy`, `provision`, `execute`, `validate-deployment`, `pxeboot`, `cleanup`, `cleanup_credentials`, `upgrade`, `rollback` |
 | `repo_manager` | `precheck`, `credentials`, `prepare`, `deploy`, `execute`, `download`, `status`, `cleanup`, `cleanup_pulp`, `cleanup_repos`, `upgrade`, `rollback`, `catalog_generate`, `catalog_add`, `catalog_delete`, `catalog_validate` |
 | `telemetry` | `precheck`, `validate`, `validation`, `execute`, `deploy`, `cleanup`, `cleanup_idrac`, `cleanup_ldms`, `cleanup_ome`, `cleanup_powerscale`, `cleanup_ufm`, `cleanup_vast`, `upgrade`, `rollback`, `external_kafka`, `external_victoria` |
-| `utils` | `precheck`, `setup`, `collect`, `install_os`, `cleanup`, `cleanup_logs`, `cleanup_install_os`, `upgrade`, `rollback` |
+| `utils` | `precheck`, `setup`, `collect`, `install_os`, `backup_oim_logs`, `cleanup`, `cleanup_logs`, `cleanup_install_os`, `cleanup_backup_oim_logs`, `upgrade`, `rollback` |
 
 Running a domain without `--tags` starts that domain's default flow. Defaults
 are domain-specific. Tags marked `never` in a domain playbook run only when

@@ -43,7 +43,7 @@ for `execute`.
 | Orchestrator | `src/orchestrator/playbooks/orchestrator.yml` | `precheck`, `validate`, `credentials`, `prepare`, `deploy`, `provision`, `execute`, `validate-deployment`, `pxeboot`, `cleanup`, `cleanup_credentials`, `upgrade`, `rollback` | [How-to guide](../../HowTo/orchestrator/index.md) · [Contract](../domain_contracts/orchestrator_contract.md) |
 | Repository Manager | `src/repo_manager/playbooks/repo_manager.yml` | `precheck`, `credentials`, `prepare`, `deploy`, `execute`, `download`, `status`, `cleanup_pulp`, `cleanup_repos`, and catalog operations | [How-to guide](../../HowTo/repo_manager/index.md) · [Contract](../domain_contracts/repo_manager_contract.md) |
 | Telemetry | `src/telemetry/playbooks/telemetry.yml` | `precheck`, `validate`, `validation`, `execute`, `deploy`, `cleanup`, component cleanup tags, `external_kafka`, `external_victoria` | [How-to guide](../../HowTo/Telemetry/index.md) · [Contract](../domain_contracts/telemetry_contract.md) |
-| Utils | `src/utils/playbooks/utils.yml` | `precheck`, `collect`, `install_os`, `cleanup`, `cleanup_logs`, `cleanup_install_os` | [How-to guide](../../HowTo/utils/index.md) · [Contract](../domain_contracts/utils_contract.md) |
+| Utils | `src/utils/playbooks/utils.yml` | `precheck`, `collect`, `install_os`, `backup_oim_logs`, `cleanup`, `cleanup_logs`, `cleanup_install_os`, `cleanup_backup_oim_logs` | [How-to guide](../../HowTo/utils/index.md) · [Contract](../domain_contracts/utils_contract.md) |
 
 Discovery's `precheck`, `prepare`, `cleanup`, `upgrade`, and `rollback`
 lifecycle files currently contain placeholders. BuildStreaM's upgrade and rollback files, Image Build Manager's
@@ -98,6 +98,7 @@ selected modules have been initialized.
 | Deploy enabled telemetry sources and sinks | `./omnia.sh --run telemetry --tags deploy` |
 | Deploy BuildStreaM infrastructure and GitLab | `./omnia.sh --run build_stream --tags build` |
 | Collect logs with Utils | `./omnia.sh --run utils --tags collect` |
+| Back up OIM logs with Utils | `./omnia.sh --run utils --tags backup_oim_logs` |
 
 The Repository Manager entry point supports the standard workflow combination
 `prepare,precheck,download,status`. The other module entry points validate tag

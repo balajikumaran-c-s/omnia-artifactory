@@ -43,7 +43,7 @@ each domain owns and exposes its cleanup workflow.
 | `discovery` | Runs the reserved cleanup entry point. The current source implementation is a placeholder and does not remove Discovery artifacts. |
 | `image_build_manager` | Removes MinIO, the registry, build output, domain data, logs, and Image Build Manager credentials. |
 | `repo_manager` | Removes the Pulp deployment, Pulp data, CLI configuration, repository integration, and logs. Credential removal is selected interactively unless explicitly configured. |
-| `utils` | Removes log-collection run directories and temporary unattended-OS-installation artifacts. Credential removal is selected interactively when applicable. |
+| `utils` | The general cleanup removes cluster-log collection directories and temporary unattended-OS-installation artifacts. OIM log backups require the separate `cleanup_backup_oim_logs` tag. Credential removal is selected interactively when applicable. |
 
 ## Steps
 
@@ -66,7 +66,8 @@ cd <OMNIA_SOURCE_PATH>/src/main
 
 See [Clean Up Utils](../HowTo/utils/cleanup_utils.md) before running the Utils
 command; its log cleanup removes every collection run directory after checking
-archive age.
+archive age. The command does not remove OIM log backups. Preserve required
+backups, then run the dedicated cleanup described in that guide when needed.
 
 Stop and resolve any failure before continuing to the next domain. Do not run
 the main cleanup while domain playbooks still need the shared virtual

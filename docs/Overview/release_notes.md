@@ -19,6 +19,7 @@ requirements, see the
 | **Explicit PowerScale CSI Activation** | PowerScale CSI deployment for the service Kubernetes cluster is controlled by `enable_powerscale_csi`. Catalog membership or populated PowerScale file paths do not enable the driver. For details, see [Deploy PowerScale CSI](../HowTo/orchestrator/deploy_powerscale_csi.md). |
 | **Scoped Cleanup and Data Preservation** | Domains provide scoped cleanup workflows. Cleanup options determine whether credentials are preserved, while Telemetry preserves persistent volumes unless volume deletion is explicitly requested. Review the applicable cleanup procedure before running a cleanup tag. For details, see [OIM Cleanup](../Operations/oim_cleanup.md). |
 | **Stricter Input Validation** | Environment, catalog, repository, image-build, ISO filename, and NFS location inputs are validated before the applicable workflow proceeds, providing earlier feedback for invalid configuration. See the configuration reference for each domain for accepted values and formats. |
+| **OIM Domain Log Backup** | Utils can archive selected Omnia domain logs from the OIM to a local directory or NFS export. Each timestamped backup includes a compressed archive, metadata, and a SHA-256 checksum, with a dedicated cleanup operation. For details, see [Back Up OIM Logs](../HowTo/utils/backup_oim_logs.md). |
 
 ## Omnia 2.2.0.0
 
@@ -53,7 +54,7 @@ requirements, see the
 
 | Feature | Description |
 | --- | --- |
-| **BuildStreaM: Catalog-Driven Build Automation** | Omnia BuildStreaM provides a comprehensive automation solution for managing infrastructure build workflows. It uses a catalog-driven approach where you define your build requirements in a structured catalog file, and BuildStreaM executes automated pipelines to create and deploy images according to your specifications. For more details, see [BuildStreaM Documentation](../HowTo/build_stream/deploy_gitlab.md). |
+| **BuildStreaM: Catalog-Driven Build Automation** | Omnia BuildStreaM provides a comprehensive automation solution for managing infrastructure build workflows. It uses a catalog-driven approach where you define your build requirements in a structured catalog file, and BuildStreaM executes automated pipelines to create and deploy images according to your specifications. For more details, see [BuildStreaM Documentation](../HowTo/build_stream/index.md). |
 | **Support for Installation of Additional Packages** | Enables the installation of additional packages on the cluster nodes, allowing to extend cluster functionality with custom software and tools. For more details, see [Configure Catalog Content and Add Packages](../HowTo/repo_manager/adding_additional_packages.md). |
 | **Add and Remove Slurm Compute Nodes** | Provides the ability to add and remove Slurm compute nodes from the cluster, allowing for dynamic scaling of the cluster. See [Add Nodes](../Operations/add_nodes.md) and [Remove Slurm Compute Nodes](../Operations/remove_slurm_nodes.md). |
 | **Support for Apptainer** | Run apptainer pull to store the SIF container image on the cluster's NFS-mounted shared storage. This ensures uniform access across all compute nodes, enabling them to run jobs from the same SIF file. For more details, see [Use Apptainer](../HowTo/orchestrator/../orchestrator/use_apptainer.md). |
@@ -76,8 +77,6 @@ requirements, see the
 | **Security Enhancements** | Credentials are now encrypted using industry-standard algorithms (for example, AES-256), improving compliance with security best practices and reducing the risk of data exposure. For more details, see [Product and Subsystem Security](../SecurityConfigurationGuide/product_subsystem_security.md). |
 | **Platform Support** | Supports `x86_64` and `aarch64` architectures, enabling deployment on both traditional and ARM-based HPC nodes for improved flexibility and energy efficiency. For more details, see [Software Requirements](../Reference/../Reference/../Reference/ClusterRequirements/software_requirements.md). |
 | **Input Template and Validator** | Provides predefined configuration templates and early input validation to reduce configuration errors and accelerate HPC cluster provisioning. This improves deployment reliability and overall user experience. For current task-specific procedures, see the [module how-to guides](../HowTo/index.md). |
-
-
 
 
 

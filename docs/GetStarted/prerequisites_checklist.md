@@ -217,15 +217,6 @@ via iDRAC or BIOS Setup (F2 at POST).
 | ☐ | iDRAC IP assigned on BMC network | Can be DHCP (Omnia will assign) or static. If static, record each iDRAC IP for the mapping file. |
 | ☐ | Current iDRAC credentials known | Provide them through the Orchestrator credential workflow when prompted. |
 
-## Aarch64 Node Prerequisites
-
-
-| ☑ | Requirement | Details |
-| --- | --- | --- |
-| ☐ | Disk available for Full OS installation | You must install the OS manually on aarch64 nodes. |
-| ☐ | IP address assigned with PXE network connectivity | Ensure the aarch64 node has an IP and connectivity to the PXE network. |
-| ☐ | Same NFS share as OIM reachable | Ensure the NFS share used in OIM is also reachable on the aarch64 node. |
-
 ## Service Kubernetes (K8s) Requirements
 
 
@@ -370,7 +361,6 @@ dnf repolist
     deep in the Ansible playbook execution.
 
 You are now ready to choose your deployment path. Return to [Get Started Index](index.md).
-
 
 
 
