@@ -48,6 +48,17 @@ The source also provides optional component path overrides:
 # BUILD_STREAM_DATA_PATH=${OMNIA_DATA_PATH}/build_stream
 ```
 
+When a component-specific path is set, it is authoritative for that component's
+`input`, `output`, and `log` directories. If it is unset or empty, the component
+uses `${OMNIA_DATA_PATH}/<component>`. For example,
+`ORCHESTRATOR_DATA_PATH=/data/orchestrator` selects
+`/data/orchestrator/input/$OMNIA_PROJECT_NAME` and
+`/data/orchestrator/output/$OMNIA_PROJECT_NAME`; it does not append another
+`orchestrator` directory. Upstream consumers use the producer's component path,
+so Orchestrator resolves Image Build Manager output from
+`IMAGE_BUILD_MANAGER_DATA_PATH` before falling back to
+`${OMNIA_DATA_PATH}/image_build_manager`.
+
 Do not add credentials to `omnia.env`; module credential playbooks create their
 own encrypted credential files.
 

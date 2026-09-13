@@ -21,7 +21,9 @@ clusters via PXE using a mapping file **(Mandatory)** to dictate IP
 address/MAC mapping.
 
 Omnia can be installed via CLI only. Slurm and Kubernetes are deployed and
-configured on the cluster. OpenLDAP is installed for providing authentication.
+configured on the cluster. When a catalog group name contains the lowercase
+text `openldap`, Orchestrator deploys OpenLDAP for supported Slurm and login
+functional groups.
 
 To perform these configurations and installations, a secure SSH channel is
 established between the management node and the following entities:
@@ -40,7 +42,12 @@ Omnia does not have its own authentication mechanism because bare metal installa
 
 ## Cluster Authentication Tool
 
-In order to enable authentication to the cluster, Omnia installs OpenLDAP: an open source tool providing integrated identity and authentication for Linux networked environments. As part of the HPC cluster, the login node is responsible for configuring users and managing a limited number of administrative tasks. Access to the manager/head node is restricted to cluster administrators only.
+For centralized authentication, Orchestrator can deploy OpenLDAP, an open
+source directory service for Linux networked environments. Selection is
+catalog-driven, and the current provisioning templates configure OpenLDAP
+clients on supported Slurm control, compute, and login functional groups. The
+Kubernetes provisioning path does not configure an OpenLDAP client. Site
+administrators remain responsible for user and group management.
 
 !!! note
 
@@ -65,9 +72,9 @@ requested only when iDRAC metrics are enabled.
 
 1. iDRAC/BMC (Username / Password)
 2. Provisioning OS (Password)
-3. slurmdb_password (Password)
+3. Slurm database (`slurm_db_password`)
 4. DockerHub (Username / Password)
-5. OpenLDAP (`openldap_db_username`, `openldap_db_password`, `openldap_config_username`, `openldap_config_password`, `openldap_monitor_password`)
+5. OpenLDAP (`openldap_db_username`, `openldap_db_password`)
 6. Telemetry (`mysqldb_user`, `mysqldb_password`, `mysqldb_root_password`)
 7. Minio S3 bucket (Password)
 8. Pulp (Password)
@@ -78,8 +85,6 @@ requested only when iDRAC metrics are enabled.
 13. OME Discovery (`ome_username`, `ome_password`)
 14. UFM Telemetry (`ufm_username`, `ufm_password`)
 15. VAST Telemetry (`vast_username`, `vast_password`)
-
-
 
 
 

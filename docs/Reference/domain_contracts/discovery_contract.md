@@ -50,8 +50,10 @@ normally begins with `nid001`.
 Review and correct the generated values before copying the file to:
 
 ```text
-$OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv
+$ORCHESTRATOR_DATA_PATH/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv
 ```
+
+`ORCHESTRATOR_DATA_PATH` defaults to `$OMNIA_DATA_PATH/orchestrator`.
 
 For `slurm_node_x86_64` and `slurm_node_aarch64`, Discovery sets
 `PARENT_SERVICE_TAG` to the service tag of a

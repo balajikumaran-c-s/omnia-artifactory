@@ -43,9 +43,13 @@ conditional credentials in the encrypted project
 
 ## Usage example
 
-```yaml title="File: /opt/omnia/telemetry/input/project_default/telemetry_config.yml"
+Resolve the component paths from `/etc/omnia/omnia.env` and replace the
+angle-bracket placeholders below with absolute paths. Environment-variable
+expressions are not expanded inside this YAML file.
+
+```yaml title="File: <TELEMETRY_DATA_PATH>/input/<OMNIA_PROJECT_NAME>/telemetry_config.yml"
 ---
-cluster_inventory: "/opt/omnia/orchestrator/output/project_default/orchestrator_inventory.yml"
+cluster_inventory: "<ORCHESTRATOR_DATA_PATH>/output/<OMNIA_PROJECT_NAME>/orchestrator_inventory.yaml"
 
 telemetry_sources:
 
@@ -122,7 +126,7 @@ telemetry_sinks:
       ldms: 2
 
 idrac_telemetry_configurations:
-  bmc_group_data_path: "/opt/omnia/orchestrator/output/project_default/bmc_group_data.csv"
+  bmc_group_data_path: "<ORCHESTRATOR_DATA_PATH>/output/<OMNIA_PROJECT_NAME>/bmc_group_data.csv"
   mysqldb_storage: "1Gi"
   oim_bmc_ips:
     oim1: ""
@@ -383,8 +387,6 @@ kafka_storage:
     - [Ldms Metrics](../Metrics/ldms_metrics.md) -- LDMS sampler metric catalog.
     - [Ports](../../SecurityConfigurationGuide/network_security.md#telemetry-ports) -- Ports used by telemetry
       services.
-
-
 
 
 

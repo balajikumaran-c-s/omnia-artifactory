@@ -8,6 +8,14 @@ This file controls the deployment of Slurm and Kubernetes across cluster nodes.
 
 --8<-- "html/omnia_config-slurm_cluster.html"
 
+This release supports one Slurm cluster configuration. When Slurm is enabled,
+supply one item in `slurm_cluster`; the current implementation reads only the
+first item and does not process additional items. `vast_storage_name` is
+optional. When it is empty or omitted, Orchestrator reuses `nfs_storage_name`
+for Slurm shared-data and HPC-tools paths and skips the standard mount whose
+`name` is `vast_storage`. When set, `vast_storage_name` must exactly match one
+mount `name` in `storage_config.yml`.
+
 ### Kubernetes Configuration Parameters
 
 --8<-- "html/omnia_config-k8s_cluster.html"
@@ -20,9 +28,15 @@ defaults to `false`. When set to `true`, both
 existing regular files by absolute path. Catalog membership and populated file
 paths do not enable CSI when the flag is `false` or omitted.
 
+When service Kubernetes is configured, set `deployment: true` on exactly one
+`service_k8s_cluster` item. Other entries may remain in the list with
+`deployment: false`, but Orchestrator deploys only the selected item. The
+current runtime falls back to the first list item when none is marked; use an
+explicit selection so that list reordering cannot change the deployed cluster.
+
 ## Usage example
 
-```yaml title="File: /opt/omnia/orchestrator/input/project_default/omnia_config.yml"
+```yaml title="File: $ORCHESTRATOR_DATA_PATH/input/$OMNIA_PROJECT_NAME/omnia_config.yml"
 ---
 slurm_cluster:
   - cluster_name: slurm_cluster
@@ -35,10 +49,8 @@ slurm_cluster:
       cgroup: /path/to/custom/cgroup.conf
       # slurm:
       #   SlurmctldTimeout: 60
-      #   SlurmdTimeout: 150  
+      #   SlurmdTimeout: 150
     # Optional: Override hardware specs for specific node groups
-    nvidia_driver_version_x86_64: "580.159.04"
-    nvidia_driver_version_aarch64: "580.159.04"
     node_hardware_defaults:
       grp1:
         sockets: 2
@@ -51,7 +63,6 @@ slurm_cluster:
         cores_per_socket: 32
         threads_per_core: 2
         real_memory: 256000
-      
 
 service_k8s_cluster:
   - cluster_name: service_cluster
@@ -76,11 +87,6 @@ service_k8s_cluster:
     - [HA Config](high_availability_config.md) -- Kubernetes high-availability settings.
     - [Slurm Storage Architecture](../../HowTo/orchestrator/deploy_slurm.md#slurm-storage-architecture) -- How NFS and VAST mounts are used by Slurm.
     - [K8s Storage Architecture](../../HowTo/orchestrator/deploy_kubernetes.md#k8s-storage-architecture) -- How NFS mounts are used by service K8s.
-
-
-
-
-
 
 
 

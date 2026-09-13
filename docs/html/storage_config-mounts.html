@@ -23,7 +23,7 @@
                     </td>
                     <td>
                         <div class="omnia-cell">
-                            <p>Cloud-init compatible mount configurations. Source must be known at boot time.</p>
+                            <p>Cloud-init compatible mount configurations. Source must be known at boot time. Each entry must define exactly one targeting field: <code class="docutils literal notranslate"><span class="pre">functional_group_prefix</span></code> or <code class="docutils literal notranslate"><span class="pre">groups</span></code>.</p>
                         </div>
                     </td>
                 </tr>
@@ -176,7 +176,7 @@
                         </div>
                     </td>
                 </tr>
-                <tr class="row-even">
+                <tr class="row-odd">
                     <td>
                         <div class="omnia-indent"></div>
                         <div class="omnia-cell">
@@ -209,8 +209,7 @@
                     <td>
                         <div class="omnia-indent-desc"></div>
                         <div class="omnia-cell">
-                            <p>Per-node subdirectory isolation variable. Optional<br  >Allowed values:<br>  - <code class="docutils literal notranslate"><span class="pre">local_hostname</span></code> - hostname of the node<br>  - <code class="docutils literal notranslate"><span class="pre">local_ipv4</span></code> - IPv4 address of the node<br>  - <code class="docutils literal notranslate"><span class="pre">instance_id</span></code> - instance ID of the node from cloud-init<br>When set, <code class="docutils literal notranslate"><span class="pre">node_mount_point</span></code> is MANDATORY<br>Generates bind mounts: &lt;mount_point&gt;/&lt;node_key_value&gt;/&lt;target&gt; -> &lt;target&gt;</p>
-                            <p>Default: <code class="docutils literal notranslate"><span class="pre">local_hostname</span></code>.</p>
+                            <p>Per-node subdirectory isolation variable. Optional and disabled when omitted.<br  >Allowed values:<br>  - <code class="docutils literal notranslate"><span class="pre">local_hostname</span></code> - hostname of the node<br>  - <code class="docutils literal notranslate"><span class="pre">local_ipv4</span></code> - IPv4 address of the node<br>  - <code class="docutils literal notranslate"><span class="pre">instance_id</span></code> - instance ID of the node from cloud-init<br>When set, <code class="docutils literal notranslate"><span class="pre">node_mount_point</span></code> is required.<br>Generates bind mounts: &lt;mount_point&gt;/&lt;node_key_value&gt;/&lt;target&gt; -&gt; &lt;target&gt;</p>
                         </div>
                     </td>
                 </tr>
@@ -246,7 +245,7 @@
                     <td>
                         <div class="omnia-indent-desc"></div>
                         <div class="omnia-cell">
-                            <p>List of oChaMI functional group prefixes to apply this mount to. Mutually exclusive with <code class="docutils literal notranslate"><span class="pre">groups</span></code>.</p>
+                            <p>List of OpenCHAMI functional group prefixes to apply this mount to. Exactly one of <code class="docutils literal notranslate"><span class="pre">functional_group_prefix</span></code> or <code class="docutils literal notranslate"><span class="pre">groups</span></code> is required.</p>
                         </div>
                     </td>
                 </tr>
@@ -264,7 +263,7 @@
                     <td>
                         <div class="omnia-indent-desc"></div>
                         <div class="omnia-cell">
-                            <p>List of GROUP_NAME values from pxe_mapping_file.csv. Mutually exclusive with <code class="docutils literal notranslate"><span class="pre">functional_group_prefix</span></code>.</p>
+                            <p>List of <code class="docutils literal notranslate"><span class="pre">GROUP_NAME</span></code> values from <code class="docutils literal notranslate"><span class="pre">pxe_mapping_file.csv</span></code>. Exactly one of <code class="docutils literal notranslate"><span class="pre">groups</span></code> or <code class="docutils literal notranslate"><span class="pre">functional_group_prefix</span></code> is required.</p>
                         </div>
                     </td>
                 </tr>
@@ -345,10 +344,9 @@
                         <div class="omnia-indent-desc"></div>
                         <div class="omnia-cell">
                             <p>Octal permission mode (e.g., 0755, 1777)</p>
-                            <p>Default: <code class="docutils literal notranslate"><span class="pre">0755</span></code>.</p>
+                            <p>Default: <code class="docutils literal notranslate"><span class="pre">0644</span></code>.</p>
                         </div>
                     </td>
                 </tr>
     </tbody>
 </table>
-

@@ -15,7 +15,7 @@ FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_M
 
 | Contract | Producer or staged location | Structure sample |
 |---|---|---|
-| `pxe_mapping_file.csv` | Discovery: `$OMNIA_DATA_PATH/discovery/output/$OMNIA_PROJECT_NAME/bmc_pxe_mapping_file.csv`; staged for Orchestrator: `$OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv` | [PXE mapping structure sample](https://github.com/dell/omnia/blob/issue-4849-omnia-modernization/src/orchestrator/examples/pxe_mapping_file.csv) |
+| `pxe_mapping_file.csv` | Discovery: `$DISCOVERY_DATA_PATH/output/$OMNIA_PROJECT_NAME/bmc_pxe_mapping_file.csv`; staged for Orchestrator: `$ORCHESTRATOR_DATA_PATH/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv` | [PXE mapping structure](../SampleFiles/pxe_mapping_file.md) |
 
 Review Discovery output before staging it. The reviewed, staged file is the
 authoritative pipeline input; the linked file is a structure sample.

@@ -25,6 +25,9 @@ is not deployed.
 
 - Run the workflow from the OIM with the project environment used for the
   existing Orchestrator deployment.
+- Provide a successful Repository Manager `repo_status.yml` and its referenced
+  Pulp certificate. The top-level Orchestrator setup validates this contract
+  before the `upgrade` workflow starts.
 - Confirm OpenCHAMI is healthy and preserve an external backup of required
   service and project data.
 - Ensure the OIM can pull the OpenCHAMI and `omnia_auth:1.2` container images.

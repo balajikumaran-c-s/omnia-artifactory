@@ -17,7 +17,7 @@ prerequisite phases automatically.
 | `provision` | Yes | Successful | Successful | Successful `precheck` and `prepare`; healthy deployed services |
 | `execute` | Yes | Successful | Successful | Same as `provision`; BMC access when PXE is enabled |
 | `validate-deployment` | Yes | No | No | Deployed OpenCHAMI and any catalog-selected OpenLDAP service |
-| `pxeboot` | No | Successful | Successful | Completed provisioning, stored BMC credentials, and reachable mapped iDRACs |
+| `pxeboot` | No | Successful | No | Completed provisioning, stored BMC credentials, and reachable mapped iDRACs |
 
 Cleanup and credential cleanup do not require upstream status files. Upgrade
 requires a supported deployed source version and successful
@@ -27,23 +27,28 @@ requires a supported deployed source version and successful
 
 | Producer | Output consumed by Orchestrator | Required contract |
 |---|---|---|
-| Repository Manager | `repo_status.yml` | Required provisioning flows validate `overall_status: success`, OS metadata, repository mappings, and the Pulp certificate path; the certificate must exist. |
-| Image Build Manager | `build_status.yml` | Provisioning and PXE flows require `overall_status: success` and a usable S3 endpoint. Functional-group image records supply the boot artifacts. |
+| Repository Manager | `repo_status.yml` | Precheck, provisioning, execute, and PXE flows validate `overall_status: success`, OS metadata, repository mappings, and the Pulp certificate path; the certificate must exist. |
+| Image Build Manager | `build_status.yml` | Precheck, provisioning, and execute flows require `overall_status: success` and a usable S3 endpoint. Functional-group image records supply the boot artifacts. A standalone `pxeboot` run does not read this file. |
 | Discovery or an administrator | `pxe_mapping_file.csv` | Node data must use the mapping columns below. Discovery output must be reviewed and staged for Orchestrator; the handoff is not automatic. |
 
 ### Contract locations and structure samples
 
 | Contract | Producer output | Structure sample |
 |---|---|---|
-| `repo_status.yml` | `$OMNIA_DATA_PATH/repo_manager/output/$OMNIA_PROJECT_NAME/repo_status.yml` | [Repository Manager output sample](https://github.com/dell/omnia/blob/issue-4849-omnia-modernization/src/orchestrator/samples/repo_manager_output/repo_status.yml) |
-| `build_status.yml` | `$OMNIA_DATA_PATH/image_build_manager/output/$OMNIA_PROJECT_NAME/build_status.yml` | [Image Build Manager output sample](https://github.com/dell/omnia/blob/issue-4849-omnia-modernization/src/orchestrator/samples/image_build_manager_output/build_status.yml) |
-| `pxe_mapping_file.csv` | `$OMNIA_DATA_PATH/discovery/output/$OMNIA_PROJECT_NAME/bmc_pxe_mapping_file.csv` | [PXE mapping structure sample](https://github.com/dell/omnia/blob/issue-4849-omnia-modernization/src/orchestrator/examples/pxe_mapping_file.csv) |
+| `repo_status.yml` | `$REPO_MANAGER_DATA_PATH/output/$OMNIA_PROJECT_NAME/repo_status.yml` | [Repository Manager contract](repo_manager_contract.md) |
+| `build_status.yml` | `$IMAGE_BUILD_MANAGER_DATA_PATH/output/$OMNIA_PROJECT_NAME/build_status.yml` | [Image Build Manager contract](image_build_manager_contract.md) |
+| `pxe_mapping_file.csv` | `$DISCOVERY_DATA_PATH/output/$OMNIA_PROJECT_NAME/bmc_pxe_mapping_file.csv` | [PXE mapping structure](../SampleFiles/pxe_mapping_file.md) |
 
 Custom Repo Manager and Image Build Manager output paths can be set in
 `orchestrator_config.yml`. Discovery output must be reviewed and copied to
-`$OMNIA_DATA_PATH/orchestrator/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv`.
+`$ORCHESTRATOR_DATA_PATH/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv`.
 Generated producer outputs remain authoritative; the linked files show the
 structures expected by Orchestrator.
+
+Each component data path defaults to its directory under `$OMNIA_DATA_PATH`.
+For example, `ORCHESTRATOR_DATA_PATH` defaults to
+`$OMNIA_DATA_PATH/orchestrator`. A component-specific value is authoritative
+when configured.
 
 The PXE mapping contract is:
 
@@ -61,7 +66,7 @@ use InfiniBand.
 Customer-readable project outputs are written under:
 
 ```text
-$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/
+$ORCHESTRATOR_DATA_PATH/output/$OMNIA_PROJECT_NAME/
 ```
 
 `provisioning_report.yml`, `orchestrator_status.yml`, `pxeboot_status.yml`,
@@ -80,12 +85,37 @@ and `failed_nodes.json` use schema version `1.0`.
 Orchestrator also writes the shared generated file:
 
 ```text
-$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/.data/functional_groups_config.yml
+$ORCHESTRATOR_DATA_PATH/output/$OMNIA_PROJECT_NAME/.data/functional_groups_config.yml
 ```
 
 This file is derived from `pxe_mapping_file.csv` and is consumed by inventory
 generation, OpenCHAMI configuration, Slurm and Kubernetes provisioning, and
 validation roles.
+
+Its generated structure is:
+
+```yaml
+groups:
+  grp0:
+    parent: ""
+  grp1:
+    parent: "ABFL82"
+
+functional_groups:
+  - name: "slurm_control_node_rhel_10_0_x86_64"
+    cluster_name: "slurm_cluster"
+    group:
+      - grp0
+  - name: "slurm_node_rhel_10_0_x86_64"
+    cluster_name: "slurm_cluster"
+    group:
+      - grp1
+```
+
+`groups` maps each PXE `GROUP_NAME` to its optional parent service tag.
+`functional_groups[].group` contains group names, not per-node inventory
+records. Node records remain in the PXE mapping and generated
+`orchestrator_inventory.yaml`.
 
 ### `orchestrator_status.yml`
 
@@ -131,21 +161,24 @@ current provisioning playbooks.
 ### Service outputs
 
 Orchestrator also creates runtime state through OpenCHAMI and the selected
-cluster roles. These include SMD node and group records, BSS boot parameters,
-cloud-init configurations, OpenCHAMI services, and the selected Slurm or
-Kubernetes deployment. These service resources are not represented by
-generated `slurm_config.yml` or `kubernetes_config.yml` files in the project
-output directory.
+cluster roles. These include SMD node and group records, boot-service
+configurations, metadata-service cloud-init resources, OpenCHAMI services, and
+the selected Slurm or Kubernetes deployment. These service resources are not
+represented by generated `slurm_config.yml` or `kubernetes_config.yml` files
+in the project output directory.
 
 ## Lifecycle contract
 
 ### Cleanup
 
 The top-level `cleanup` tag removes all enabled components and Orchestrator
-credentials by default. Set `cleanup_credentials=false` to preserve the
 credentials. The `cleanup_credentials` tag limits the operation to credential
 artifacts, while `cleanup,cleanup_credentials` explicitly removes both the
-enabled components and credentials.
+enabled components and credentials. Although source comments mention a
+`cleanup_credentials=false` extra variable, the current cleanup implementation
+does not consume it. Retain credentials by running the standalone cleanup
+playbook with explicit component tags that omit `cleanup_credentials`, or by
+using an approved secure backup and restore procedure.
 
 Component tags are not accepted by the top-level Orchestrator playbook. Run
 `playbooks/cleanup/cleanup_orchestrator.yml` directly for `openchami`,

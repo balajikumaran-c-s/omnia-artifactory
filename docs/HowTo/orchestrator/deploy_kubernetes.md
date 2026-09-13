@@ -17,9 +17,12 @@ available. Do not assume that selecting OpenLDAP in the catalog configures an
 OpenLDAP client on Kubernetes nodes.
 
 The source provides x86_64 templates for the first control-plane node,
-additional control-plane nodes, and worker nodes. During functional-group
-generation, the first `service_kube_control_plane_x86_64` group is converted to
-`service_kube_control_plane_first_x86_64`.
+additional control-plane nodes, and worker nodes. In the PXE mapping, use the
+exact Kubernetes functional-layer names from the selected catalog. For the
+bundled RHEL 10.0 x86_64 catalog, these are
+`service_kube_control_plane_rhel_10_0_x86_64` and
+`service_kube_node_rhel_10_0_x86_64`. Orchestrator promotes the first mapped
+control-plane occurrence to the corresponding internal `_first` group.
 
 ## Prerequisites
 
@@ -33,8 +36,9 @@ generation, the first `service_kube_control_plane_x86_64` group is converted to
 - Provide an NFS mount whose `name` matches `nfs_storage_name` in
   `omnia_config.yml`. The OIM must be able to mount it and create the Kubernetes
   configuration directories.
-- Configure `high_availability_config.yml`; its `cluster_name` must match the
-  Kubernetes entry selected for deployment.
+- Configure `high_availability_config.yml` and keep the intended Kubernetes HA
+  entry first. The current Kubernetes configuration role reads the first HA
+  entry; it does not select an entry by `cluster_name`.
 - To deploy PowerScale CSI, set `enable_powerscale_csi: true` on the deployed
   `service_k8s_cluster` and provide its secret and values file paths.
 
@@ -52,17 +56,17 @@ etcd data.
    `pxe_mapping_file.csv`:
 
     ```text title="pxe_mapping_file.csv — functional-group examples"
-    service_kube_control_plane_x86_64
-    service_kube_node_x86_64
+    service_kube_control_plane_rhel_10_0_x86_64
+    service_kube_node_rhel_10_0_x86_64
     ```
 
-   The source classification accepts the `service_kube_` prefix. When the
-   canonical control-plane name shown above is used, functional-group
-   generation marks the first occurrence as
-   `service_kube_control_plane_first_x86_64`.
+   Do not add the internal `_first` marker to the source mapping. The source
+   currently has no aarch64 Kubernetes metadata-service templates.
 
-2. Configure the Kubernetes cluster in `omnia_config.yml`. Exactly one source
-   template entry is marked `deployment: true`.
+2. Configure the Kubernetes cluster in `omnia_config.yml`. Mark the intended
+   entry with `deployment: true`. The runtime rejects multiple entries marked
+   `true`; when none is marked, the current provisioning path selects the first
+   entry in the list.
 
     ```yaml title="omnia_config.yml"
     service_k8s_cluster:
@@ -71,7 +75,7 @@ etcd data.
         enable_powerscale_csi: false
         etcd_on_local_disk: false
         k8s_cni: "calico"
-        pod_external_ip_range: "<external-ip-range-or-cidr>"
+        pod_external_ip_range: "172.16.107.170-172.16.107.200"
         k8s_service_addresses: "10.233.0.0/18"
         k8s_pod_network_cidr: "10.233.64.0/18"
         nfs_storage_name: "nfs_k8s"
@@ -80,9 +84,10 @@ etcd data.
         csi_powerscale_driver_values_file_path: ""
     ```
 
-   The source input supports `calico` or `flannel`; it directs RoCE deployments
-   to use `flannel`. Keep the external IP range unused by cluster nodes and
-   keep the service and pod networks unused in the surrounding infrastructure.
+   Set `k8s_cni` to `calico`. The current provisioning path stages and applies
+   Calico and does not select a Flannel manifest from this value. Keep the
+   external IP range unused by cluster nodes and keep the service and pod
+   networks unused in the surrounding infrastructure.
 
 3. Configure the matching HA entry:
 
@@ -129,8 +134,16 @@ etcd data.
 Confirm the Orchestrator view first:
 
 ```bash title="Run on: OIM"
-cat "$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/provisioning_report.yml"
-cat "$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/orchestrator_status.yml"
+source /etc/profile.d/omnia-env.sh
+orchestrator_path="${ORCHESTRATOR_DATA_PATH:-${OMNIA_DATA_PATH}/orchestrator}"
+cat "$orchestrator_path/output/$OMNIA_PROJECT_NAME/provisioning_report.yml"
+cat "$orchestrator_path/output/$OMNIA_PROJECT_NAME/orchestrator_status.yml"
+```
+
+If the `pxeboot` phase in step 6 ran, inspect its per-node report separately:
+
+```bash title="Run on: OIM"
+cat "$orchestrator_path/output/$OMNIA_PROJECT_NAME/pxeboot_status.yml"
 ```
 
 After cloud-init completes, use the commands embedded in the source templates

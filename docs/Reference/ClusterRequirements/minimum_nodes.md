@@ -59,13 +59,17 @@ This page lists the minimum number of servers required for each Omnia deployment
 
 | Role | Functional Group | Description |
 | --- | --- | --- |
-| OIM | -- | Management node. Runs Pulp, OpenCHAMI, MinIO, and provisioning services. Always exactly 1. Cannot be co-located with cluster roles. |
-| Service K8s Control Plane | `service_kube_control_plane_x86_64` | Runs Kubernetes API server, etcd, scheduler, and controller-manager. 3 required for HA quorum. |
-| Service K8s Node | `service_kube_node_x86_64` | Kubernetes worker node. Hosts telemetry pods and application workloads. |
-| Slurm Control Node | `slurm_control_node_x86_64` | Runs `slurmctld`, `slurmdbd`, and MariaDB for job accounting. |
-| Slurm Node | `slurm_node_x86_64`, `slurm_node_aarch64` | Compute nodes running `slurmd`. Scale out as needed. |
-| Login Node | `login_node_x86_64`, `login_node_aarch64` | Interactive SSH access for users to submit jobs. Runs `slurmd`. |
-| Login Compiler Node | `login_compiler_node_aarch64` | Login node with compiler toolchain for cross-compilation on AArch64. |
+| OIM | -- | Management node. Runs Pulp, OpenCHAMI, provisioning services, and local MinIO when selected. Always exactly 1. Cannot be co-located with cluster roles. |
+| Service K8s Control Plane | `service_kube_control_plane_<os>_<version>_x86_64` | Runs Kubernetes API server, etcd, scheduler, and controller-manager. 3 required for HA quorum. |
+| Service K8s Node | `service_kube_node_<os>_<version>_x86_64` | Kubernetes worker node. Hosts telemetry pods and application workloads. |
+| Slurm Control Node | `slurm_control_node_<os>_<version>_x86_64` | Runs `slurmctld`, `slurmdbd`, and MariaDB for job accounting. |
+| Slurm Node | `slurm_node_<os>_<version>_<architecture>` | Compute nodes running `slurmd`. Scale out as needed. |
+| Login Node | `login_node_<os>_<version>_<architecture>` | Interactive SSH access for users to submit jobs. Runs `slurmd`. |
+| Login Compiler Node | `login_compiler_node_<os>_<version>_<architecture>` | Login node with compiler toolchain. |
+
+Use the exact functional-layer name from the selected catalog. For example,
+the default catalog uses `service_kube_control_plane_rhel_10_0_x86_64` and
+`slurm_node_rhel_10_0_aarch64`.
 
 !!! note
 
@@ -76,8 +80,6 @@ This page lists the minimum number of servers required for each Omnia deployment
     - [Disk Space](disk_space.md) -- Disk and memory requirements per node role.
     - [Ports](../../SecurityConfigurationGuide/network_security.md#firewall-settings) -- Network ports required per role.
     - [HA Config](../Configuration/high_availability_config.md) -- Kubernetes HA settings.
-
-
 
 
 

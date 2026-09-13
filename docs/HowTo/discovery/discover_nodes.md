@@ -420,8 +420,11 @@ accordingly when this relationship is required.
    directory:
 
     ```bash title="Run on: OIM host"
-    cp /opt/omnia/discovery/output/project_default/bmc_pxe_mapping_file.csv \
-      /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv
+    source /etc/profile.d/omnia-env.sh
+    discovery_path="${DISCOVERY_DATA_PATH:-${OMNIA_DATA_PATH}/discovery}"
+    orchestrator_path="${ORCHESTRATOR_DATA_PATH:-${OMNIA_DATA_PATH}/orchestrator}"
+    cp "${discovery_path}/output/${OMNIA_PROJECT_NAME}/bmc_pxe_mapping_file.csv" \
+      "${orchestrator_path}/input/${OMNIA_PROJECT_NAME}/pxe_mapping_file.csv"
     ```
 
 3. With BuildStreaM enabled, build the images through the build pipeline first.

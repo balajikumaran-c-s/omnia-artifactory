@@ -18,9 +18,13 @@ status file.
 - Confirm that Orchestrator produced:
 
     ```text
-    /opt/omnia/orchestrator/output/project_default/orchestrator_inventory.yaml
-    /opt/omnia/orchestrator/output/project_default/bmc_group_data.csv
+    <ORCHESTRATOR_DATA_PATH>/output/<OMNIA_PROJECT_NAME>/orchestrator_inventory.yaml
+    <ORCHESTRATOR_DATA_PATH>/output/<OMNIA_PROJECT_NAME>/bmc_group_data.csv
     ```
+
+  `ORCHESTRATOR_DATA_PATH` uses the component-specific value from
+  `/etc/omnia/omnia.env`; when unset, resolve it as
+  `<OMNIA_DATA_PATH>/orchestrator`.
 
 - Initialize the Telemetry module so these inputs exist:
 
@@ -41,15 +45,18 @@ status file.
    the generated Orchestrator inventory:
 
     ```yaml
-    cluster_inventory: "/opt/omnia/orchestrator/output/project_default/orchestrator_inventory.yaml"
+    cluster_inventory: "<ORCHESTRATOR_DATA_PATH>/output/<OMNIA_PROJECT_NAME>/orchestrator_inventory.yaml"
     ```
+
+   Replace the placeholders with their absolute values. YAML does not expand
+   shell environment variables.
 
 2. When iDRAC metrics are enabled, set the BMC inventory path under the
    source-specific configuration:
 
     ```yaml
     idrac_telemetry_configurations:
-      bmc_group_data_path: "/opt/omnia/orchestrator/output/project_default/bmc_group_data.csv"
+      bmc_group_data_path: "<ORCHESTRATOR_DATA_PATH>/output/<OMNIA_PROJECT_NAME>/bmc_group_data.csv"
     ```
 
     To add an external BMC, create a customer-managed CSV with the same schema

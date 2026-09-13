@@ -43,12 +43,17 @@ service. Its data is stored on a ReadWriteOnce persistent volume.
           - kafka
 
     idrac_telemetry_configurations:
-      bmc_group_data_path: "/opt/omnia/orchestrator/output/project_default/bmc_group_data.csv"
+      bmc_group_data_path: "<ORCHESTRATOR_DATA_PATH>/output/<OMNIA_PROJECT_NAME>/bmc_group_data.csv"
       mysqldb_storage: "1Gi"
       oim_bmc_ips:
         oim1: ""
         oim2: ""
     ```
+
+    Resolve `ORCHESTRATOR_DATA_PATH` from `/etc/omnia/omnia.env`; when it is
+    unset, use `<OMNIA_DATA_PATH>/orchestrator`. Replace both placeholders
+    with their absolute values because environment variables are not expanded
+    inside YAML.
 
 2. Keep the `idrac_telemetry_storage` resource sections in
    `telemetry_storage_config.yml` and the `images.idrac` entries in

@@ -5,7 +5,6 @@
 Orchestrator provides a full cleanup workflow and a standalone
 component-cleanup playbook. Full cleanup removes every enabled Orchestrator
 component, including the encrypted credential file and Vault key by default.
-Set `cleanup_credentials=false` to preserve the credentials.
 
 Component cleanup can remove OpenCHAMI, OpenLDAP, Slurm, Kubernetes, storage
 mounts, or generated Orchestrator artifacts independently. Slurm and
@@ -17,6 +16,15 @@ then unmounts the corresponding storage and removes its `/etc/fstab` entries.
     Cleanup is destructive. Slurm and Kubernetes cleanup can permanently
     delete data from mounted shared NFS storage. Back up required data and
     review the selected components before confirming the operation.
+
+!!! warning "Credential preservation limitation"
+
+    The current cleanup implementation does not consume the
+    `cleanup_credentials=false` extra variable, although source comments still
+    mention it. A full cleanup therefore removes the Orchestrator credential
+    file and Vault key. To retain them, use the standalone component-cleanup
+    playbook with explicit component tags that omit `cleanup_credentials`, or
+    preserve both files in an approved secure backup before full cleanup.
 
 ## Prerequisites
 
@@ -75,13 +83,9 @@ For example:
 
 This deletes Slurm shared data, preserves Kubernetes shared data, and unmounts
 both storage domains. Full cleanup also removes
-`omnia_config_credentials.yml` and `.omnia_config_credentials_key` by default.
-To preserve both credential files, run:
-
-```bash title="Run on: OIM"
-./omnia.sh --run orchestrator --tags cleanup \
-  -e cleanup_credentials=false
-```
+`orchestrator_credentials.yml` and `.orchestrator_credentials_key`. The
+documented `cleanup_credentials=false` compatibility value is not honored by
+the current runtime; use the preservation options in the warning above.
 
 For an approved non-interactive operation, set `SKIP_APPROVAL=true`:
 
@@ -135,8 +139,9 @@ Supported component tags are:
 Use `DRY_RUN=true` or `SKIP_APPROVAL=true` with the standalone command when
 the same preview or explicitly approved non-interactive behavior is required.
 Running the standalone playbook without tags selects all enabled components
-and removes Orchestrator credentials by default. Set
-`cleanup_credentials=false` to preserve them.
+and removes Orchestrator credentials. To preserve them, select each required
+component explicitly and omit `cleanup_credentials`; do not run the standalone
+playbook without tags.
 
 ## Verification
 
@@ -144,8 +149,8 @@ and removes Orchestrator credentials by default. Set
   message lists the intended number of components.
 - For a component cleanup, verify only the selected service, configuration,
   mounts, and artifacts were removed.
-- When credentials were preserved, confirm both credential files remain in
-  the project input directory.
+- When credentials were intentionally omitted from component cleanup, confirm
+  both credential files remain in the project input directory.
 - When `cleanup_credentials` was selected, confirm both credential files were
   removed.
 

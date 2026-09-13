@@ -5,12 +5,21 @@ This file provides additional cloud-init configuration for stateless node
 provisioning. It allows writing files and running commands on nodes during
 the cloud-init final stage.
 
+!!! warning "Current implementation limitation"
+
+    The current Orchestrator setup validates a non-empty
+    `additional_cloud_init_config_file` path, but does not publish that value
+    to the OpenCHAMI runtime role. Consequently, this file is not loaded or
+    applied during provisioning in the current release. The schema below
+    documents the retained input contract; do not rely on it until the runtime
+    publication issue is fixed.
+
 ## Parameter Reference
 
 --8<-- "html/additional_cloud_init.html"
 
 ## Usage example
-```yaml title="File: /opt/omnia/orchestrator/input/project_default/additional_cloud_init.yml"
+```yaml title="File: $ORCHESTRATOR_DATA_PATH/input/$OMNIA_PROJECT_NAME/additional_cloud_init.yml"
 ---
 # Common cloud-init applied to ALL nodes
 common:
@@ -23,10 +32,10 @@ common:
 
 # Per-functional-group cloud-init overrides
 groups:
-  slurm_node_x86_64:
+  slurm_node_rhel_10_0_aarch64:
     runcmd:
       - echo "Slurm node setup" >> /var/log/custom.log
-  os_x86_64:
+  os_rhel_10_0_x86_64:
     write_files:
       - path: /etc/profile.d/cluster.sh
         content: |
@@ -34,28 +43,27 @@ groups:
         permissions: '0644'
 ```
 
-!!! warning "Prohibited keys"
+!!! warning "Unsupported keys"
 
     The following keys are platform-managed and must **not** be used in this file:
     `bootcmd`, `network`, `network-config`, `packages`.
-    Validation will fail if any of these are present.
+    Initial input validation does not currently reject every unsupported key;
+    review the file before provisioning because unsupported content can fail
+    later or produce an unintended merge.
 
 !!! note
 
     - Platform-defined defaults always take precedence (`merge_how: no_replace`).
     - User entries are appended to platform lists (`write_files`, `runcmd`).
     - Group-specific entries are merged **after** common entries.
-    - Group names must match functional groups defined in `pxe_mapping_file.csv`.
+    - Group names must exactly match `FUNCTIONAL_GROUP_NAME` values in
+      `pxe_mapping_file.csv`; copy the value from the active project rather
+      than deriving or shortening it.
 
 !!! info
 
     - This file is optional and can be used to add custom cloud-init configuration to the platform.
     - Refer official cloud-init documentation for [`write_files`](https://docs.cloud-init.io/en/latest/reference/modules.html#write-files) and [`runcmd`](https://docs.cloud-init.io/en/latest/reference/modules.html#runcmd) for more details.
-
-
-
-
-
 
 
 

@@ -172,10 +172,16 @@ Module status and handoff files are stored under the selected project output
 directory. Verify the files relevant to the executed flow:
 
 ```bash title="Run on: OIM host"
-cat <OMNIA_DATA_PATH>/repo_manager/output/<OMNIA_PROJECT_NAME>/repo_status.yml
-cat <OMNIA_DATA_PATH>/image_build_manager/output/<OMNIA_PROJECT_NAME>/build_status.yml
-cat <OMNIA_DATA_PATH>/orchestrator/output/<OMNIA_PROJECT_NAME>/orchestrator_status.yml
-cat <OMNIA_DATA_PATH>/telemetry/output/<OMNIA_PROJECT_NAME>/telemetry_status.yml
+source /etc/profile.d/omnia-env.sh
+repo_manager_path="${REPO_MANAGER_DATA_PATH:-${OMNIA_DATA_PATH}/repo_manager}"
+image_build_manager_path="${IMAGE_BUILD_MANAGER_DATA_PATH:-${OMNIA_DATA_PATH}/image_build_manager}"
+orchestrator_path="${ORCHESTRATOR_DATA_PATH:-${OMNIA_DATA_PATH}/orchestrator}"
+telemetry_path="${TELEMETRY_DATA_PATH:-${OMNIA_DATA_PATH}/telemetry}"
+
+cat "$repo_manager_path/output/$OMNIA_PROJECT_NAME/repo_status.yml"
+cat "$image_build_manager_path/output/$OMNIA_PROJECT_NAME/build_status.yml"
+cat "$orchestrator_path/output/$OMNIA_PROJECT_NAME/orchestrator_status.yml"
+cat "$telemetry_path/output/$OMNIA_PROJECT_NAME/telemetry_status.yml"
 ```
 
 Discovery primarily produces CSV results, BuildStreaM reports its prepared

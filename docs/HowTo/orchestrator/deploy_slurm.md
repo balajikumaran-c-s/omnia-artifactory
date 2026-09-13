@@ -102,8 +102,12 @@ Pulp certificate. The optional `vast_storage_name` mount supplies the
         functional_group_prefix: ["slurm_node", "login"]
     ```
 
-   Omit both `vast_storage_name` and its mount when separate VAST storage is not
-   used.
+   Use the standard `name: "vast_storage"` for the optional VAST entry. Set
+   `vast_storage_name: vast_storage` to enable it. If `vast_storage_name` is
+   empty or omitted, Orchestrator excludes the standard `vast_storage` entry
+   and reuses `nfs_storage_name`; therefore an unused VAST endpoint is not
+   contacted during precheck or provisioning. When enabled, the VAST mount
+   must exist and be reachable or validation fails.
 
 4. Validate and provision. The `provision` tag processes all functional-group
    categories in the mapping, not only Slurm.
@@ -128,8 +132,10 @@ First confirm that Orchestrator registered all expected nodes and configured
 all functional groups:
 
 ```bash title="Run on: OIM"
-cat "$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/provisioning_report.yml"
-cat "$OMNIA_DATA_PATH/orchestrator/output/$OMNIA_PROJECT_NAME/orchestrator_status.yml"
+source /etc/profile.d/omnia-env.sh
+orchestrator_path="${ORCHESTRATOR_DATA_PATH:-${OMNIA_DATA_PATH}/orchestrator}"
+cat "$orchestrator_path/output/$OMNIA_PROJECT_NAME/provisioning_report.yml"
+cat "$orchestrator_path/output/$OMNIA_PROJECT_NAME/orchestrator_status.yml"
 ```
 
 After the nodes complete cloud-init, check Slurm from a controller:

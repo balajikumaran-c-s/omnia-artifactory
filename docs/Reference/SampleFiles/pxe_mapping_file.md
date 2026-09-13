@@ -7,8 +7,10 @@ the hostname and network identities used during provisioning.
 The default project-scoped location is:
 
 ```text
-/opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv
+$ORCHESTRATOR_DATA_PATH/input/$OMNIA_PROJECT_NAME/pxe_mapping_file.csv
 ```
+
+`ORCHESTRATOR_DATA_PATH` defaults to `$OMNIA_DATA_PATH/orchestrator`.
 
 Set `pxe_mapping_file_path` in `orchestrator_config.yml` to select another
 absolute path.
@@ -23,7 +25,7 @@ FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_M
 
 | Column | Required | Description |
 | --- | --- | --- |
-| `FUNCTIONAL_GROUP_NAME` | Yes | Functional-layer name from the selected catalog. The value must exactly match the corresponding image name in Image Build Manager output. |
+| `FUNCTIONAL_GROUP_NAME` | Yes | Functional-layer identity used by Orchestrator. Use an exact `catalog.functionallayer[].name` value from the selected catalog. |
 | `GROUP_NAME` | Yes | Scalable Unit or logical group identifier. |
 | `SERVICE_TAG` | Yes | Unique Dell server service tag. |
 | `PARENT_SERVICE_TAG` | No | For Slurm compute-node roles, the service tag of the service Kubernetes worker in the same group. Leave empty for other roles. |
@@ -35,8 +37,8 @@ FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_M
 | `IB_NIC_NAME` | No | InfiniBand NIC FQDD, such as `InfiniBand.Slot.7-1` or `NIC.InfiniBand.1-3`. |
 | `IB_IP` | No | InfiniBand IPv4 address. |
 
-For the default RHEL 10.0 catalog installed by Main, use these exact,
-case-sensitive functional-group names:
+With the default RHEL 10.0 catalog installed by Main, use these
+case-sensitive mapping names:
 
 - `os_rhel_10_0_x86_64`
 - `slurm_control_node_rhel_10_0_x86_64`
@@ -48,11 +50,18 @@ case-sensitive functional-group names:
 - `login_compiler_node_rhel_10_0_aarch64`
 
 Other catalog variants can define different functional layers. Use the exact
-`catalog.functionallayer[].name` value from the selected catalog. When using a
-Discovery-generated mapping, review and update `FUNCTIONAL_GROUP_NAME` before
-passing the file to Orchestrator.
+`catalog.functionallayer[].name` value from the selected catalog. During
+validation and provisioning, Orchestrator promotes the first name beginning
+with `service_kube_control_plane_` to an internal
+`service_kube_control_plane_first_...` group. Do not put that internal name in
+the source mapping. When using a Discovery-generated mapping, review each
+`FUNCTIONAL_GROUP_NAME` and align it with the selected catalog before passing
+the file to Orchestrator.
 
 ## Sample file
+
+The sample below uses the functional layers in the default RHEL 10.0 catalog
+installed by Main.
 
 ```csv title="pxe_mapping_file.csv"
 FUNCTIONAL_GROUP_NAME,GROUP_NAME,SERVICE_TAG,PARENT_SERVICE_TAG,HOSTNAME,ADMIN_MAC,ADMIN_IP,BMC_MAC,BMC_IP,IB_NIC_NAME,IB_IP

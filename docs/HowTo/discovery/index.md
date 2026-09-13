@@ -113,8 +113,11 @@ Review all generated values before copying the stable mapping to the
 Orchestrator-owned input path:
 
 ```bash title="Run on: OIM host"
-cp /opt/omnia/discovery/output/project_default/bmc_pxe_mapping_file.csv \
-  /opt/omnia/orchestrator/input/project_default/pxe_mapping_file.csv
+source /etc/profile.d/omnia-env.sh
+discovery_path="${DISCOVERY_DATA_PATH:-${OMNIA_DATA_PATH}/discovery}"
+orchestrator_path="${ORCHESTRATOR_DATA_PATH:-${OMNIA_DATA_PATH}/orchestrator}"
+cp "${discovery_path}/output/${OMNIA_PROJECT_NAME}/bmc_pxe_mapping_file.csv" \
+  "${orchestrator_path}/input/${OMNIA_PROJECT_NAME}/pxe_mapping_file.csv"
 ```
 
 See the [Discovery contract](../../Reference/domain_contracts/discovery_contract.md)

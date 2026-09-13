@@ -10,7 +10,7 @@ against the Repo Manager status schema before loading repository data.
 
 | Contract | Default producer output | Structure sample |
 |---|---|---|
-| `repo_status.yml` | `$OMNIA_DATA_PATH/repo_manager/output/$OMNIA_PROJECT_NAME/repo_status.yml` | [Image Build Manager upstream contract samples](https://github.com/dell/omnia/tree/issue-4849-omnia-modernization/src/image_build_manager/samples) (`repo_manager_output/repo_status.yml`) |
+| `repo_status.yml` | `$REPO_MANAGER_DATA_PATH/output/$OMNIA_PROJECT_NAME/repo_status.yml` | [Repository Manager contract](repo_manager_contract.md) |
 
 The path can be overridden by `repo_manager_output_path` in
 `image_build_config.yml`. The generated Repository Manager output is
@@ -32,8 +32,8 @@ output.
 
 **Producer**: The `build_os_images` role's status-writing task.
 
-**Consumer**: The provisioning workflow, for image validation and BSS template
-rendering.
+**Consumer**: The provisioning workflow, for image validation and OpenCHAMI
+boot-service configuration rendering.
 
 The current manifest does not contain a `schema_version` or
 `contract_version` field. Consumers determine compatibility by validating the

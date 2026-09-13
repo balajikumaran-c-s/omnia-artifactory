@@ -99,11 +99,12 @@ PVC `mysqldb-pvc-idrac-telemetry-0` is also preserved unless
 `Delete_volume=true` is supplied.
 
 Orchestrator removes its encrypted credentials and Vault key during full
-cleanup by default. To preserve them, run:
-
-```bash title="Run on: OIM"
-./omnia.sh --run orchestrator --tags cleanup -e cleanup_credentials=false
-```
+cleanup. The current implementation does not consume the documented
+`cleanup_credentials=false` extra variable. To preserve those files, run the
+standalone Orchestrator cleanup playbook with explicit component tags that omit
+`cleanup_credentials`, or save both files through an approved secure backup
+procedure before full cleanup. See the limitation in
+[Clean Up Orchestrator](../HowTo/orchestrator/cleanup_orchestrator.md).
 
 Slurm and Kubernetes shared-data deletion is selected independently during
 full cleanup. Review

@@ -23,7 +23,7 @@
                     </td>
                     <td>
                         <div class="omnia-cell">
-                            <p>High Availability (HA) configuration for Kubernetes (K8s) service clusters. Service K8s clusters are supported only in HA mode.</p>
+                            <p>High Availability (HA) configuration for Kubernetes (K8s) service clusters. The current provisioning path consumes the first entry and generates kube-vip configuration from its virtual IP address.</p>
                         </div>
                     </td>
                 </tr>
@@ -35,13 +35,13 @@
                             <p class="omnia-title" id="module-parameter-service-k8s-cluster-ha-cluster-name">
                                 <strong>cluster_name</strong>
                             </p>
-                            <p class="omnia-type-line"><span class="omnia-type">string</span> / <span class="omnia-required">required</span></p>
+                            <p class="omnia-type-line"><span class="omnia-type">string</span></p>
                         </div>
                     </td>
                     <td>
                         <div class="omnia-indent-desc"></div>
                         <div class="omnia-cell">
-                            <p>Captures the name of the service cluster on which HA will be set up. <b>Default value:</b> <code class="docutils literal notranslate"><span class="pre">service_cluster</span></code></p>
+                            <p>Identifies the intended service cluster. Keep this value aligned with <code class="docutils literal notranslate"><span class="pre">omnia_config.yml</span></code>. The current provisioning role does not use the name to select an HA entry.</p>
                         </div>
                     </td>
                 </tr>
@@ -53,15 +53,15 @@
                             <p class="omnia-title" id="module-parameter-service-k8s-cluster-ha-enable-k8s-ha">
                                 <strong>enable_k8s_ha</strong>
                             </p>
-                            <p class="omnia-type-line"><span class="omnia-type">boolean</span> / <span class="omnia-required">required</span></p>
+                            <p class="omnia-type-line"><span class="omnia-type">boolean</span></p>
                         </div>
                     </td>
                     <td>
                         <div class="omnia-indent-desc"></div>
                         <div class="omnia-cell">
-                            <p><b>Possible values:</b> <code class="docutils literal notranslate"><span class="pre">true</span></code></p>
-                            <p><b>Default value:</b> <code class="docutils literal notranslate"><span class="pre">true</span></code></p>
-                            <p>Indicates whether to enable HA for the Kubernetes (K8s) service node or not. Set to <code class="docutils literal notranslate"><span class="pre">true</span></code> to enable.</p>
+                            <p><b>Possible values:</b> <code class="docutils literal notranslate"><span class="pre">true</span></code> or <code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+                            <p><b>Runtime default:</b> <code class="docutils literal notranslate"><span class="pre">false</span></code> when omitted.</p>
+                            <p>Set this value to <code class="docutils literal notranslate"><span class="pre">true</span></code> for the supported HA configuration. The current provisioning role reads the value but does not use it to disable kube-vip generation.</p>
                         </div>
                     </td>
                 </tr>
@@ -81,7 +81,8 @@
                         <div class="omnia-cell">
                             <p>This is a mandatory and user-configurable parameter.</p>
                             <p>Captures the virtual IP address for the K8s service node HA setup. Ensure that the <code class="docutils literal notranslate"><span class="pre">virtual_ip_address</span></code> does not belong to the <code class="docutils literal notranslate"><span class="pre">dynamic_range</span></code> mentioned in the network_spec.yml.</p>
-                            <p><b>Default value:</b> <code class="docutils literal notranslate"><span class="pre">172.16.107.1</span></code></p>
+                            <p><b>Sample value:</b> <code class="docutils literal notranslate"><span class="pre">172.16.107.1</span></code></p>
+                            <p>The current input validator does not verify the VIP subnet or detect conflicts with node, OIM, DHCP, or MetalLB addresses. Perform these checks before provisioning.</p>
                         </div>
                     </td>
                 </tr>
